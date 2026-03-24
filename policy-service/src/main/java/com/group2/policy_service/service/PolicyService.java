@@ -164,7 +164,6 @@ public class PolicyService {
 
     // Cancel a user-policy (Admin lifecycle: ACTIVE → CANCELLED)
     public UserPolicyResponseDTO cancelPolicy(Long userPolicyId) {
-
         UserPolicy userPolicy = userPolicyRepository.findById(userPolicyId)
                 .orElseThrow(() -> new RuntimeException("UserPolicy not found with id: " + userPolicyId));
 
@@ -175,6 +174,24 @@ public class PolicyService {
         userPolicy.setStatus(PolicyStatus.CANCELLED);
         userPolicyRepository.save(userPolicy);
 
+        return mapToUserPolicyResponse(userPolicy);
+    }
+
+    // Policy Renewal (Customer/Admin triggered: Extend service life)
+    public UserPolicyResponseDTO renewPolicy(Long userPolicyId) {
+        UserPolicy userPolicy = userPolicyRepository.findById(userPolicyId)
+                .orElseThrow(() -> new RuntimeException("UserPolicy not found with id: " + userPolicyId));
+
+        Policy policy = userPolicy.getPolicy();
+        
+        // If currently expired or cancelled, start from now. If active, extend from current end date.
+        LocalDate baseDate = (userPolicy.getEndDate() == null || LocalDate.now().isAfter(userPolicy.getEndDate())) 
+                             ? LocalDate.now() : userPolicy.getEndDate();
+
+        userPolicy.setStatus(PolicyStatus.ACTIVE);
+        userPolicy.setEndDate(baseDate.plusMonths(policy.getDurationInMonths()));
+
+        userPolicyRepository.save(userPolicy);
         return mapToUserPolicyResponse(userPolicy);
     }
 

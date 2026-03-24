@@ -38,8 +38,7 @@ export default function Navbar() {
     { to: '/dashboard', icon: HiOutlineViewGrid, label: 'Dashboard' },
     { to: '/policies', icon: HiOutlineShieldCheck, label: 'Browse' },
     { to: '/my-policies', icon: HiOutlineCollection, label: 'My Policies' },
-    { to: '/file-claim', icon: HiOutlinePlusCircle, label: 'File Claim' },
-    { to: '/my-claims', icon: HiOutlineClipboardList, label: 'My Claims' },
+    { to: '/my-claims', icon: HiOutlineClipboardList, label: 'Claims Hub' },
   ]
 
   const links = isAdmin ? adminLinks : customerLinks

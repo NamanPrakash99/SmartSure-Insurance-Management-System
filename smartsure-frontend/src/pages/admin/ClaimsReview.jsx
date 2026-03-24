@@ -6,12 +6,11 @@ import { Modal } from '../../components/common/Modal'
 import { toast } from 'react-toastify'
 import { 
   HiOutlineDownload, 
-  HiChevronLeft, 
-  HiChevronRight, 
   HiSearch,
   HiOutlineCheckCircle,
   HiOutlinePencilAlt
 } from 'react-icons/hi'
+import { Pagination } from '../../components/common/Pagination'
 
 export default function ClaimsReview() {
   const [claims, setClaims] = useState([])
@@ -156,11 +155,11 @@ export default function ClaimsReview() {
 
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="space-y-10 pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 uppercase">
         <div>
-          <h1 className="section-title">Review Claims</h1>
-          <p className="text-surface-500 mt-1">
+          <h1 className="section-title !text-4xl">Review Claims</h1>
+          <p className="text-surface-500 mt-2 font-medium">
              Manage and audit insurance claims across the system.
           </p>
         </div>
@@ -187,105 +186,69 @@ export default function ClaimsReview() {
       </div>
 
       {loading ? <LoadingSpinner /> : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800">
-                  <th className="table-header">Claim ID</th>
-                  <th className="table-header">User ID</th>
-                  <th className="table-header hidden sm:table-cell">Amount</th>
-                  <th className="table-header">Status</th>
-                  <th className="table-header text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
-                {claims.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="p-12 text-center text-surface-500">No claims found.</td>
+        <>
+          <div className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-50 dark:bg-surface-800/50 border-b border-surface-200 dark:border-surface-800">
+                    <th className="table-header">Claim ID</th>
+                    <th className="table-header">User ID</th>
+                    <th className="table-header hidden sm:table-cell">Amount</th>
+                    <th className="table-header">Status</th>
+                    <th className="table-header text-right">Actions</th>
                   </tr>
-                ) : claims.map((claim) => {
-                  const id = claim.claimId || claim.id
-                  return (
-                    <tr key={id} className="hover:bg-surface-50 dark:hover:bg-surface-800/20 transition-colors">
-                      <td className="p-4 font-mono font-medium">{id}</td>
-                      <td className="p-4 text-sm font-semibold text-surface-600 dark:text-surface-400">ID: {claim.userId || 'N/A'}</td>
-                      <td className="p-4 font-semibold text-surface-900 dark:text-white hidden sm:table-cell">₹{(claim.claimAmount||0).toLocaleString()}</td>
-                      <td className="p-4"><StatusBadge status={claim.status} /></td>
-                      <td className="p-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button 
-                            onClick={() => handleOpenReview(claim)}
-                            className="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-lg transition-colors"
-                            title="Review Decision"
-                          >
-                            <HiOutlineCheckCircle className="text-xl" />
-                          </button>
-                          <button 
-                            onClick={() => handleOpenEdit(claim)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
-                            title="Edit Details"
-                          >
-                            <HiOutlinePencilAlt className="text-xl" />
-                          </button>
-                        </div>
-                      </td>
+                </thead>
+                <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
+                  {claims.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="p-12 text-center text-surface-500">No claims found.</td>
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                  ) : claims.map((claim) => {
+                    const id = claim.claimId || claim.id
+                    return (
+                      <tr key={id} className="hover:bg-surface-50 dark:hover:bg-surface-800/20 transition-colors">
+                        <td className="p-4 font-mono font-medium">{id}</td>
+                        <td className="p-4 text-sm font-semibold text-surface-600 dark:text-surface-400">ID: {claim.userId || 'N/A'}</td>
+                        <td className="p-4 font-semibold text-surface-900 dark:text-white hidden sm:table-cell">₹{(claim.claimAmount||0).toLocaleString()}</td>
+                        <td className="p-4"><StatusBadge status={claim.status} /></td>
+                        <td className="p-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button 
+                              onClick={() => handleOpenReview(claim)}
+                              className="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-lg transition-colors"
+                              title="Review Decision"
+                            >
+                              <HiOutlineCheckCircle className="text-xl" />
+                            </button>
+                            <button 
+                              onClick={() => handleOpenEdit(claim)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+                              title="Edit Details"
+                            >
+                              <HiOutlinePencilAlt className="text-xl" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* Finalized Pagination Toolbar */}
-          <div className="p-4 border-t border-surface-100 dark:border-surface-700/50 flex flex-row items-center justify-between">
-             {/* LEFT: Previous */}
-             <button 
-                disabled={page === 0}
-                onClick={() => setPage(p => p - 1)}
-                className="px-6 py-2.5 text-xs font-bold rounded-xl transition-all disabled:opacity-30 enabled:hover:bg-surface-100 dark:enabled:hover:bg-surface-800 border border-surface-200 dark:border-surface-700"
-             >
-                Previous
-             </button>
-
-             {/* CENTER: Current Page Indicator */}
-             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-                <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest hidden sm:inline">Page</span>
-                <span className="bg-primary-500/10 text-primary-500 px-3 py-1 rounded-lg text-xs font-black ring-1 ring-primary-500/20">
-                   {page + 1} <span className="text-surface-400 dark:text-surface-600 font-medium px-1">of</span> {totalPages || 1}
-                </span>
-             </div>
-
-             {/* RIGHT: Next & Page Size */}
-             <div className="flex items-center gap-4">
-                <button 
-                  disabled={page >= totalPages - 1 || totalPages === 0}
-                  onClick={() => setPage(p => p + 1)}
-                  className="px-6 py-2.5 text-xs font-bold rounded-xl transition-all disabled:opacity-30 enabled:hover:bg-surface-100 dark:enabled:hover:bg-surface-800 border border-surface-200 dark:border-surface-700"
-                >
-                   Next
-                </button>
-                
-                {!searchUserId && (
-                  <div className="hidden sm:flex items-center gap-2 pl-4 border-l border-surface-100 dark:border-surface-700/50">
-                     <p className="text-[10px] font-black text-surface-400 uppercase tracking-widest">Show:</p>
-                     <select 
-                       value={pageSize}
-                       onChange={(e) => {
-                          setPageSize(Number(e.target.value))
-                          setPage(0)
-                       }}
-                       className="bg-surface-50 dark:bg-surface-800 border-none text-[10px] font-black rounded-lg px-2.5 py-1.5 outline-none ring-1 ring-surface-200 dark:ring-surface-700 cursor-pointer hover:ring-primary-500/50 transition-all font-sans"
-                     >
-                        {[10, 50, 100].map(size => (
-                          <option key={size} value={size}>{size}</option>
-                        ))}
-                     </select>
-                  </div>
-                )}
-             </div>
-          </div>
-        </div>
+          <Pagination 
+            currentPage={page + 1}
+            totalItems={totalElements}
+            itemsPerPage={pageSize}
+            onPageChange={(p) => setPage(p - 1)}
+            onItemsPerPageChange={(size) => {
+              setPageSize(size)
+              setPage(0)
+            }}
+          />
+        </>
       )}
 
       {/* Review Modal */}

@@ -8,6 +8,8 @@ import { EmptyState } from '../../components/common/EmptyState'
 import { HiOutlineShieldCheck, HiOutlineSearch, HiOutlineCreditCard, HiOutlineFilter } from 'react-icons/hi'
 import { toast } from 'react-toastify'
 
+import { Pagination } from '../../components/common/Pagination'
+
 export default function BrowsePolicies() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -18,6 +20,8 @@ export default function BrowsePolicies() {
   const [processing, setProcessing] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeFilter, setActiveFilter] = useState('ALL')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   useEffect(() => {
     fetchPolicies()
@@ -25,6 +29,10 @@ export default function BrowsePolicies() {
       fetchUserPolicies()
     }
   }, [user?.id])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, activeFilter, itemsPerPage])
 
   const fetchPolicies = async () => {
     try {
@@ -135,57 +143,65 @@ export default function BrowsePolicies() {
     return Array.from(cats)
   }, [policies])
 
-  const filteredPolicies = policies.filter(p => {
-    const matchesSearch = p.policyName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          p.description.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    // Exact match with backend category enum (HEALTH, VEHICLE, LIFE)
-    const matchesFilter = activeFilter === 'ALL' || (p.category?.toUpperCase() === activeFilter.toUpperCase())
-    
-    return matchesSearch && matchesFilter
-  })
+  const filteredPolicies = useMemo(() => {
+    return policies.filter(p => {
+      const matchesSearch = p.policyName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            p.description.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchesFilter = activeFilter === 'ALL' || (p.category?.toUpperCase() === activeFilter.toUpperCase())
+      
+      return matchesSearch && matchesFilter
+    })
+  }, [policies, searchTerm, activeFilter])
+
+  const paginatedPolicies = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredPolicies.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredPolicies, currentPage])
 
   if (loading) return <LoadingSpinner />
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-10 pb-12">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-fade-in">
         <div className="max-w-xl">
           <h1 className="section-title text-3xl sm:text-4xl mb-2">Available Coverages</h1>
-          <p className="text-surface-500 font-medium">Browse and secure the right insurance plans tailored for your peace of mind.</p>
-        </div>
-        
-        <div className="relative w-full md:w-80 shrink-0">
-          <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 text-lg" />
-          <input 
-            type="text" 
-            placeholder="Search tailored plans..." 
-            className="input-field !pl-11 !py-3 bg-white dark:bg-surface-900 shadow-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <p className="text-surface-500 font-medium tracking-tight">Browse and secure the right insurance plans tailored for your peace of mind.</p>
         </div>
       </div>
 
-      {/* Filter Chips - Mock visual enhancement for premium feel */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar animate-slide-up" style={{ animationDelay: '100ms' }}>
-        <div className="flex items-center gap-2 px-3 py-1.5 border-r border-surface-200 dark:border-surface-700 mr-2 text-surface-400">
-          <HiOutlineFilter />
-          <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Filters</span>
+      {/* Modern Unified AI Pill Toolbar */}
+      <div className="ai-gradient-border shadow-2xl overflow-visible w-full">
+        <div className="ai-content flex flex-col lg:flex-row items-center gap-6 bg-white dark:bg-surface-900 p-2 rounded-full justify-between px-4">
+          {/* Search Pill */}
+          <div className="relative group flex-1 w-full">
+             <HiOutlineSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors text-lg" />
+             <input 
+                type="text" 
+                placeholder="Search plans (e.g. Life, Vehicle, Health)..." 
+                className="w-full bg-white dark:bg-surface-800 py-3.5 pl-14 pr-6 rounded-full border-none focus:ring-2 focus:ring-primary-500/20 text-sm font-medium placeholder-surface-400 transition-all dark:shadow-inner" 
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+             />
+          </div>
+
+          {/* Category Pill */}
+          <div className="flex items-center gap-1 bg-surface-100 dark:bg-surface-950/50 p-1 rounded-full border border-surface-200/50 dark:border-surface-800">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveFilter(cat)}
+                className={`px-6 py-2 rounded-full text-[10px] font-black tracking-widest uppercase transition-all duration-500 shrink-0 ${
+                  activeFilter === cat
+                    ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-white shadow-xl scale-105'
+                    : 'text-surface-500 hover:text-surface-900 dark:hover:text-white'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveFilter(cat)}
-            className={`px-5 py-2 rounded-full text-xs font-bold tracking-wider transition-all duration-300 shrink-0 ${
-              activeFilter === cat 
-                ? 'bg-surface-900 text-white dark:bg-white dark:text-surface-900 shadow-md' 
-                : 'bg-white dark:bg-surface-800 text-surface-600 dark:text-surface-400 border border-surface-200 dark:border-surface-700 hover:border-primary-500/50'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
       </div>
 
       {filteredPolicies.length === 0 ? (
@@ -196,7 +212,7 @@ export default function BrowsePolicies() {
          />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPolicies.map((policy, idx) => (
+          {paginatedPolicies.map((policy, idx) => (
             <div 
               key={policy.id} 
               className="card group flex flex-col h-full border-2 border-transparent hover:border-primary-500/30 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary-500/10 animate-fade-in"
@@ -207,6 +223,12 @@ export default function BrowsePolicies() {
                 
                 <div className="relative z-10 w-14 h-14 bg-white dark:bg-surface-800 shadow-lg border border-surface-100 dark:border-surface-700 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary-600 group-hover:text-white transition-colors duration-300">
                   <HiOutlineShieldCheck className="text-2xl" />
+                </div>
+
+                <div className="absolute top-4 right-4 flex gap-2">
+                   <span className="px-3 py-1 text-[10px] font-black text-primary-500 uppercase tracking-widest bg-primary-500/10 rounded-full shadow-inner ring-1 ring-primary-500/20">
+                     {policy.category || 'General'}
+                   </span>
                 </div>
                 
                 <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-2 line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{policy.policyName}</h3>
@@ -245,6 +267,14 @@ export default function BrowsePolicies() {
           ))}
         </div>
       )}
+
+      <Pagination 
+        currentPage={currentPage}
+        totalItems={filteredPolicies.length}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={setItemsPerPage}
+      />
     </div>
   )
 }

@@ -17,4 +17,10 @@ export const authService = {
 
   getUserById: (id) =>
     API.get(`${AUTH_BASE}/users/${id}`),
+
+  forgotPassword: (email) =>
+    API.post(`${AUTH_BASE}/forgot-password?email=${encodeURIComponent(email)}`),
+
+  resetPassword: (data) =>
+    API.post(`${AUTH_BASE}/reset-password`, data),
 }

@@ -90,4 +90,10 @@ public class PolicyController {
     public ResponseEntity<UserPolicyResponseDTO> cancelPolicy(@PathVariable Long id) {
         return ResponseEntity.ok(policyService.cancelPolicy(id));
     }
+
+    // Renew a user's policy (Customer lifecycle: Extend service life)
+    @PostMapping("/policies/renew/{id}")
+    public ResponseEntity<UserPolicyResponseDTO> renewPolicy(@PathVariable Long id) {
+        return ResponseEntity.ok(policyService.renewPolicy(id));
+    }
 }

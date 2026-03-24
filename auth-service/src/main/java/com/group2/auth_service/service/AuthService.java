@@ -13,19 +13,28 @@ import com.group2.auth_service.dto.RegisterRequest;
 import com.group2.auth_service.entity.Role;
 import com.group2.auth_service.entity.User;
 import com.group2.auth_service.repository.AuthServiceRepository;
+import com.group2.auth_service.repository.PasswordResetTokenRepository;
 import com.group2.auth_service.security.JwtUtil;
 
 @Service
 public class AuthService {
 
 	private final AuthServiceRepository userRepository;
+	private final PasswordResetTokenRepository tokenRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtUtil jwtUtil;
+	private final EmailService emailService;
 
-	public AuthService(AuthServiceRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+	public AuthService(AuthServiceRepository userRepository, 
+	                  PasswordResetTokenRepository tokenRepository,
+	                  PasswordEncoder passwordEncoder, 
+	                  JwtUtil jwtUtil,
+	                  EmailService emailService) {
 		this.userRepository = userRepository;
+		this.tokenRepository = tokenRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtUtil = jwtUtil;
+		this.emailService = emailService;
 	}
 	
 	@PostConstruct
@@ -42,7 +51,7 @@ public class AuthService {
 			userRepository.save(admin);
 		}
 	}
-	
+
     @Transactional
 	public User register(RegisterRequest request) {
         Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
@@ -58,8 +67,10 @@ public class AuthService {
         if (!request.getPassword().matches(".*\\d.*")) {
             throw new RuntimeException("Password must contain at least one number.");
         }
+
+        User user = new User();
         user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        user.setEmail(request.getEmail().toLowerCase());
         user.setPassword(passwordEncoder.encode(request.getPassword()));    
         user.setPhone(request.getPhone());
         user.setAddress(request.getAddress());
@@ -69,16 +80,19 @@ public class AuthService {
 	}
 
 	public AuthResponse login(LoginRequest request) {
-	    Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
+	    Optional<User> userOpt = userRepository.findByEmail(request.getEmail().toLowerCase());
+	    
+	    if (userOpt.isEmpty()) {
+	        userOpt = userRepository.findByEmail(request.getEmail());
+	    }
 	    
 	    if (userOpt.isPresent()) {
 	        User user = userOpt.get();        
 
 	        if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-	            String token = jwtUtil.generateToken(user.getEmail(), user.getId(),user.getRole().name());
+	            String token = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole().name());
 	            return new AuthResponse(token, user.getRole().name(), user.getId(), user.getName());
 	        }
-
 	    }
 	    throw new RuntimeException("Invalid credentials");
 	}
@@ -87,5 +101,46 @@ public class AuthService {
 	    return userRepository.findById(id)
 	            .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 	}
+
+    @Transactional
+    public void forgotPassword(String email) {
+        // Handle case-insensitivity by looking up by lowercase if your DB doesn't handle it
+        User user = userRepository.findByEmail(email.toLowerCase())
+                .orElseGet(() -> userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("No user found with the email: " + email)));
+
+        // Delete existing tokens if any
+        tokenRepository.deleteByUser(user);
+
+        // Generate token
+        String token = java.util.UUID.randomUUID().toString();
+        com.group2.auth_service.entity.PasswordResetToken resetToken = 
+                new com.group2.auth_service.entity.PasswordResetToken(token, user);
+        
+        tokenRepository.save(resetToken);
+
+        // SEND REAL EMAIL VIA BREVO
+        emailService.sendResetPasswordEmail(user.getEmail(), token);
+
+        System.out.println("Password reset link sent to: " + user.getEmail());
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        com.group2.auth_service.entity.PasswordResetToken resetToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired token."));
+
+        if (resetToken.isExpired()) {
+            tokenRepository.delete(resetToken);
+            throw new RuntimeException("Token has expired.");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Delete token after successful reset
+        tokenRepository.delete(resetToken);
+    }
 
 }

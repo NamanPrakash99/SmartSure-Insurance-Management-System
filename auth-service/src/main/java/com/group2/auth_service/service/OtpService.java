@@ -4,13 +4,8 @@ package com.group2.auth_service.service;
 import java.time.LocalDateTime;
 import java.util.Random;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import com.group2.auth_service.entity.Otp;
 import com.group2.auth_service.exception.OtpException;
@@ -24,20 +19,20 @@ public class OtpService {
 
     private final OtpRepository otpRepository;
     private final AuthServiceRepository authServiceRepository;
+    private final EmailService emailService;
 
-    // 🔐 Inject API key from properties
-    @Value("${brevo.api.key}")
-    private String apiKey;
-
-    public OtpService(OtpRepository otpRepository, AuthServiceRepository authServiceRepository) {
+    public OtpService(OtpRepository otpRepository, 
+                      AuthServiceRepository authServiceRepository,
+                      EmailService emailService) {
         this.otpRepository = otpRepository;
         this.authServiceRepository = authServiceRepository;
+        this.emailService = emailService;
     }
 
     // 🔹 Generate & Send OTP
     public void sendOtp(String email) {
 
-        if (authServiceRepository.findByEmail(email).isPresent()) {
+        if (authServiceRepository.findByEmail(email.toLowerCase()).isPresent()) {
             throw new UserAlreadyExistsException("User with email " + email + " is already registered.");
         }
 
@@ -54,33 +49,7 @@ public class OtpService {
 
         otpRepository.save(otpEntity);
 
-        sendEmail(email, otp);
-    }
-
-    // 🔹 Send email using Brevo API
-    private void sendEmail(String email, String otp) {
-
-        RestTemplate restTemplate = new RestTemplate();
-
-        String url = "https://api.brevo.com/v3/smtp/email";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("api-key", apiKey);
-
-        String body = "{\n" +
-                "\"sender\": {\"name\": \"SmartSure\", \"email\": \"np164429@gmail.com\"},\n" +
-                "\"to\": [{\"email\": \"" + email + "\"}],\n" +
-                "\"subject\": \"OTP Verification\",\n" +
-                "\"htmlContent\": \"<h3>Your OTP is: <b>" + otp + "</b></h3><p>Valid for 10 minutes.</p>\"\n" +
-                "}";
-
-        HttpEntity<String> request = new HttpEntity<>(body, headers);
-
-        restTemplate.postForObject(url, request, String.class);
-        
-        String response = restTemplate.postForObject(url, request, String.class);
-        System.out.println("Brevo Response: " + response);
+        emailService.sendOtpEmail(email, otp);
     }
 
     // 🔹 Verify OTP

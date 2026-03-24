@@ -4,17 +4,28 @@ import { policyService } from '../../api/policyService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { EmptyState } from '../../components/common/EmptyState'
+import { toast } from 'react-toastify'
 import { HiOutlineShieldCheck } from 'react-icons/hi'
 import { Link } from 'react-router-dom'
+
+import { Pagination } from '../../components/common/Pagination'
 
 export default function MyPolicies() {
   const { user } = useAuth()
   const [policies, setPolicies] = useState([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+
+  const paginatedPolicies = policies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   useEffect(() => {
     fetchPolicies()
   }, [user.id])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [itemsPerPage])
 
   const fetchPolicies = async () => {
     try {
@@ -52,7 +63,7 @@ export default function MyPolicies() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {policies.map((policy, idx) => {
+          {paginatedPolicies.map((policy, idx) => {
             // Calculate mock next due date (approx 1 month from start or next month if already past)
             const startDate = new Date(policy.startDate || Date.now())
             const nextDueDate = new Date(startDate)
@@ -93,20 +104,44 @@ export default function MyPolicies() {
                   </div>
                 </div>
 
-                <div className="px-6 sm:px-8 pb-6 pt-0">
+                <div className="px-6 sm:px-8 pb-6 pt-0 flex flex-col gap-3">
                   <Link 
-                    to="/file-claim" 
+                    to="/my-claims" 
                     state={{ policyId: policy.id, policyName: policy.policyName }}
                     className="w-full btn-ghost border border-surface-200 dark:border-surface-700 text-xs tracking-widest uppercase font-bold !py-3 block text-center hover:bg-surface-900 hover:text-white dark:hover:bg-white dark:hover:text-surface-900"
                   >
                     File a Claim
                   </Link>
+                  {policy.status !== 'CANCELLED' && (
+                    <button 
+                      onClick={async () => {
+                        try {
+                          await policyService.renewPolicy(policy.id);
+                          toast.success('Policy renewed successfully!');
+                          fetchPolicies();
+                        } catch (error) {
+                          toast.error('Renewal failed. Please try again.');
+                        }
+                      }}
+                      className="w-full btn-primary text-xs tracking-widest uppercase font-bold !py-3 block text-center shadow-lg shadow-primary-500/20"
+                    >
+                      Renew Policy
+                    </button>
+                  )}
                 </div>
               </div>
             )
           })}
         </div>
       )}
+
+      <Pagination 
+        currentPage={currentPage}
+        totalItems={policies.length}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={setItemsPerPage}
+      />
     </div>
   )
 }

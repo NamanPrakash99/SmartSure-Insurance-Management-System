@@ -62,4 +62,16 @@ public class AuthController {
         return ResponseEntity.ok(service.getUserById(id));
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestParam String email) {
+        service.forgotPassword(email);
+        return ResponseEntity.ok("Recovery email sent successfully (Simulated)");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody com.group2.auth_service.dto.ResetPasswordRequest request) {
+        service.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok("Password reset successfully");
+    }
+
 }

@@ -4,13 +4,14 @@ import { useAuth } from '../context/AuthContext'
 // Auth Pages
 import LoginPage from '../pages/auth/LoginPage'
 import RegisterPage from '../pages/auth/RegisterPage'
+import ForgotPassword from '../pages/auth/ForgotPassword'
+import ResetPassword from '../pages/auth/ResetPassword'
 
 // Customer Pages
 import CustomerDashboard from '../pages/customer/Dashboard'
 import BrowsePolicies from '../pages/customer/BrowsePolicies'
 import PolicyDetails from '../pages/customer/PolicyDetails'
 import MyPolicies from '../pages/customer/MyPolicies'
-import FileClaim from '../pages/customer/FileClaim'
 import MyClaims from '../pages/customer/MyClaims'
 
 // Admin Pages
@@ -53,6 +54,8 @@ export default function AppRouter() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Customer Routes */}
       <Route path="/dashboard" element={
@@ -73,11 +76,6 @@ export default function AppRouter() {
       <Route path="/my-policies" element={
         <ProtectedRoute allowedRoles={['CUSTOMER']}>
           <DashboardLayout><MyPolicies /></DashboardLayout>
-        </ProtectedRoute>
-      } />
-      <Route path="/file-claim" element={
-        <ProtectedRoute allowedRoles={['CUSTOMER']}>
-          <DashboardLayout><FileClaim /></DashboardLayout>
         </ProtectedRoute>
       } />
       <Route path="/my-claims" element={

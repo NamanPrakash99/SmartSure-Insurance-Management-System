@@ -33,4 +33,7 @@ export const policyService = {
 
   cancelPolicy: (id) =>
     API.put(`${POLICY_BASE}/admin/policies/${id}/cancel`),
+
+  renewPolicy: (id) =>
+    API.post(`${POLICY_BASE}/policies/renew/${id}`),
 }

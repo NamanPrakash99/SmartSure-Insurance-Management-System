@@ -50,7 +50,6 @@ export default function AdminReports() {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-fade-in">
         <div>
-          <p className="text-[10px] font-bold text-primary-500 uppercase tracking-[0.2em] mb-2">System Intelligence</p>
           <h1 className="section-title text-4xl sm:text-5xl mb-2 font-black tracking-tight">Reports & Analytics</h1>
           <p className="text-surface-500 font-medium italic">Comprehensive performance breakdown of the SmartSure insurance ecosystem.</p>
         </div>

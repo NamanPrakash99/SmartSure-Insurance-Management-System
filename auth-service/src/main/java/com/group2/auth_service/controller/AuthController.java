@@ -1,6 +1,5 @@
 package com.group2.auth_service.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,14 +20,12 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/auth")
 public class AuthController {
 	
-	@Autowired
-	private OtpService otpService;
-	
+	private final OtpService otpService;
 	private final AuthService service;
 
-	public AuthController(AuthService service) {
-		super();
+	public AuthController(AuthService service, OtpService otpService) {
 		this.service = service;
+		this.otpService = otpService;
 	}
 	
 

@@ -158,7 +158,7 @@ export default function Dashboard() {
                   <div key={claim.claimId} className="p-4 sm:px-5 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors flex justify-between items-center">
                     <div className="min-w-0 flex-1 mr-3">
                       <p className="font-semibold text-sm text-surface-900 dark:text-white flex items-center gap-2">
-                        Claim #{claim.claimId}
+                        Claim {claim.claimId}
                         {claim.claimAmount && <span className="text-xs font-medium text-surface-500">₹{claim.claimAmount.toLocaleString()}</span>}
                       </p>
                       <p className="text-[11px] text-surface-500 mt-0.5 truncate max-w-[200px]">{claim.description || claim.message}</p>

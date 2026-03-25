@@ -24,6 +24,10 @@ export const claimService = {
   getClaimsByUser: (userId) =>
     API.get(`${CLAIMS_BASE}/user/${userId}`),
 
+
   downloadDocument: (claimId) =>
     API.get(`${CLAIMS_BASE}/${claimId}/document`, { responseType: 'blob' }),
+
+  deleteClaim: (claimId) =>
+    API.delete(`${CLAIMS_BASE}/${claimId}`),
 }

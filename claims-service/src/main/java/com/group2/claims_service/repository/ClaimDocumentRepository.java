@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface ClaimDocumentRepository extends JpaRepository<ClaimDocument, Long>{
 	java.util.Optional<ClaimDocument> findFirstByClaimIdOrderByIdDesc(Long claimId);
+	void deleteByClaimId(Long claimId);
 
 }

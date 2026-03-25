@@ -19,6 +19,7 @@ export const adminService = {
   getAllClaims: (page = 0, size = 10) =>
     API.get(`${ADMIN_BASE}/claims`, { params: { page, size } }),
   updateClaim: (id, data) => API.put(`${ADMIN_BASE}/claims/${id}`, data),
+  deleteClaim: (id) => API.delete(`${ADMIN_BASE}/claims/${id}`),
 
 
 

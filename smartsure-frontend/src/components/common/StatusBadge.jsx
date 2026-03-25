@@ -75,12 +75,15 @@ const defaultConfig = {
 export function StatusBadge({ status }) {
   const config = statusConfig[status] || defaultConfig
 
+  const formatStatus = (s) =>
+    s ? s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : ''
+
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${config.bg} ${config.text} ${config.border}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider border ${config.bg} ${config.text} ${config.border}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${config.dot} ${config.pulse ? 'animate-pulse' : ''}`} />
-      {status?.replace('_', ' ')}
+      {formatStatus(status)}
     </span>
   )
 }

@@ -10,7 +10,8 @@ import { Link } from 'react-router-dom'
 
 import { Pagination } from '../../components/common/Pagination'
 import { paymentService } from '../../api/paymentService'
-import { HiOutlineCreditCard, HiOutlineTrash } from 'react-icons/hi'
+import { HiOutlineCreditCard, HiOutlineTrash, HiOutlineCalendar, HiOutlineCurrencyRupee } from 'react-icons/hi'
+import { Modal } from '../../components/common/Modal'
 
 export default function MyPolicies() {
   const { user } = useAuth()
@@ -18,6 +19,7 @@ export default function MyPolicies() {
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [selectedPolicyForRenewal, setSelectedPolicyForRenewal] = useState(null)
 
   const paginatedPolicies = policies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
@@ -67,6 +69,7 @@ export default function MyPolicies() {
             }
             await paymentService.verifyPayment(verifyData)
             toast.success('Payment successful! Your policy will be active shortly.')
+            setSelectedPolicyForRenewal(null)
             fetchPolicies() // Refresh status
           } catch (err) {
             toast.error('Payment verification failed')
@@ -212,15 +215,7 @@ export default function MyPolicies() {
                     </button>
                   ) : policy.status !== 'CANCELLED' && (
                     <button 
-                      onClick={async () => {
-                        try {
-                          await policyService.renewPolicy(policy.id);
-                          toast.success('Policy renewed successfully!');
-                          fetchPolicies();
-                        } catch (error) {
-                          toast.error('Renewal failed. Please try again.');
-                        }
-                      }}
+                      onClick={() => setSelectedPolicyForRenewal(policy)}
                       className="w-full btn-primary text-xs tracking-widest uppercase font-bold !py-3 block text-center shadow-lg shadow-primary-500/20"
                     >
                       Renew Policy
@@ -248,6 +243,63 @@ export default function MyPolicies() {
         onPageChange={setCurrentPage}
         onItemsPerPageChange={setItemsPerPage}
       />
+
+      <Modal
+        isOpen={!!selectedPolicyForRenewal}
+        onClose={() => setSelectedPolicyForRenewal(null)}
+        title="Policy Renewal"
+      >
+        {selectedPolicyForRenewal && (
+          <div className="space-y-8 animate-fade-in">
+             <div className="flex items-center gap-4 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-2xl border border-primary-100 dark:border-primary-500/20">
+                <div className="w-12 h-12 bg-primary-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                   <HiOutlineCalendar className="text-2xl" />
+                </div>
+                <div>
+                   <h4 className="font-bold text-surface-900 dark:text-white">{selectedPolicyForRenewal.policyName}</h4>
+                   <p className="text-xs text-primary-600 dark:text-primary-400 font-bold uppercase tracking-wider">Premium Installment</p>
+                </div>
+             </div>
+
+             <div className="space-y-4">
+                <div className="flex justify-between items-center py-3 border-b border-surface-100 dark:border-surface-800">
+                   <span className="text-sm text-surface-500 font-medium">Monthly Installment:</span>
+                   <div className="flex items-center gap-1 text-surface-900 dark:text-white font-black">
+                      <HiOutlineCurrencyRupee className="text-lg text-primary-500" />
+                      <span>{(selectedPolicyForRenewal.premiumAmount || 0).toLocaleString()}</span>
+                   </div>
+                </div>
+                <div className="flex justify-between items-center py-3 border-b border-surface-100 dark:border-surface-800 font-black">
+                   <span className="text-sm text-surface-500">Total Due Now:</span>
+                   <div className="flex items-center gap-1 text-primary-600 dark:text-primary-400 text-xl">
+                      <HiOutlineCurrencyRupee className="text-xl" />
+                      <span>{(selectedPolicyForRenewal.premiumAmount || 0).toLocaleString()}</span>
+                   </div>
+                </div>
+             </div>
+
+             <div className="bg-surface-50 dark:bg-surface-800/50 p-4 rounded-xl text-xs text-surface-500 leading-relaxed italic border border-surface-200 dark:border-surface-700/50">
+                "Renewing your policy ensures uninterrupted protection. The payment will be processed securely via Razorpay."
+             </div>
+
+             <div className="flex flex-col gap-3 pt-4">
+                <button 
+                  onClick={() => handleCompletePayment(selectedPolicyForRenewal)}
+                  className="w-full btn-primary py-4 flex justify-center items-center gap-2 group text-sm tracking-widest uppercase font-black"
+                >
+                   <HiOutlineCreditCard className="text-xl" />
+                   Proceed to Payment
+                </button>
+                <button 
+                  onClick={() => setSelectedPolicyForRenewal(null)}
+                  className="w-full btn-ghost py-3 text-xs tracking-widest uppercase font-bold text-surface-500 hover:text-surface-900 dark:hover:text-white"
+                >
+                   Cancel
+                </button>
+             </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

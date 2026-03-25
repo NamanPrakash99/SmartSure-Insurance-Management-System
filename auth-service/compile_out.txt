@@ -1,0 +1,73 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< com.group2:auth-service >-----------------------
+[INFO] Building auth-service 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.1:clean (default-clean) @ auth-service ---
+[INFO] Deleting C:\Users\Naman Prakash\OneDrive\Downloads\SmartSure-Insurance-Management-System-Demo\auth-service\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ auth-service ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ auth-service ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 24 source files with javac [debug parameters release 17] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ auth-service ---
+[INFO] skip non existing resourceDirectory C:\Users\Naman Prakash\OneDrive\Downloads\SmartSure-Insurance-Management-System-Demo\auth-service\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ auth-service ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 4 source files with javac [debug parameters release 17] to target\test-classes
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ auth-service ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.group2.auth_service.AuthServiceApplicationTests
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.007 s -- in com.group2.auth_service.AuthServiceApplicationTests
+[INFO] Running com.group2.auth_service.controller.AuthControllerTest
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.814 s -- in com.group2.auth_service.controller.AuthControllerTest
+[INFO] Running com.group2.auth_service.service.AuthServiceTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.839 s -- in com.group2.auth_service.service.AuthServiceTest
+[INFO] Running com.group2.auth_service.service.OtpServiceTest
+[ERROR] Tests run: 7, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.562 s <<< FAILURE! -- in com.group2.auth_service.service.OtpServiceTest
+[ERROR] com.group2.auth_service.service.OtpServiceTest.testSendOtp_Success -- Time elapsed: 0.377 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "com.group2.auth_service.service.EmailService.sendOtpEmail(String, String)" because "<local3>.emailService" is null
+	at com.group2.auth_service.service.OtpService.sendOtp(OtpService.java:52)
+	at com.group2.auth_service.service.OtpServiceTest.testSendOtp_Success(OtpServiceTest.java:79)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Errors: 
+[ERROR]   OtpServiceTest.testSendOtp_Success:79 » NullPointer Cannot invoke "com.group2.auth_service.service.EmailService.sendOtpEmail(String, String)" because "<local3>.emailService" is null
+[INFO] 
+[ERROR] Tests run: 19, Failures: 0, Errors: 1, Skipped: 1
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  13.987 s
+[INFO] Finished at: 2026-03-25T23:05:03+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.4:test (default-test) on project auth-service: 
+[ERROR] 
+[ERROR] See C:\Users\Naman Prakash\OneDrive\Downloads\SmartSure-Insurance-Management-System-Demo\auth-service\target\surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

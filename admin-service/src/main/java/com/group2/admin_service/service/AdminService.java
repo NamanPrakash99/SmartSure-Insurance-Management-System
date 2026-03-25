@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import com.group2.admin_service.dto.ClaimDTO;
 import com.group2.admin_service.dto.ClaimReviewEvent;
 import com.group2.admin_service.dto.ClaimStatusDTO;
-import com.group2.admin_service.dto.ClaimStatusUpdateDTO;
 import com.group2.admin_service.dto.PolicyDTO;
 import com.group2.admin_service.dto.PolicyRequestDTO;
 import com.group2.admin_service.dto.PolicyStatsDTO;
@@ -258,5 +257,14 @@ public class AdminService {
         report.setTotalPolicies(0);
         report.setTotalRevenue(0.0);
         return report;
+    }
+    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    public void deleteClaim(Long id) {
+        claimsFeignClient.deleteClaim(id);
+    }
+
+    @Recover
+    public void recoverDeleteClaim(Exception e, Long id) {
+        throw new RuntimeException("Fallback: Could not delete claim. Service might be down. Reason: " + e.getMessage());
     }
 }

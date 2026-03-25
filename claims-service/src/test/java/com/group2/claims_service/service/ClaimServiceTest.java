@@ -23,7 +23,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.group2.claims_service.dto.ClaimCreatedEvent;
 import com.group2.claims_service.dto.ClaimRequestDTO;
@@ -55,7 +54,6 @@ public class ClaimServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(claimService, "rabbitTemplate", rabbitTemplate);
 
         claim = new Claim();
         claim.setId(1L);
@@ -83,7 +81,7 @@ public class ClaimServiceTest {
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
         doNothing().when(rabbitTemplate).convertAndSend(eq("claim.exchange"), eq("claim.created"), any(ClaimCreatedEvent.class));
 
-        ClaimResponseDTO response = claimService.initateClaim(requestDTO);
+        ClaimResponseDTO response = claimService.initiateClaim(requestDTO);
 
         assertNotNull(response);
         assertEquals(1L, response.getClaimId());

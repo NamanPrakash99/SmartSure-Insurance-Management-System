@@ -62,14 +62,19 @@ export default function MyClaims() {
 
   const handleDownload = async (claimId) => {
     try {
-      const response = await claimService.downloadDocument(claimId)
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const res = await claimService.downloadDocument(claimId)
+      
+      const contentType = res.headers['content-type']
+      const extension = contentType?.includes('image') ? 'jpg' : 'pdf'
+      
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }))
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `claim_document_${claimId}.pdf`) 
+      link.setAttribute('download', `claim_${claimId}_document.${extension}`) 
       document.body.appendChild(link)
       link.click()
       link.remove()
+      window.URL.revokeObjectURL(url)
       toast.success('Document download started')
     } catch (err) {
       toast.error('Could not download document. It may not have been uploaded.')
@@ -286,14 +291,14 @@ export default function MyClaims() {
                         <div className="p-2 bg-surface-100 dark:bg-surface-800 rounded-lg group-hover:bg-primary-500/10 transition-colors">
                           <HiOutlineDocumentText className="text-xl text-surface-500 group-hover:text-primary-500" />
                         </div>
-                        <h3 className="font-black text-lg text-surface-900 dark:text-white tracking-tight">Claim #{claim.claimId}</h3>
+                        <h3 className="font-black text-lg text-surface-900 dark:text-white tracking-tight">Claim {claim.claimId}</h3>
                         <StatusBadge status={claim.status} />
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-surface-500">
                          <div className="flex items-center gap-1.5 font-medium">
                            <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                           <span>Policy ID: <span className="text-surface-700 dark:text-surface-300 font-bold">#{claim.policyId}</span></span>
+                           <span>Policy ID: <span className="text-surface-700 dark:text-surface-300 font-bold">{claim.policyId}</span></span>
                          </div>
                          <div className="flex items-center gap-1.5 font-medium">
                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -301,18 +306,37 @@ export default function MyClaims() {
                          </div>
                       </div>
 
-                      <div className="bg-surface-100/50 dark:bg-surface-900/40 p-5 rounded-2xl text-sm text-surface-600 dark:text-surface-300 leading-relaxed italic border border-surface-200 dark:border-surface-800/50">
-                        "{claim.description || claim.message}"
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 bg-surface-100/50 dark:bg-surface-900/40 p-4 rounded-xl text-xs sm:text-sm text-surface-600 dark:text-surface-300 leading-relaxed italic border border-surface-200 dark:border-surface-800/50">
+                          "{claim.description || claim.message}"
+                        </div>
+                        
+                          <div className="flex flex-col gap-2">
+                            <button 
+                              onClick={() => handleDownload(claim.claimId)}
+                              className="btn-secondary sm:w-48 flex flex-col items-center justify-center gap-1.5 group/btn active:scale-95 transition-all p-4 !rounded-xl border border-transparent hover:border-primary-500/20"
+                            >
+                               <HiOutlineDownload className="text-xl text-primary-600 dark:text-primary-400 group-hover/btn:translate-y-0.5 transition-transform"/> 
+                               <span className="text-[10px] font-bold tracking-widest text-surface-700 dark:text-surface-200 whitespace-nowrap">Download Document</span>
+                            </button>
+
+                             <button 
+                               onClick={async () => {
+                                 if (window.confirm('Delete this claim? This action cannot be undone.')) {
+                                   try {
+                                     await claimService.deleteClaim(claim.claimId)
+                                     toast.success('Claim deleted successfully')
+                                     fetchData()
+                                   } catch (err) { toast.error('Failed to delete claim') }
+                                 }
+                               }}
+                               className="btn-secondary sm:w-48 !py-2.5 !rounded-xl border-red-500/20 text-red-500 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest shadow-none"
+                             >
+                               Delete Claim
+                             </button>
+                          </div>
                       </div>
                     </div>
-                    
-                    <button 
-                      onClick={() => handleDownload(claim.claimId)}
-                      className="btn-secondary h-12 px-6 flex items-center justify-center gap-2 group/btn active:scale-95 transition-transform"
-                    >
-                       <HiOutlineDownload className="text-xl group-hover/btn:translate-y-0.5 transition-transform"/> 
-                       <span className="text-xs uppercase font-black tracking-widest">Download Evidence</span>
-                    </button>
                   </div>
                 </div>
               ))

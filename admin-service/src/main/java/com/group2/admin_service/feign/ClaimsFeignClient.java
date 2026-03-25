@@ -31,7 +31,7 @@ public interface ClaimsFeignClient {
     @GetMapping("/api/claims/user/{userId}")
     List<ClaimDTO> getClaimsByUserId(@PathVariable("userId") Long userId);
 
-    @GetMapping("/api/claims/{id}/document")
+    @GetMapping(value = "/api/claims/{id}/document", consumes = "application/octet-stream")
     org.springframework.http.ResponseEntity<byte[]> downloadDocument(@PathVariable("id") Long id);
 
     @GetMapping("/api/claims/admin/all")
@@ -39,6 +39,9 @@ public interface ClaimsFeignClient {
 
     @PutMapping("/api/claims/{id}")
     ClaimDTO updateClaim(@PathVariable("id") Long id, @RequestBody ClaimDTO dto);
+
+    @DeleteMapping("/api/claims/{id}")
+    void deleteClaim(@PathVariable("id") Long id);
 }
 
 

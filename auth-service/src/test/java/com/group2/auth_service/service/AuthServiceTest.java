@@ -23,6 +23,7 @@ import com.group2.auth_service.entity.Role;
 import com.group2.auth_service.entity.User;
 import com.group2.auth_service.exception.UserAlreadyExistsException;
 import com.group2.auth_service.repository.AuthServiceRepository;
+import com.group2.auth_service.repository.PasswordResetTokenRepository;
 import com.group2.auth_service.security.JwtUtil;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,10 +33,16 @@ public class AuthServiceTest {
     private AuthServiceRepository userRepository;
 
     @Mock
+    private PasswordResetTokenRepository tokenRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
     private JwtUtil jwtUtil;
+
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private AuthService authService;

@@ -4,11 +4,12 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { Modal } from '../../components/common/Modal'
 import { toast } from 'react-toastify'
-import { 
-  HiOutlineDownload, 
+import {
+  HiOutlineDownload,
   HiSearch,
   HiOutlineCheckCircle,
-  HiOutlinePencilAlt
+  HiOutlinePencilAlt,
+  HiOutlineXCircle
 } from 'react-icons/hi'
 import { Pagination } from '../../components/common/Pagination'
 
@@ -19,11 +20,12 @@ export default function ClaimsReview() {
   const [totalPages, setTotalPages] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [totalElements, setTotalElements] = useState(0)
-  
+  const [filteredClaims, setFilteredClaims] = useState([])
+
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedClaim, setSelectedClaim] = useState(null)
-  
+
   const [reviewRemark, setReviewRemark] = useState('')
   const [targetStatus, setTargetStatus] = useState('')
   const [editingClaim, setEditingClaim] = useState({ claimAmount: 0, description: '' })
@@ -40,6 +42,7 @@ export default function ClaimsReview() {
     try {
       const { data } = await adminService.getAllClaims(pageNum, pageSize)
       setClaims(data?.content || [])
+      setFilteredClaims(data?.content || [])
       setTotalPages(data?.totalPages || 0)
       setTotalElements(data?.totalElements || 0)
     } catch (error) {
@@ -66,6 +69,7 @@ export default function ClaimsReview() {
     try {
       const { data } = await adminService.getClaimsByUser(searchUserId)
       setClaims(data || [])
+      setFilteredClaims(data || [])
       setTotalPages(1)
       setTotalElements(data?.length || 0)
     } catch (error) {
@@ -79,7 +83,9 @@ export default function ClaimsReview() {
   const handleOpenReview = (claim) => {
     setSelectedClaim(claim)
     setReviewRemark('')
-    setTargetStatus(claim.status)
+    // If current status is not in our direct action list, default to first logical step (UNDER_REVIEW)
+    const validActions = ['UNDER_REVIEW', 'APPROVED', 'REJECTED', 'CLOSED']
+    setTargetStatus(validActions.includes(claim.status) ? claim.status : 'UNDER_REVIEW')
     setIsReviewModalOpen(true)
   }
 
@@ -99,7 +105,7 @@ export default function ClaimsReview() {
         status: newStatus,
         remark: reviewRemark
       })
-      toast.success(`Claim status updated to ${newStatus}`)
+      toast.success(`Claim status updated to ${newStatus.replace('_', ' ')}`)
       setIsReviewModalOpen(false)
       refreshList()
     } catch (error) {
@@ -130,22 +136,22 @@ export default function ClaimsReview() {
   const handleDownload = async (claimId) => {
     try {
       if (!claimId) throw new Error("Missing Claim ID")
-      
+
       const res = await adminService.downloadClaimDocument(claimId)
-      
+
       // Determine file type from header if possible, or fallback to pdf
       const contentType = res.headers['content-type']
       const extension = contentType?.includes('image') ? 'jpg' : 'pdf'
-      
+
       const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }))
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `claim_${claimId}_document.${extension}`) 
+      link.setAttribute('download', `claim_${claimId}_document.${extension}`)
       document.body.appendChild(link)
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
-      
+
       toast.success('Document download started')
     } catch (err) {
       console.error("Download Error:", err)
@@ -154,23 +160,37 @@ export default function ClaimsReview() {
   }
 
 
+  // Real-time local filtering (Specific to User ID)
+  useEffect(() => {
+    if (!searchUserId) {
+      setFilteredClaims(claims)
+    } else {
+      const term = searchUserId.toLowerCase()
+      const filtered = claims.filter(c => {
+        const uid = (c.userId || '').toString().toLowerCase()
+        return uid.includes(term)
+      })
+      setFilteredClaims(filtered)
+    }
+  }, [searchUserId, claims])
+
   return (
     <div className="space-y-10 pb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 uppercase">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="section-title !text-4xl">Review Claims</h1>
           <p className="text-surface-500 mt-2 font-medium">
-             Manage and audit insurance claims across the system.
+             Audit and process insurance claims to ensure accuracy, transparency, and timely settlements.
           </p>
         </div>
 
         <div className="flex gap-2">
           <form onSubmit={handleSearch} className="relative group">
             <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
-            <input 
-              type="text" 
-              placeholder="Search User ID..." 
-              className="input-field pl-10 pr-20 !py-2.5 w-64" 
+            <input
+              type="text"
+              placeholder="Search by User ID..."
+              className="input-field pl-10 pr-20 !py-2.5 w-64"
               value={searchUserId}
               onChange={e => setSearchUserId(e.target.value)}
             />
@@ -200,34 +220,48 @@ export default function ClaimsReview() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
-                  {claims.length === 0 ? (
+                  {filteredClaims.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="p-12 text-center text-surface-500">No claims found.</td>
                     </tr>
-                  ) : claims.map((claim) => {
+                  ) : filteredClaims.map((claim) => {
                     const id = claim.claimId || claim.id
                     return (
                       <tr key={id} className="hover:bg-surface-50 dark:hover:bg-surface-800/20 transition-colors">
                         <td className="p-4 font-mono font-medium">{id}</td>
                         <td className="p-4 text-sm font-semibold text-surface-600 dark:text-surface-400">ID: {claim.userId || 'N/A'}</td>
-                        <td className="p-4 font-semibold text-surface-900 dark:text-white hidden sm:table-cell">₹{(claim.claimAmount||0).toLocaleString()}</td>
+                        <td className="p-4 font-semibold text-surface-900 dark:text-white hidden sm:table-cell">₹{(claim.claimAmount || 0).toLocaleString()}</td>
                         <td className="p-4"><StatusBadge status={claim.status} /></td>
                         <td className="p-4 text-right">
                           <div className="flex justify-end gap-2">
-                            <button 
-                              onClick={() => handleOpenReview(claim)}
-                              className="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-lg transition-colors"
-                              title="Review Decision"
-                            >
-                              <HiOutlineCheckCircle className="text-xl" />
-                            </button>
-                            <button 
-                              onClick={() => handleOpenEdit(claim)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
-                              title="Edit Details"
-                            >
-                              <HiOutlinePencilAlt className="text-xl" />
-                            </button>
+                              <button
+                                onClick={() => handleOpenReview(claim)}
+                                className="p-2 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-lg transition-colors"
+                                title="Review Decision"
+                              >
+                                <HiOutlineCheckCircle className="text-xl" />
+                              </button>
+                              <button
+                                onClick={() => handleOpenEdit(claim)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+                                title="Edit Details"
+                              >
+                                <HiOutlinePencilAlt className="text-xl" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to delete this claim?')) {
+                                    adminService.deleteClaim(id).then(() => {
+                                      toast.success('Claim deleted successfully')
+                                      refreshList()
+                                    }).catch(() => toast.error('Failed to delete claim'))
+                                  }
+                                }}
+                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                                title="Delete Claim"
+                              >
+                                <HiOutlineXCircle className="text-xl" />
+                              </button>
                           </div>
                         </td>
                       </tr>
@@ -238,7 +272,7 @@ export default function ClaimsReview() {
             </div>
           </div>
 
-          <Pagination 
+          <Pagination
             currentPage={page + 1}
             totalItems={totalElements}
             itemsPerPage={pageSize}
@@ -255,68 +289,68 @@ export default function ClaimsReview() {
       {selectedClaim && (
         <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title={`Review Claim ${selectedClaim.claimId}`}>
           <div className="space-y-6">
-             <div className="bg-surface-50 dark:bg-surface-800/50 p-4 rounded-xl space-y-2 border border-surface-200 dark:border-surface-700">
-                <div className="flex justify-between">
-                   <span className="text-sm font-semibold text-surface-500">Claimant</span>
-                   <span className="text-sm font-bold">User: {selectedClaim.userId}</span>
-                </div>
-                <div className="flex justify-between">
-                   <span className="text-sm font-semibold text-surface-500">Current Status</span>
-                   <StatusBadge status={selectedClaim.status} />
-                </div>
-                <div className="flex justify-between">
-                   <span className="text-sm font-semibold text-surface-500">Requested Amount</span>
-                   <span className="font-bold">₹{(selectedClaim.claimAmount||0).toLocaleString()}</span>
-                </div>
-                <div className="pt-2">
-                   <span className="text-sm font-semibold text-surface-500 block mb-1">Description</span>
-                   <p className="text-sm text-surface-700 dark:text-surface-300 bg-white dark:bg-surface-900 p-3 rounded-lg border border-surface-200 dark:border-surface-800">{selectedClaim.description || 'No description provided.'}</p>
-                </div>
-             </div>
+            <div className="bg-surface-50 dark:bg-surface-800/50 p-4 rounded-xl space-y-2 border border-surface-200 dark:border-surface-700">
+              <div className="flex justify-between">
+                <span className="text-sm font-semibold text-surface-500">Claimant</span>
+                <span className="text-sm font-bold">User: {selectedClaim.userId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-semibold text-surface-500">Current Status</span>
+                <StatusBadge status={selectedClaim.status} />
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-semibold text-surface-500">Requested Amount</span>
+                <span className="font-bold">₹{(selectedClaim.claimAmount || 0).toLocaleString()}</span>
+              </div>
+              <div className="pt-2">
+                <span className="text-sm font-semibold text-surface-500 block mb-1">Description</span>
+                <p className="text-sm text-surface-700 dark:text-surface-300 bg-white dark:bg-surface-900 p-3 rounded-lg border border-surface-200 dark:border-surface-800">{selectedClaim.description || 'No description provided.'}</p>
+              </div>
+            </div>
 
-             <button 
-                type="button" 
-                onClick={() => handleDownload(selectedClaim.claimId || selectedClaim.id)}
-                className="w-full btn-secondary py-3 flex items-center justify-center gap-2 border-primary-500/30 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-500/10"
-              >
-                <HiOutlineDownload className="text-lg" /> Download Attached Document
-             </button>
+            <button
+              type="button"
+              onClick={() => handleDownload(selectedClaim.claimId || selectedClaim.id)}
+              className="w-full btn-secondary py-3 flex items-center justify-center gap-2 border-primary-500/30 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-500/10"
+            >
+              <HiOutlineDownload className="text-lg" /> Download Attached Document
+            </button>
 
-             <div className="border-t border-surface-200 dark:border-surface-800 pt-6">
-                <div className="mb-4">
-                  <label className="block text-xs font-bold text-surface-400 uppercase tracking-widest mb-2">Internal Remarks *</label>
-                  <textarea 
-                    required
-                    placeholder="Enter process notes or final decision comments..."
-                    className="input-field h-24 resize-none"
-                    value={reviewRemark}
-                    onChange={e => setReviewRemark(e.target.value)}
-                  />
+            <div className="border-t border-surface-200 dark:border-surface-800 pt-6">
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-surface-400 uppercase tracking-widest mb-2">Internal Remarks *</label>
+                <textarea
+                  required
+                  placeholder="Enter process notes or final decision comments..."
+                  className="input-field h-24 resize-none"
+                  value={reviewRemark}
+                  onChange={e => setReviewRemark(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-surface-400 tracking-widest mb-2">Set New Status</label>
+                <div className="flex gap-3">
+                  <select
+                    className="input-field flex-1"
+                    value={targetStatus}
+                    onChange={(e) => setTargetStatus(e.target.value)}
+                  >
+                    <option value="UNDER_REVIEW">UNDER REVIEW</option>
+                    <option value="APPROVED">APPROVED</option>
+                    <option value="REJECTED">REJECTED</option>
+                    <option value="CLOSED">CLOSED</option>
+
+                  </select>
+                  <button
+                    onClick={() => submitReview(targetStatus)}
+                    className="btn-primary py-3 px-8 shadow-lg shadow-primary-500/20"
+                  >
+                    Update Status
+                  </button>
                 </div>
-
-                <div>
-                   <label className="block text-xs font-bold text-surface-400 uppercase tracking-widest mb-2">Set New Status</label>
-                   <div className="flex gap-3">
-                      <select 
-                        className="input-field flex-1"
-                        value={targetStatus}
-                        onChange={(e) => setTargetStatus(e.target.value)}
-                      >
-                         <option value="UNDER_REVIEW">UNDER REVIEW</option>
-                         <option value="APPROVED">APPROVED</option>
-                         <option value="REJECTED">REJECTED</option>
-                         <option value="CLOSED">CLOSED</option>
-
-                      </select>
-                      <button 
-                        onClick={() => submitReview(targetStatus)} 
-                        className="btn-primary py-3 px-8 shadow-lg shadow-primary-500/20"
-                      >
-                        Update Status
-                      </button>
-                   </div>
-                </div>
-             </div>
+              </div>
+            </div>
           </div>
         </Modal>
       )}
@@ -326,7 +360,7 @@ export default function ClaimsReview() {
         <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={`Edit Claim ${selectedClaim.claimId}`}>
           <div className="space-y-6">
             <p className="text-sm text-surface-500">Correct the amount or description for this security audit.</p>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-surface-400 uppercase tracking-wider mb-2">Adjusted Amount (₹)</label>
@@ -334,29 +368,29 @@ export default function ClaimsReview() {
                   type="number"
                   className="input-field"
                   value={editingClaim.claimAmount}
-                  onChange={(e) => setEditingClaim({...editingClaim, claimAmount: parseFloat(e.target.value) || 0})}
+                  onChange={(e) => setEditingClaim({ ...editingClaim, claimAmount: parseFloat(e.target.value) || 0 })}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-xs font-bold text-surface-400 uppercase tracking-wider mb-2">Updated Description</label>
-                <textarea 
+                <textarea
                   rows="4"
                   className="input-field resize-none"
                   value={editingClaim.description}
-                  onChange={(e) => setEditingClaim({...editingClaim, description: e.target.value})}
+                  onChange={(e) => setEditingClaim({ ...editingClaim, description: e.target.value })}
                 ></textarea>
               </div>
             </div>
 
             <div className="flex gap-3 mt-4 pt-4 border-t border-surface-200 dark:border-surface-800">
-              <button 
+              <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="flex-1 btn-secondary py-3"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={submitEdit}
                 className="flex-[2] btn-primary py-3"
               >

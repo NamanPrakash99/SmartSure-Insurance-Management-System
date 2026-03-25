@@ -1,0 +1,56 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< com.group2:claims-service >----------------------
+[INFO] Building claims-service 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.1:clean (default-clean) @ claims-service ---
+[INFO] Deleting C:\Users\Naman Prakash\OneDrive\Downloads\SmartSure-Insurance-Management-System-Demo\claims-service\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ claims-service ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ claims-service ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 24 source files with javac [debug parameters release 17] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ claims-service ---
+[INFO] skip non existing resourceDirectory C:\Users\Naman Prakash\OneDrive\Downloads\SmartSure-Insurance-Management-System-Demo\claims-service\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ claims-service ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 4 source files with javac [debug parameters release 17] to target\test-classes
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ claims-service ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.group2.claims_service.ClaimsServiceApplicationTests
+[WARNING] Tests run: 1, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.008 s -- in com.group2.claims_service.ClaimsServiceApplicationTests
+[INFO] Running com.group2.claims_service.controller.ClaimControllerTest
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.683 s -- in com.group2.claims_service.controller.ClaimControllerTest
+[INFO] Running com.group2.claims_service.listner.ClaimReviewListenerTest
+Processing Claim Review Event for Claim ID: 1
+Invalid status received in event: INVALID_STATUS
+Processing Claim Review Event for Claim ID: 1
+Successfully updated Claim 1 to APPROVED
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.281 s -- in com.group2.claims_service.listner.ClaimReviewListenerTest
+[INFO] Running com.group2.claims_service.service.ClaimServiceTest
+? Claim event sent to RabbitMQ for claimId: 1
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.587 s -- in com.group2.claims_service.service.ClaimServiceTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[WARNING] Tests run: 20, Failures: 0, Errors: 0, Skipped: 1
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  14.843 s
+[INFO] Finished at: 2026-03-25T22:59:12+05:30
+[INFO] ------------------------------------------------------------------------

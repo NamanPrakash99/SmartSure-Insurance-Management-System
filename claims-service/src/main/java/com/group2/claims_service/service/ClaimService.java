@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,17 +23,17 @@ public class ClaimService {
 	
 	private final ClaimRepository claimRepository;
 	private final ClaimDocumentRepository documentRepository;
+	private final RabbitTemplate rabbitTemplate;
 	
-	@Autowired
-	private RabbitTemplate rabbitTemplate;
-	
-	
-	public ClaimService(ClaimRepository claimRepository, ClaimDocumentRepository documentRepository) {
+	public ClaimService(ClaimRepository claimRepository, 
+	                  ClaimDocumentRepository documentRepository,
+	                  RabbitTemplate rabbitTemplate) {
 		this.claimRepository = claimRepository;
 		this.documentRepository = documentRepository;
+		this.rabbitTemplate = rabbitTemplate;
 	}
 	
-	public ClaimResponseDTO initateClaim(ClaimRequestDTO requestDTO) {
+	public ClaimResponseDTO initiateClaim(ClaimRequestDTO requestDTO) {
 
 	    // 1. Create Claim Entity
 	    Claim claim = new Claim();
@@ -263,6 +262,19 @@ public class ClaimService {
 		response.setMessage("Claim updated successfully by Admin");
 		
 		return response;
+	}
+
+
+	@org.springframework.transaction.annotation.Transactional
+	public void deleteClaim(Long claimId) {
+		Claim claim = claimRepository.findById(claimId)
+				.orElseThrow(() -> new ClaimNotFoundException("Claim not found with id: " + claimId));
+		
+		// Delete documents first
+		documentRepository.deleteByClaimId(claimId);
+		
+		// Delete claim
+		claimRepository.delete(claim);
 	}
 
 

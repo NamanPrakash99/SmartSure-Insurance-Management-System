@@ -87,7 +87,7 @@ export default function UserPolicies() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="section-title !text-4xl">User Policies</h1>
-            <p className="text-surface-500 mt-2 font-medium">Manage and audit policies purchased by users across the system.</p>
+            <p className="text-surface-500 mt-2 font-medium">Comprehensive overview of all customer insurance enrollments and historic policy records.</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4">

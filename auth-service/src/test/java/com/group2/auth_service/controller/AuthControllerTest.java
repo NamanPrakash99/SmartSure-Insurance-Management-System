@@ -19,8 +19,6 @@ import com.group2.auth_service.dto.RegisterRequest;
 import com.group2.auth_service.entity.User;
 import com.group2.auth_service.service.AuthService;
 import com.group2.auth_service.service.OtpService;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.junit.jupiter.api.BeforeEach;
 
 @ExtendWith(MockitoExtension.class)
 public class AuthControllerTest {
@@ -34,10 +32,7 @@ public class AuthControllerTest {
     @InjectMocks
     private AuthController authController;
 
-    @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(authController, "otpService", otpService);
-    }
+
 
     /**
      * Given: A valid register request
@@ -64,7 +59,7 @@ public class AuthControllerTest {
      */
     @Test
     void login() {
-        AuthResponse response = new AuthResponse("token", "CUSTOMER", 1L);
+        AuthResponse response = new AuthResponse("token", "CUSTOMER", 1L, "Test User");
         when(authService.login(any())).thenReturn(response);
         
         ResponseEntity<AuthResponse> res = authController.login(new LoginRequest());

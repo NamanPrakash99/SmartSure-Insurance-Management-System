@@ -82,7 +82,6 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 pb-12">
       <div className="animate-fade-in">
-        <p className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-1">Administration Console</p>
         <h1 className="section-title text-3xl sm:text-4xl mb-2">Admin Dashboard</h1>
         <p className="text-surface-500 text-sm font-medium">Real-time oversight of SmartSure policy clusters and claim lifecycles.</p>
       </div>

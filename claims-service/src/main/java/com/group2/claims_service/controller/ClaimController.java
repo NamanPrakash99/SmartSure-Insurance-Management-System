@@ -3,6 +3,7 @@ package com.group2.claims_service.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,7 +36,7 @@ public class ClaimController {
 	@PreAuthorize("hasRole('ADMIN') or principal == #requestDTO.userId")
 	public ResponseEntity<ClaimResponseDTO> initiateClaim(@RequestBody ClaimRequestDTO requestDTO){
 		
-		ClaimResponseDTO response=claimService.initateClaim(requestDTO);
+		ClaimResponseDTO response=claimService.initiateClaim(requestDTO);
 		
 		return ResponseEntity.ok(response);
 	}
@@ -50,7 +51,9 @@ public class ClaimController {
 	}
 	
 	@org.springframework.transaction.annotation.Transactional(readOnly = true)
-	@GetMapping("/{claimId}/document")
+	@GetMapping(value = "/{claimId}/document", produces = { 
+		"application/pdf", "image/jpeg", "image/png", "application/octet-stream" 
+	})
 	public ResponseEntity<byte[]> downloadDocument(@PathVariable("claimId") Long claimId) {
 		com.group2.claims_service.entity.ClaimDocument document = claimService.getClaimDocument(claimId);
 		
@@ -125,6 +128,13 @@ public class ClaimController {
 		return ResponseEntity.ok(response);
 	}
 
+
+	@DeleteMapping("/{claimId}")
+	@org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<String> deleteClaim(@PathVariable("claimId") Long claimId) {
+		claimService.deleteClaim(claimId);
+		return ResponseEntity.ok("Claim and associated documents deleted successfully");
+	}
 
 }
 

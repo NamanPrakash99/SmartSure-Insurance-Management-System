@@ -89,7 +89,7 @@
 
   /* --- Badges --- */
   .badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase;
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wide;
   }
 
   /* --- Layout --- */
@@ -112,7 +112,7 @@
 
   /* --- Table Styles --- */
   .table-header {
-    @apply p-4 text-[10px] font-bold text-surface-400 dark:text-surface-500 uppercase tracking-widest whitespace-nowrap;
+    @apply p-4 text-[10px] font-bold text-surface-400 dark:text-surface-500 tracking-widest whitespace-nowrap;
   }
 
   .table-cell {

@@ -51,7 +51,9 @@ public class AdminController {
     }
 
     // Download a claim's uploaded document
-    @GetMapping("/claims/{id}/document")
+    @GetMapping(value = "/claims/{id}/document", produces = { 
+    	"application/pdf", "image/jpeg", "image/png", "application/octet-stream" 
+    })
     public ResponseEntity<byte[]> downloadDocument(@PathVariable("id") Long id) {
         return adminService.downloadClaimDocument(id);
     }
@@ -82,6 +84,12 @@ public class AdminController {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
+    }
+    
+    @DeleteMapping("/claims/{id}")
+    public ResponseEntity<String> deleteClaim(@PathVariable("id") Long id) {
+        adminService.deleteClaim(id);
+        return ResponseEntity.ok("Claim deleted successfully");
     }
 
 

@@ -13,6 +13,14 @@ public class UserPolicyResponseDTO {
     private LocalDate startDate;
     private LocalDate endDate;
     private Double premiumAmount;
+    private Long policyId;
+
+	public Long getPolicyId() {
+		return policyId;
+	}
+	public void setPolicyId(Long policyId) {
+		this.policyId = policyId;
+	}
 	public Long getId() {
 		return id;
 	}

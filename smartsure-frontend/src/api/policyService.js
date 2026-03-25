@@ -36,4 +36,7 @@ export const policyService = {
 
   renewPolicy: (id) =>
     API.post(`${POLICY_BASE}/policies/renew/${id}`),
+
+  deleteUserPolicy: (id) =>
+    API.delete(`${POLICY_BASE}/policies/${id}`),
 }

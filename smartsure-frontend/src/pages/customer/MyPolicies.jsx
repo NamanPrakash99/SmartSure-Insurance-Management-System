@@ -9,6 +9,8 @@ import { HiOutlineShieldCheck } from 'react-icons/hi'
 import { Link } from 'react-router-dom'
 
 import { Pagination } from '../../components/common/Pagination'
+import { paymentService } from '../../api/paymentService'
+import { HiOutlineCreditCard, HiOutlineTrash } from 'react-icons/hi'
 
 export default function MyPolicies() {
   const { user } = useAuth()
@@ -35,6 +37,94 @@ export default function MyPolicies() {
       console.error("Failed to load user policies", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCompletePayment = async (policy) => {
+    try {
+      const orderData = {
+        userId: user.id,
+        policyId: policy.policyId,
+        amount: policy.premiumAmount,
+        userPolicyId: policy.id
+      }
+      
+      const { data: orderResponse } = await paymentService.createOrder(orderData)
+
+      const options = {
+        key: 'rzp_test_SUGz2hbfTwDAHc',
+        amount: (policy.premiumAmount * 100).toString(),
+        currency: 'INR',
+        name: 'SmartSure Insurance',
+        description: `Premium for ${policy.policyName}`,
+        order_id: orderResponse.orderId,
+        handler: async function (response) {
+          try {
+            const verifyData = {
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature
+            }
+            await paymentService.verifyPayment(verifyData)
+            toast.success('Payment successful! Your policy will be active shortly.')
+            fetchPolicies() // Refresh status
+          } catch (err) {
+            toast.error('Payment verification failed')
+            console.error(err)
+          }
+        },
+        prefill: {
+          name: user.name || 'Customer',
+          email: user.email || 'customer@example.com'
+        },
+        theme: {
+          color: '#6366f1'
+        },
+        modal: {
+          ondismiss: async function() {
+            toast.info('Payment cancelled')
+            // Explicitly notify backend of failure to trigger Saga rollback
+            try {
+              await paymentService.verifyPayment({
+                razorpayOrderId: orderResponse.orderId,
+                razorpayPaymentId: 'CANCELLED',
+                razorpaySignature: 'INVALID'
+              })
+              fetchPolicies()
+            } catch (e) { console.error(e) }
+          }
+        }
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', async function (response){
+        toast.error(response.error.description || 'Payment Failed')
+        // Explicitly notify backend of failure to trigger Saga rollback
+        try {
+          await paymentService.verifyPayment({
+            razorpayOrderId: response.error.metadata.order_id,
+            razorpayPaymentId: response.error.metadata.payment_id,
+            razorpaySignature: 'FAILED'
+          })
+          fetchPolicies()
+        } catch (e) { console.error(e) }
+      })
+      rzp.open()
+
+    } catch (error) {
+      toast.error('Failed to initiate payment')
+    }
+  }
+
+  const handleDeletePolicy = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this policy record?')) return
+    
+    try {
+      await policyService.deleteUserPolicy(id)
+      toast.success('Policy removed')
+      fetchPolicies()
+    } catch (error) {
+      toast.error('Failed to delete policy')
     }
   }
 
@@ -112,7 +202,15 @@ export default function MyPolicies() {
                   >
                     File a Claim
                   </Link>
-                  {policy.status !== 'CANCELLED' && (
+                  {policy.status === 'PENDING_PAYMENT' ? (
+                    <button 
+                      onClick={() => handleCompletePayment(policy)}
+                      className="w-full btn-primary !bg-amber-500 !hover:bg-amber-600 text-xs tracking-widest uppercase font-bold !py-3 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+                    >
+                      <HiOutlineCreditCard className="text-lg" />
+                      Complete Payment
+                    </button>
+                  ) : policy.status !== 'CANCELLED' && (
                     <button 
                       onClick={async () => {
                         try {
@@ -128,6 +226,14 @@ export default function MyPolicies() {
                       Renew Policy
                     </button>
                   )}
+
+                    <button 
+                      onClick={() => handleDeletePolicy(policy.id)}
+                      className="w-full btn-ghost border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 text-xs tracking-widest uppercase font-bold !py-3 flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                    >
+                      <HiOutlineTrash className="text-lg" />
+                      Remove Record
+                    </button>
                 </div>
               </div>
             )

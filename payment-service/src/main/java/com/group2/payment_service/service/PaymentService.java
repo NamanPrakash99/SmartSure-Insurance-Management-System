@@ -12,6 +12,9 @@ import com.razorpay.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import com.group2.payment_service.config.RabbitConfig;
+import com.group2.payment_service.dto.event.PaymentStatusEvent;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.json.JSONObject;
 
 import java.util.Optional;
@@ -36,6 +39,9 @@ public class PaymentService {
 
     @Autowired
     private PolicyRepository policyRepository;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     public PaymentResponse createOrder(PaymentRequest request) {
         // Validate User Exists (100% Reliable Local DB Query)
@@ -63,6 +69,7 @@ public class PaymentService {
             transaction.setRazorpayOrderId(order.get("id"));
             transaction.setUserId(request.getUserId());
             transaction.setPolicyId(request.getPolicyId());
+            transaction.setUserPolicyId(request.getUserPolicyId());
             transaction.setAmount(request.getAmount());
             transaction.setStatus("PENDING");
 
@@ -96,6 +103,9 @@ public class PaymentService {
                     transaction.setRazorpaySignature(verifyRequest.getRazorpaySignature());
                     transaction.setStatus("SUCCESS");
                     transactionRepository.save(transaction);
+                    
+                    // Emit Success Event
+                    emitPaymentStatus(transaction.getUserPolicyId(), verifyRequest.getRazorpayPaymentId(), "SUCCESS");
                 }
                 return "Payment Verification Successful";
             } else {
@@ -103,12 +113,22 @@ public class PaymentService {
                     Transaction transaction = transactionOpt.get();
                     transaction.setStatus("FAILED");
                     transactionRepository.save(transaction);
+                    
+                    // Emit Failed Event
+                    emitPaymentStatus(transaction.getUserPolicyId(), null, "FAILED");
                 }
                 return "Payment Verification Failed";
             }
         } catch (RazorpayException e) {
             e.printStackTrace();
             throw new RuntimeException("Exception while verifying Razorpay payment: " + e.getMessage());
+        }
+    }
+
+    private void emitPaymentStatus(Long userPolicyId, String paymentId, String status) {
+        if (userPolicyId != null) {
+            PaymentStatusEvent event = new PaymentStatusEvent(userPolicyId, paymentId, status);
+            rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, RabbitConfig.PAYMENT_STATUS_ROUTING_KEY, event);
         }
     }
 }

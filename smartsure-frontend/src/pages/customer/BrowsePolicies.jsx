@@ -67,10 +67,15 @@ export default function BrowsePolicies() {
 
     setProcessing(true)
     try {
+      // Step 1: Initialize the Saga on the backend (Creates PENDING_PAYMENT record)
+      const { data: userPolicy } = await policyService.purchasePolicy(policy.id)
+
+      // Step 2: Create the Razorpay Order linked to our userPolicyId
       const orderData = {
         userId: user.id,
         policyId: policy.id,
-        amount: policy.premiumAmount
+        amount: policy.premiumAmount,
+        userPolicyId: userPolicy.id // Link the payment to the pending policy record
       }
       
       const { data: orderResponse } = await paymentService.createOrder(orderData)
@@ -89,10 +94,12 @@ export default function BrowsePolicies() {
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature
             }
+            // Step 3: Verify on backend. 
+            // The backend verify will auto-emit PaymentSuccess event to RabbitMQ
+            // which tells the Policy Service to turn this record status to "ACTIVE"
             await paymentService.verifyPayment(verifyData)
-            await policyService.purchasePolicy(policy.id)
 
-            toast.success('Payment successful! Policy purchased.')
+            toast.success('Payment successful! Your policy will be active shortly.')
             navigate('/my-policies')
           } catch (err) {
             toast.error('Payment verification failed')
@@ -111,6 +118,7 @@ export default function BrowsePolicies() {
           ondismiss: function() {
             setProcessing(false)
             toast.info('Payment cancelled')
+            // The record remains in PENDING_PAYMENT state in your dashboard
           }
         }
       }
@@ -123,7 +131,7 @@ export default function BrowsePolicies() {
       rzp.open()
 
     } catch (error) {
-      toast.error(error.response?.data || 'Failed to initiate payment')
+      toast.error(error.response?.data || 'Failed to initiate purchase')
       setProcessing(false)
     }
   }

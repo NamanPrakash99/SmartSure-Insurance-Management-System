@@ -161,7 +161,15 @@ public class AdminService {
     // Create policy product
     @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public PolicyDTO createPolicy(PolicyRequestDTO dto) {
-        return policyFeignClient.createPolicy(dto);
+        try {
+            return policyFeignClient.createPolicy(dto);
+        } catch (feign.FeignException e) {
+            String message = e.contentUTF8();
+            // If the message contains a JSON, you could parse it, but let's just use the raw text if short
+            throw new RuntimeException("Policy Creation Failed: " + (message.length() < 100 ? message : "Invalid Data"));
+        } catch (Exception e) {
+            throw new RuntimeException("Policy Service unreachable: " + e.getMessage());
+        }
     }
 
     @Recover

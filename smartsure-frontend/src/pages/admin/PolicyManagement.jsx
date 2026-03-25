@@ -112,7 +112,9 @@ export default function PolicyManagement() {
       setIsModalOpen(false)
       fetchData()
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Action failed')
+      console.error('API Error:', error);
+      const msg = error.response?.data?.message || error.response?.data || error.message || 'Action failed';
+      toast.error(msg);
     }
   }
 
@@ -272,14 +274,14 @@ export default function PolicyManagement() {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingPolicy ? "Edit Policy" : "Create New Policy"}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold mb-1">Policy Name</label>
-            <input required type="text" className="input-field" value={formData.policyName} onChange={e => setFormData({...formData, policyName: e.target.value})} />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
           <div>
             <label className="block text-sm font-semibold mb-1">Description</label>
             <textarea required className="input-field h-24 resize-none" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Policy Name</label>
+            <input required type="text" placeholder="e.g. Premium Health Shield" className="input-field" value={formData.policyName} onChange={e => setFormData({...formData, policyName: e.target.value})} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

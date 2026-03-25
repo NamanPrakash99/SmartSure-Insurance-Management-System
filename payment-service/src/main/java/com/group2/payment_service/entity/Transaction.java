@@ -18,6 +18,7 @@ public class Transaction {
 
     private Long userId;
     private Long policyId;
+    private Long userPolicyId; // Link to policy-service record
 
     private Double amount;
     private String status; // PENDING, SUCCESS, FAILED
@@ -75,6 +76,14 @@ public class Transaction {
 
 	public void setPolicyId(Long policyId) {
 		this.policyId = policyId;
+	}
+
+	public Long getUserPolicyId() {
+		return userPolicyId;
+	}
+
+	public void setUserPolicyId(Long userPolicyId) {
+		this.userPolicyId = userPolicyId;
 	}
 
 	public Double getAmount() {

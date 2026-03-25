@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
 
 @SpringBootApplication
 @EnableDiscoveryClient
+@org.springframework.cache.annotation.EnableCaching
 @OpenAPIDefinition(servers = @Server(url = "/policy-service", description = "Policy Service via API Gateway"))
 public class PolicyServiceApplication {
 

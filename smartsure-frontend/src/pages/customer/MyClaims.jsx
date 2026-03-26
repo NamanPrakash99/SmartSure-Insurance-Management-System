@@ -6,7 +6,7 @@ import { policyService } from '../../api/policyService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { EmptyState } from '../../components/common/EmptyState'
-import { HiOutlineDownload, HiOutlineDocumentText, HiOutlinePlus, HiOutlineArrowLeft, HiOutlineUpload, HiOutlineDocumentAdd, HiArrowRight } from 'react-icons/hi'
+import { HiOutlineDownload, HiOutlineDocumentText, HiOutlinePlus, HiOutlineArrowLeft, HiOutlineUpload, HiOutlineDocumentAdd, HiArrowRight, HiOutlineEye, HiOutlineX } from 'react-icons/hi'
 import { toast } from 'react-toastify'
 import { Pagination } from '../../components/common/Pagination'
 
@@ -17,6 +17,7 @@ export default function MyClaims() {
 
   const [claims, setClaims] = useState([])
   const [policies, setPolicies] = useState([])
+  const [allPolicies, setAllPolicies] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(!!defaultPolicyId)
   const [submitting, setSubmitting] = useState(false)
@@ -36,7 +37,8 @@ export default function MyClaims() {
         policyService.getUserPolicies(user.id)
       ])
       setClaims(claimsRes.data || [])
-      setPolicies(policiesRes.data.filter(p => p.status === 'ACTIVE' || p.status === 'EXPIRED'))
+      setAllPolicies(policiesRes.data || [])
+      setPolicies((policiesRes.data || []).filter(p => p.status === 'ACTIVE' || p.status === 'EXPIRED'))
     } catch (error) {
       console.error("Failed to load data", error)
       toast.error('Failed to load claims portal')
@@ -78,6 +80,21 @@ export default function MyClaims() {
       toast.success('Document download started')
     } catch (err) {
       toast.error('Could not download document. It may not have been uploaded.')
+    }
+  }
+
+  const handleView = async (claimId) => {
+    try {
+      const res = await claimService.downloadDocument(claimId)
+      const contentType = res.headers['content-type']
+      
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }))
+      window.open(url, '_blank')
+      
+      // Cleanup after a short delay to ensure it opens
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+    } catch (err) {
+      toast.error('Could not view document. It may not have been uploaded.')
     }
   }
 
@@ -291,15 +308,13 @@ export default function MyClaims() {
                         <div className="p-2 bg-surface-100 dark:bg-surface-800 rounded-lg group-hover:bg-primary-500/10 transition-colors">
                           <HiOutlineDocumentText className="text-xl text-surface-500 group-hover:text-primary-500" />
                         </div>
-                        <h3 className="font-black text-lg text-surface-900 dark:text-white tracking-tight">Claim {claim.claimId}</h3>
+                        <h3 className="font-black text-lg text-surface-900 dark:text-white tracking-tight">
+                          {allPolicies.find(p => p.id === claim.policyId)?.policyName || `Claim ${claim.claimId}`}
+                        </h3>
                         <StatusBadge status={claim.status} />
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-surface-500">
-                         <div className="flex items-center gap-1.5 font-medium">
-                           <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                           <span>Policy ID: <span className="text-surface-700 dark:text-surface-300 font-bold">{claim.policyId}</span></span>
-                         </div>
                          <div className="flex items-center gap-1.5 font-medium">
                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                            <span>Claim Amount: <span className="text-emerald-600 dark:text-emerald-400 font-bold">₹{(claim.claimAmount||0).toLocaleString()}</span></span>
@@ -311,13 +326,20 @@ export default function MyClaims() {
                           "{claim.description || claim.message}"
                         </div>
                         
-                          <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2 lg:ml-4">
+                            <button 
+                              onClick={() => handleView(claim.claimId)}
+                              title="View Document"
+                              className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-500 hover:text-primary-500 hover:bg-primary-500/10 hover:border-primary-500/30 transition-all active:scale-95"
+                            >
+                               <HiOutlineEye className="text-xl" />
+                            </button>
                             <button 
                               onClick={() => handleDownload(claim.claimId)}
-                              className="btn-secondary sm:w-48 flex flex-col items-center justify-center gap-1.5 group/btn active:scale-95 transition-all p-4 !rounded-xl border border-transparent hover:border-primary-500/20"
+                              title="Download Document"
+                              className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-500 hover:text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all active:scale-95"
                             >
-                               <HiOutlineDownload className="text-xl text-primary-600 dark:text-primary-400 group-hover/btn:translate-y-0.5 transition-transform"/> 
-                               <span className="text-[10px] font-bold tracking-widest text-surface-700 dark:text-surface-200 whitespace-nowrap">Download Document</span>
+                               <HiOutlineDownload className="text-xl" />
                             </button>
 
                              <button 
@@ -330,9 +352,10 @@ export default function MyClaims() {
                                    } catch (err) { toast.error('Failed to delete claim') }
                                  }
                                }}
-                               className="btn-secondary sm:w-48 !py-2.5 !rounded-xl border-red-500/20 text-red-500 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest shadow-none"
+                               title="Delete Claim"
+                               className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 hover:bg-red-500 border border-red-500/20 text-red-500 hover:text-white dark:bg-red-500/10 dark:hover:bg-red-500 transition-all shadow-sm active:scale-95"
                              >
-                               Delete Claim
+                               <HiOutlineX className="text-xl" />
                              </button>
                           </div>
                       </div>

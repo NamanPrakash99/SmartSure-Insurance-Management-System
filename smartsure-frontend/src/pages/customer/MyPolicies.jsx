@@ -70,7 +70,10 @@ export default function MyPolicies() {
             await paymentService.verifyPayment(verifyData)
             toast.success('Payment successful! Your policy will be active shortly.')
             setSelectedPolicyForRenewal(null)
-            fetchPolicies() // Refresh status
+            // Delay fetch to allow RabbitMQ event processing on backend
+            setTimeout(() => {
+              fetchPolicies()
+            }, 1000)
           } catch (err) {
             toast.error('Payment verification failed')
             console.error(err)

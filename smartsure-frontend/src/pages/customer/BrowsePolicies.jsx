@@ -100,7 +100,9 @@ export default function BrowsePolicies() {
             await paymentService.verifyPayment(verifyData)
 
             toast.success('Payment successful! Your policy will be active shortly.')
-            navigate('/my-policies')
+            setTimeout(() => {
+              navigate('/my-policies')
+            }, 1000)
           } catch (err) {
             toast.error('Payment verification failed')
             console.error(err)

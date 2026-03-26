@@ -29,7 +29,7 @@ export default function Dashboard() {
           policyService.getUserPolicies(user.id).catch(() => ({ data: [] })),
           claimService.getClaimsByUser(user.id).catch(() => ({ data: [] }))
         ])
-        
+
         setPolicies(policiesRes.data)
         setClaims(claimsRes.data)
       } catch (error) {
@@ -53,7 +53,7 @@ export default function Dashboard() {
             {getGreeting()}
           </p>
           <h1 className="section-title text-3xl sm:text-4xl">
-            Welcome back, <span className="gradient-text">{user.name || 'User'}</span>
+            Welcome, <span className="gradient-text">{user.name || 'User'}</span>
           </h1>
           <p className="text-surface-500 dark:text-surface-400 mt-2 text-sm">
             Here's a quick overview of your insurance portfolio.
@@ -75,21 +75,21 @@ export default function Dashboard() {
           </>
         ) : (
           <>
-            <StatsCard 
-              title="Active Policies" 
-              value={activePolicies} 
+            <StatsCard
+              title="Active Policies"
+              value={activePolicies}
               icon={HiOutlineShieldCheck}
               color="green"
             />
-            <StatsCard 
-              title="Pending Claims" 
-              value={pendingClaims} 
+            <StatsCard
+              title="Pending Claims"
+              value={pendingClaims}
               icon={HiOutlineDocumentText}
               color="amber"
             />
-            <StatsCard 
-              title="Total Claims Filed" 
-              value={claims.length} 
+            <StatsCard
+              title="Total Claims Filed"
+              value={claims.length}
               icon={HiOutlineCurrencyRupee}
               color="blue"
             />
@@ -107,12 +107,12 @@ export default function Dashboard() {
           <div className="p-0">
             {loading ? (
               <div className="p-4 space-y-3">
-                {[1,2,3].map(i => <div key={i} className="h-14 skeleton rounded-xl" />)}
+                {[1, 2, 3].map(i => <div key={i} className="h-14 skeleton rounded-xl" />)}
               </div>
             ) : policies.length === 0 ? (
-              <EmptyState 
-                title="No policies yet" 
-                description="Start by exploring available insurance plans." 
+              <EmptyState
+                title="No policies yet"
+                description="Start by exploring available insurance plans."
                 icon={HiOutlineShieldCheck}
                 actionLabel="Browse Policies"
                 actionTo="/policies"
@@ -142,12 +142,12 @@ export default function Dashboard() {
           <div className="p-0">
             {loading ? (
               <div className="p-4 space-y-3">
-                {[1,2,3].map(i => <div key={i} className="h-14 skeleton rounded-xl" />)}
+                {[1, 2, 3].map(i => <div key={i} className="h-14 skeleton rounded-xl" />)}
               </div>
             ) : claims.length === 0 ? (
-              <EmptyState 
-                title="No claims filed" 
-                description="When you file a claim, it will appear here." 
+              <EmptyState
+                title="No claims filed"
+                description="When you file a claim, it will appear here."
                 icon={HiOutlineDocumentText}
                 actionLabel="File a Claim"
                 actionTo="/file-claim"

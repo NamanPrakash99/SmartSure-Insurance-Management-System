@@ -5,9 +5,7 @@ import java.util.List;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.stereotype.Service;
 
 import com.group2.admin_service.dto.ClaimDTO;
@@ -37,11 +35,7 @@ public class AdminService {
     
     // ==================== CLAIM OPERATIONS ====================
 
-	@Retryable(
-	    retryFor = Exception.class,
-	    maxAttempts = 3,
-	    backoff = @Backoff(delay = 2000)
-	)
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverReviewClaim")
 	public void reviewClaim(Long claimId, ReviewRequest request) {
 	
 	    // 1. Create Event DTO (DO NOT send ReviewRequest directly)
@@ -60,42 +54,38 @@ public class AdminService {
 	    System.out.println("🔥 Claim review event sent for claimId: " + claimId);
 	}
 
-    @Recover
-    public void recoverReviewClaim(Exception e, Long claimId, ReviewRequest request) {
+    public void recoverReviewClaim(Long claimId, ReviewRequest request, Throwable e) {
         throw new RuntimeException("Fallback: Could not review claim. Service might be down. Reason: " + e.getMessage());
     }
 
     // Get claim status
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverGetClaimStatus")
     public ClaimStatusDTO getClaimStatus(Long claimId) {
         return claimsFeignClient.getClaimStatus(claimId);
     }
 
-    @Recover
-    public ClaimStatusDTO recoverGetClaimStatus(Exception e, Long claimId) {
+    public ClaimStatusDTO recoverGetClaimStatus(Long claimId, Throwable e) {
         return new ClaimStatusDTO();
     }
 
     // Get claims by user ID
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverGetClaimsByUserId")
     public List<ClaimDTO> getClaimsByUserId(Long userId) {
         return claimsFeignClient.getClaimsByUserId(userId);
     }
 
-    @Recover
-    public List<ClaimDTO> recoverGetClaimsByUserId(Exception e, Long userId) {
+    public List<ClaimDTO> recoverGetClaimsByUserId(Long userId, Throwable e) {
         return Collections.emptyList();
     }
 
     // Download Claim Document
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverDownloadClaimDocument")
     public org.springframework.http.ResponseEntity<byte[]> downloadClaimDocument(Long claimId) {
         System.out.println("📥 Requesting document download for Claim ID: " + claimId);
         return claimsFeignClient.downloadDocument(claimId);
     }
     
-    @Recover
-    public org.springframework.http.ResponseEntity<byte[]> recoverDownloadClaimDocument(Exception e, Long claimId) {
+    public org.springframework.http.ResponseEntity<byte[]> recoverDownloadClaimDocument(Long claimId, Throwable e) {
         System.err.println("❌ document download failed for Claim " + claimId + " due to: " + e.getMessage());
         throw new RuntimeException("Fallback: Could not download document. Service might be down. Reason: " + e.getMessage());
     }
@@ -103,7 +93,7 @@ public class AdminService {
 
     // Get all claims with pagination
     // Get all claims with pagination
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverGetAllClaims")
     public com.group2.admin_service.dto.PageResponse<ClaimDTO> getAllClaims(int page, int size) {
         java.util.Map<String, Object> data = claimsFeignClient.getAllClaims(page, size);
         com.group2.admin_service.dto.PageResponse<ClaimDTO> response = new com.group2.admin_service.dto.PageResponse<>();
@@ -135,20 +125,18 @@ public class AdminService {
     }
 
 
-    @Recover
-    public com.group2.admin_service.dto.PageResponse<ClaimDTO> recoverGetAllClaims(Exception e, int page, int size) {
+    public com.group2.admin_service.dto.PageResponse<ClaimDTO> recoverGetAllClaims(int page, int size, Throwable e) {
         System.err.println("Recovering from getAllClaims error: " + e.getMessage());
         e.printStackTrace();
         return new com.group2.admin_service.dto.PageResponse<>();
     }
 
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverUpdateClaim")
     public ClaimDTO updateClaim(Long id, ClaimDTO dto) {
         return claimsFeignClient.updateClaim(id, dto);
     }
 
-    @Recover
-    public ClaimDTO recoverUpdateClaim(Exception e, Long id, ClaimDTO dto) {
+    public ClaimDTO recoverUpdateClaim(Long id, ClaimDTO dto, Throwable e) {
         throw new RuntimeException("Fallback: Could not update claim details. Service might be down. Reason: " + e.getMessage());
     }
 
@@ -158,7 +146,7 @@ public class AdminService {
 
 
     // Create policy product
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverCreatePolicy")
     public PolicyDTO createPolicy(PolicyRequestDTO dto) {
         try {
             return policyFeignClient.createPolicy(dto);
@@ -171,35 +159,32 @@ public class AdminService {
         }
     }
 
-    @Recover
-    public PolicyDTO recoverCreatePolicy(Exception e, PolicyRequestDTO dto) {
+    public PolicyDTO recoverCreatePolicy(PolicyRequestDTO dto, Throwable e) {
         throw new RuntimeException("Fallback: Could not create policy. Service might be down. Reason: " + e.getMessage());
     }
 
     // Update policy product
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverUpdatePolicy")
     public PolicyDTO updatePolicy(Long id, PolicyRequestDTO dto) {
         return policyFeignClient.updatePolicy(id, dto);
     }
 
-    @Recover
-    public PolicyDTO recoverUpdatePolicy(Exception e, Long id, PolicyRequestDTO dto) {
+    public PolicyDTO recoverUpdatePolicy(Long id, PolicyRequestDTO dto, Throwable e) {
         throw new RuntimeException("Fallback: Could not update policy. Service might be down. Reason: " + e.getMessage());
     }
 
     // Delete policy product
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverDeletePolicy")
     public void deletePolicy(Long id) {
         policyFeignClient.deletePolicy(id);
     }
 
-    @Recover
-    public void recoverDeletePolicy(Exception e, Long id) {
+    public void recoverDeletePolicy(Long id, Throwable e) {
         throw new RuntimeException("Fallback: Could not delete policy. Service might be down. Reason: " + e.getMessage());
     }
 
     // Get all policies purchased by a user
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverGetUserPolicies")
     public List<Object> getUserPolicies(Long userId) {
         return policyFeignClient.getUserPolicies(userId);
     }
@@ -209,26 +194,24 @@ public class AdminService {
     }
 
 
-    @Recover
-    public java.util.List<Object> recoverGetUserPolicies(Exception e, Long userId) {
+    public java.util.List<Object> recoverGetUserPolicies(Long userId, Throwable e) {
         return java.util.Collections.emptyList();
     }
 
     // Cancel a user's policy (lifecycle: ACTIVE → CANCELLED)
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverCancelPolicy")
     public Object cancelPolicy(Long id) {
         return policyFeignClient.cancelPolicy(id);
     }
 
-    @Recover
-    public Object recoverCancelPolicy(Exception e, Long id) {
+    public Object recoverCancelPolicy(Long id, Throwable e) {
         throw new RuntimeException("Fallback: Could not cancel policy. Service might be down. Reason: " + e.getMessage());
     }
     
     // ==================== REPORTS ====================
 
     //Reports (DYNAMIC FROM CLAIMS + POLICY SERVICES)
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverGetReports")
     public ReportResponse getReports() {
 
         ReportResponse report = new ReportResponse();
@@ -248,8 +231,7 @@ public class AdminService {
         return report;
     }
 
-    @Recover
-    public ReportResponse recoverGetReports(Exception e) {
+    public ReportResponse recoverGetReports(Throwable e) {
         ReportResponse report = new ReportResponse();
         report.setTotalClaims(0);
         report.setApprovedClaims(0);
@@ -258,13 +240,12 @@ public class AdminService {
         report.setTotalRevenue(0.0);
         return report;
     }
-    @Retryable(retryFor = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @CircuitBreaker(name = "adminService", fallbackMethod = "recoverDeleteClaim")
     public void deleteClaim(Long id) {
         claimsFeignClient.deleteClaim(id);
     }
 
-    @Recover
-    public void recoverDeleteClaim(Exception e, Long id) {
+    public void recoverDeleteClaim(Long id, Throwable e) {
         throw new RuntimeException("Fallback: Could not delete claim. Service might be down. Reason: " + e.getMessage());
     }
 }

@@ -26,8 +26,15 @@ export default function UserPolicies() {
   }, [statusFilter, searchUserId])
 
   const filteredPolicies = policies.filter(p => {
-    if (statusFilter === 'ALL') return true
-    return p.status === statusFilter
+    const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter
+    
+    // Instant local multi-field search (User ID, Purchase ID, or Product name)
+    const matchesSearch = !searchUserId || 
+      p.userId?.toString().includes(searchUserId) || 
+      p.id?.toString().includes(searchUserId) ||
+      p.policyName?.toLowerCase().includes(searchUserId.toLowerCase())
+
+    return matchesStatus && matchesSearch
   })
 
   // Pagination Logic
@@ -48,22 +55,10 @@ export default function UserPolicies() {
     }
   }
 
-  const handleSearch = async (e) => {
+  // Remove backend hit on search since we already have all data loaded
+  const handleSearch = (e) => {
     if (e) e.preventDefault()
-    if (!searchUserId) {
-      fetchAllUserPolicies()
-      return
-    }
-    setLoading(true)
-    try {
-      const { data } = await adminService.getUserPolicies(searchUserId)
-      setPolicies(data || [])
-    } catch (error) {
-      toast.error('No policies found for this user.')
-      setPolicies([])
-    } finally {
-      setLoading(false)
-    }
+    // Local filtering handles it instantly
   }
 
   const handleCancel = async (id) => {
@@ -112,14 +107,11 @@ export default function UserPolicies() {
               <form onSubmit={handleSearch} className="relative group">
                 <input 
                   type="text" 
-                  placeholder="Search User ID..." 
-                  className="input-field pr-20 !py-2.5 w-64" 
+                  placeholder="Search User ID, Purchase ID or Product..." 
+                  className="input-field pr-10 !py-2.5 w-72" 
                   value={searchUserId}
                   onChange={e => setSearchUserId(e.target.value)}
                 />
-                <button type="submit" className="absolute right-1 top-1.5 bottom-1.5 px-3 bg-primary-500 text-white rounded-lg text-xs font-semibold hover:bg-primary-600 transition-colors">
-                  Search
-                </button>
               </form>
               {searchUserId && (
                 <button onClick={() => setSearchUserId('')} className="btn-secondary !py-2.5 text-xs">Clear</button>

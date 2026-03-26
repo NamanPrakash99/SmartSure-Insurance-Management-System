@@ -19,6 +19,8 @@ import com.group2.auth_service.dto.RegisterRequest;
 import com.group2.auth_service.entity.User;
 import com.group2.auth_service.service.AuthService;
 import com.group2.auth_service.service.OtpService;
+import com.group2.auth_service.service.RefreshTokenService;
+import com.group2.auth_service.security.JwtUtil;
 
 @ExtendWith(MockitoExtension.class)
 public class AuthControllerTest {
@@ -28,6 +30,12 @@ public class AuthControllerTest {
 
     @Mock
     private OtpService otpService;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
+    @Mock
+    private JwtUtil jwtUtil;
 
     @InjectMocks
     private AuthController authController;
@@ -59,7 +67,7 @@ public class AuthControllerTest {
      */
     @Test
     void login() {
-        AuthResponse response = new AuthResponse("token", "CUSTOMER", 1L, "Test User");
+        AuthResponse response = new AuthResponse("token", "refreshToken", "CUSTOMER", 1L, "Test User");
         when(authService.login(any())).thenReturn(response);
         
         ResponseEntity<AuthResponse> res = authController.login(new LoginRequest());

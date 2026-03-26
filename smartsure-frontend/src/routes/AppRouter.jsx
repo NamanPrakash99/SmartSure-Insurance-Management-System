@@ -13,6 +13,7 @@ import BrowsePolicies from '../pages/customer/BrowsePolicies'
 import PolicyDetails from '../pages/customer/PolicyDetails'
 import MyPolicies from '../pages/customer/MyPolicies'
 import MyClaims from '../pages/customer/MyClaims'
+import FileClaim from '../pages/customer/FileClaim'
 
 // Admin Pages
 import AdminDashboard from '../pages/admin/Dashboard'
@@ -81,6 +82,11 @@ export default function AppRouter() {
       <Route path="/my-claims" element={
         <ProtectedRoute allowedRoles={['CUSTOMER']}>
           <DashboardLayout><MyClaims /></DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/file-claim" element={
+        <ProtectedRoute allowedRoles={['CUSTOMER']}>
+          <DashboardLayout><FileClaim /></DashboardLayout>
         </ProtectedRoute>
       } />
 

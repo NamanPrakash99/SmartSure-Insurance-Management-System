@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const savedToken = localStorage.getItem('smartsure-token')
     const savedUser = localStorage.getItem('smartsure-user')
+    const savedRefreshToken = localStorage.getItem('smartsure-refresh-token')
     if (savedToken && savedUser) {
       try {
         setToken(savedToken)
@@ -20,6 +21,7 @@ export function AuthProvider({ children }) {
       } catch {
         localStorage.removeItem('smartsure-token')
         localStorage.removeItem('smartsure-user')
+        localStorage.removeItem('smartsure-refresh-token')
       }
     }
     setLoading(false)
@@ -36,6 +38,7 @@ export function AuthProvider({ children }) {
     setUser(userData)
 
     localStorage.setItem('smartsure-token', authResponse.token)
+    localStorage.setItem('smartsure-refresh-token', authResponse.refreshToken)
     localStorage.setItem('smartsure-user', JSON.stringify(userData))
 
     // Redirect based on role
@@ -51,6 +54,7 @@ export function AuthProvider({ children }) {
     setUser(null)
     localStorage.removeItem('smartsure-token')
     localStorage.removeItem('smartsure-user')
+    localStorage.removeItem('smartsure-refresh-token')
     navigate('/login')
   }
 

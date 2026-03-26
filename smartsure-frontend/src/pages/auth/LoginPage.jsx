@@ -20,7 +20,10 @@ export default function LoginPage() {
       toast.success('Login successful!')
       login(data) // Pass {token, role, id} to context
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Invalid credentials. Please try again.')
+      const errorMsg = typeof error.response?.data === 'string' 
+        ? error.response.data 
+        : error.response?.data?.message || 'Invalid credentials. Please try again.'
+      toast.error(errorMsg)
     } finally {
       setLoading(false)
     }

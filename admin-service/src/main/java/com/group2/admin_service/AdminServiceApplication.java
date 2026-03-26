@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.servers.Server;
 @SpringBootApplication
 @EnableFeignClients
 @EnableMethodSecurity
-@org.springframework.retry.annotation.EnableRetry
 @OpenAPIDefinition(servers = @Server(url = "/admin-service", description = "Admin Service via API Gateway"))
 public class AdminServiceApplication {
 

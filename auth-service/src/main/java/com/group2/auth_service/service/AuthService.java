@@ -14,7 +14,9 @@ import com.group2.auth_service.entity.Role;
 import com.group2.auth_service.entity.User;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.repository.PasswordResetTokenRepository;
+import com.group2.auth_service.entity.RefreshToken;
 import com.group2.auth_service.security.JwtUtil;
+import com.group2.auth_service.service.RefreshTokenService;
 
 @Service
 public class AuthService {
@@ -23,17 +25,20 @@ public class AuthService {
 	private final PasswordResetTokenRepository tokenRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtUtil jwtUtil;
+	private final RefreshTokenService refreshTokenService;
 	private final EmailService emailService;
 
 	public AuthService(AuthServiceRepository userRepository, 
 	                  PasswordResetTokenRepository tokenRepository,
 	                  PasswordEncoder passwordEncoder, 
 	                  JwtUtil jwtUtil,
+	                  RefreshTokenService refreshTokenService,
 	                  EmailService emailService) {
 		this.userRepository = userRepository;
 		this.tokenRepository = tokenRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtUtil = jwtUtil;
+		this.refreshTokenService = refreshTokenService;
 		this.emailService = emailService;
 	}
 	
@@ -80,21 +85,30 @@ public class AuthService {
 	}
 
 	public AuthResponse login(LoginRequest request) {
-	    Optional<User> userOpt = userRepository.findByEmail(request.getEmail().toLowerCase());
+	    String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+	    System.out.println("Login attempt for email: '" + email + "'");
+	    
+	    Optional<User> userOpt = userRepository.findByEmail(email);
 	    
 	    if (userOpt.isEmpty()) {
 	        userOpt = userRepository.findByEmail(request.getEmail());
 	    }
 	    
-	    if (userOpt.isPresent()) {
-	        User user = userOpt.get();        
-
-	        if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-	            String token = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole().name());
-	            return new AuthResponse(token, user.getRole().name(), user.getId(), user.getName());
-	        }
+	    if (userOpt.isEmpty()) {
+	    	System.out.println("Login Failed: User not found for email: " + email);
+	    	throw new RuntimeException("Invalid credentials: User not found. Please register first.");
 	    }
-	    throw new RuntimeException("Invalid credentials");
+	    
+	    User user = userOpt.get();        
+
+		if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+			String token = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole().name());
+			RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+			return new AuthResponse(token, refreshToken.getToken(), user.getRole().name(), user.getId(), user.getName());
+		} else {
+			System.out.println("Login Failed: Password does not match for email: " + email);
+			throw new RuntimeException("Invalid credentials: Password is incorrect.");
+		}
 	}
 
 	public User getUserById(Long id) {

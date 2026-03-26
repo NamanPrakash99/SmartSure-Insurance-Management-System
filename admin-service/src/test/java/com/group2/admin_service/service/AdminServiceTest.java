@@ -78,7 +78,7 @@ public class AdminServiceTest {
     @Test
     void testRecoverReviewClaim() {
         assertThrows(RuntimeException.class, () -> 
-            adminService.recoverReviewClaim(new Exception("Network Error"), 1L, new ReviewRequest())
+            adminService.recoverReviewClaim(1L, new ReviewRequest(), new Exception("Network Error"))
         );
     }
 
@@ -104,7 +104,7 @@ public class AdminServiceTest {
      */
     @Test
     void testRecoverGetClaimStatus() {
-        ClaimStatusDTO result = adminService.recoverGetClaimStatus(new Exception("Fail"), 1L);
+        ClaimStatusDTO result = adminService.recoverGetClaimStatus(1L, new Exception("Fail"));
         assertNotNull(result);
     }
 
@@ -141,7 +141,7 @@ public class AdminServiceTest {
      */
     @Test
     void testRecoverCreatePolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverCreatePolicy(new Exception(), new PolicyRequestDTO()));
+        assertThrows(RuntimeException.class, () -> adminService.recoverCreatePolicy(new PolicyRequestDTO(), new Exception()));
     }
 
     /**
@@ -165,7 +165,7 @@ public class AdminServiceTest {
      */
     @Test
     void testRecoverUpdatePolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverUpdatePolicy(new Exception(), 1L, new PolicyRequestDTO()));
+        assertThrows(RuntimeException.class, () -> adminService.recoverUpdatePolicy(1L, new PolicyRequestDTO(), new Exception()));
     }
 
     /**
@@ -187,7 +187,7 @@ public class AdminServiceTest {
      */
     @Test
     void testRecoverDeletePolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverDeletePolicy(new Exception(), 1L));
+        assertThrows(RuntimeException.class, () -> adminService.recoverDeletePolicy(1L, new Exception()));
     }
 
     /**

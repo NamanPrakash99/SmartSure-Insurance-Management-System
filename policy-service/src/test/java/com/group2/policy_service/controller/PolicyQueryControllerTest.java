@@ -1,73 +1,94 @@
 package com.group2.policy_service.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
-
-import java.util.Collections;
-import java.util.List;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
-
 import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.PolicyStatsDTO;
 import com.group2.policy_service.dto.UserPolicyResponseDTO;
 import com.group2.policy_service.entity.PolicyType;
 import com.group2.policy_service.service.PolicyQueryService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(MockitoExtension.class)
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(PolicyQueryController.class)
 public class PolicyQueryControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
     private PolicyQueryService policyQueryService;
 
-    @InjectMocks
-    private PolicyQueryController policyQueryController;
-
     @Test
-    void testGetAllPolicies() {
-        when(policyQueryService.getAllPolicies()).thenReturn(Collections.singletonList(new PolicyResponseDTO()));
+    @WithMockUser
+    public void testGetAllPolicies() throws Exception {
+        PolicyResponseDTO dto = new PolicyResponseDTO();
+        dto.setPolicyName("Health");
+        when(policyQueryService.getAllPolicies()).thenReturn(Collections.singletonList(dto));
 
-        List<PolicyResponseDTO> result = policyQueryController.getAllPolicies();
-        assertEquals(1, result.size());
+        mockMvc.perform(get("/api/policies"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].policyName").value("Health"));
     }
 
     @Test
-    void testGetAllPolicyTypes() {
+    @WithMockUser
+    public void testGetAllPolicyTypes() throws Exception {
         when(policyQueryService.getAllPolicyTypes()).thenReturn(Collections.singletonList(new PolicyType()));
-
-        List<PolicyType> result = policyQueryController.getAllPolicyTypes();
-        assertEquals(1, result.size());
+        mockMvc.perform(get("/api/policy-types"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testGetPolicy() {
-        PolicyResponseDTO response = new PolicyResponseDTO();
-        when(policyQueryService.getPolicyById(1L)).thenReturn(response);
+    @WithMockUser
+    public void testGetPolicy() throws Exception {
+        PolicyResponseDTO dto = new PolicyResponseDTO();
+        dto.setId(1L);
+        when(policyQueryService.getPolicyById(1L)).thenReturn(dto);
 
-        PolicyResponseDTO result = policyQueryController.getPolicy(1L);
-        assertEquals(response, result);
+        mockMvc.perform(get("/api/policies/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L));
     }
 
     @Test
-    void testGetUserPolicies() {
-        when(policyQueryService.getPoliciesByUserId(1L)).thenReturn(Collections.singletonList(new UserPolicyResponseDTO()));
+    @WithMockUser(roles = "ADMIN")
+    public void testGetUserPolicies() throws Exception {
+        when(policyQueryService.getPoliciesByUserId(anyLong())).thenReturn(Collections.emptyList());
 
-        List<UserPolicyResponseDTO> result = policyQueryController.getUserPolicies(1L);
-        assertEquals(1, result.size());
+        mockMvc.perform(get("/api/admin/user-policies/1"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testGetPolicyStats() {
+    @WithMockUser
+    public void testGetAllUserPolicies() throws Exception {
+        when(policyQueryService.getAllUserPolicies()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/admin/user-policies/all"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    public void testGetPolicyStats() throws Exception {
         PolicyStatsDTO stats = new PolicyStatsDTO();
+        stats.setTotalPolicies(10L);
         when(policyQueryService.getPolicyStats()).thenReturn(stats);
 
-        ResponseEntity<PolicyStatsDTO> result = policyQueryController.getPolicyStats();
-        assertEquals(200, result.getStatusCode().value());
-        assertEquals(stats, result.getBody());
+        mockMvc.perform(get("/api/admin/policies/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalPolicies").value(10L));
     }
 }

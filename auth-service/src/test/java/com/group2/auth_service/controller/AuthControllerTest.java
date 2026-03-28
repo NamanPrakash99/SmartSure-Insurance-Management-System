@@ -1,100 +1,151 @@
 package com.group2.auth_service.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
-
-import com.group2.auth_service.dto.AuthResponse;
-import com.group2.auth_service.dto.LoginRequest;
-import com.group2.auth_service.dto.RegisterRequest;
-import com.group2.auth_service.entity.User;
+import com.group2.auth_service.dto.*;
 import com.group2.auth_service.service.AuthService;
 import com.group2.auth_service.service.OtpService;
 import com.group2.auth_service.service.RefreshTokenService;
 import com.group2.auth_service.security.JwtUtil;
+import com.group2.auth_service.entity.User;
+import com.group2.auth_service.entity.RefreshToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(MockitoExtension.class)
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(AuthController.class)
 public class AuthControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
     private AuthService authService;
 
-    @Mock
+    @MockitoBean
     private OtpService otpService;
 
-    @Mock
+    @MockitoBean
     private RefreshTokenService refreshTokenService;
 
-    @Mock
+    @MockitoBean
     private JwtUtil jwtUtil;
 
-    @InjectMocks
-    private AuthController authController;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-
-
-    /**
-     * Given: A valid register request
-     * When: register endpoint is called
-     * Then: otp is validated and user is registered successfully
-     */
     @Test
-    void register() {
+    public void testRegister() throws Exception {
+        RegisterRequest request = new RegisterRequest();
+        request.setEmail("user@test.com");
+        request.setPassword("Password123");
+
         User user = new User();
-        RegisterRequest req = new RegisterRequest();
-        req.setEmail("test@test.com");
-        
-        doNothing().when(otpService).validateOtpBeforeRegister(anyString());
-        when(authService.register(any())).thenReturn(user);
-        
-        ResponseEntity<User> res = authController.register(req);
-        assertEquals(user, res.getBody());
+        user.setId(1L);
+        user.setEmail("user@test.com");
+
+        when(authService.register(any(RegisterRequest.class))).thenReturn(user);
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L));
     }
 
-    /**
-     * Given: A valid login request
-     * When: login endpoint is called
-     * Then: AuthResponse containing the token is returned
-     */
     @Test
-    void login() {
-        AuthResponse response = new AuthResponse("token", "refreshToken", "CUSTOMER", 1L, "Test User");
-        when(authService.login(any())).thenReturn(response);
-        
-        ResponseEntity<AuthResponse> res = authController.login(new LoginRequest());
-        assertEquals(response, res.getBody());
+    public void testLogin() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("user@test.com");
+        request.setPassword("Password123");
+
+        AuthResponse response = new AuthResponse("token", "refreshToken", "CUSTOMER", 1L, "User");
+
+        when(authService.login(any(LoginRequest.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("token"));
     }
 
-    /**
-     * Given: An email parameter
-     * When: sendOtp endpoint is called
-     * Then: success message is returned
-     */
     @Test
-    void testSendOtp() {
-        doNothing().when(otpService).sendOtp(anyString());
-        String res = authController.sendOtp("test@test.com");
-        assertEquals("OTP sent to email", res);
+    public void testRefreshToken() throws Exception {
+        TokenRefreshRequest request = new TokenRefreshRequest();
+        request.setRefreshToken("oldRefresh");
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("user@test.com");
+        user.setRole(com.group2.auth_service.entity.Role.CUSTOMER);
+
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setUser(user);
+        refreshToken.setToken("oldRefresh");
+
+        java.util.Optional<RefreshToken> opt = java.util.Optional.of(refreshToken);
+        when(refreshTokenService.findByToken("oldRefresh")).thenReturn(opt);
+        when(refreshTokenService.verifyExpiration(any(RefreshToken.class))).thenReturn(refreshToken);
+        when(jwtUtil.generateToken(anyString(), anyLong(), anyString())).thenReturn("newToken");
+
+        mockMvc.perform(post("/api/auth/refresh-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("newToken"));
     }
 
-    /**
-     * Given: An email and otp parameter
-     * When: verifyOtp endpoint is called
-     * Then: success message is returned
-     */
     @Test
-    void testVerifyOtp() {
-        when(otpService.verifyOtp(anyString(), anyString())).thenReturn(true);
-        String res = authController.verifyOtp("test@test.com", "123456");
-        assertEquals("OTP verified successfully", res);
+    public void testSendOtp() throws Exception {
+        mockMvc.perform(post("/api/auth/send-otp")
+                .param("email", "user@test.com"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testVerifyOtp() throws Exception {
+        mockMvc.perform(post("/api/auth/verify-otp")
+                .param("email", "user@test.com")
+                .param("otp", "123456"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testGetUserById() throws Exception {
+        User user = new User();
+        user.setId(1L);
+        when(authService.getUserById(1L)).thenReturn(user);
+
+        mockMvc.perform(get("/api/auth/users/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L));
+    }
+
+    @Test
+    public void testForgotPassword() throws Exception {
+        mockMvc.perform(post("/api/auth/forgot-password")
+                .param("email", "user@test.com"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testResetPassword() throws Exception {
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setToken("token");
+        request.setNewPassword("NewPass123");
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 }

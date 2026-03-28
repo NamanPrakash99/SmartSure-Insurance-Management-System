@@ -26,7 +26,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
             	    // Swagger
-            	    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/error").permitAll()
+            	    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/error", "/actuator/**").permitAll()
 
             	    // Admin APIs
             	    .requestMatchers("/api/admin/user-policies/**").hasAnyRole("CUSTOMER", "ADMIN")

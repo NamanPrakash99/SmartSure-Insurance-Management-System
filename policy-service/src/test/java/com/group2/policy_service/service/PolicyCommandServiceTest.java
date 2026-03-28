@@ -1,29 +1,5 @@
 package com.group2.policy_service.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Optional;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-
 import com.group2.policy_service.config.RabbitConfig;
 import com.group2.policy_service.dto.PolicyRequestDTO;
 import com.group2.policy_service.dto.PolicyResponseDTO;
@@ -36,9 +12,30 @@ import com.group2.policy_service.entity.UserPolicy;
 import com.group2.policy_service.repository.PolicyRepository;
 import com.group2.policy_service.repository.PolicyTypeRepository;
 import com.group2.policy_service.repository.UserPolicyRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class PolicyCommandServiceTest {
+
+    @InjectMocks
+    private PolicyCommandService policyCommandService;
 
     @Mock
     private PolicyRepository policyRepository;
@@ -52,119 +49,163 @@ public class PolicyCommandServiceTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
-    @InjectMocks
-    private PolicyCommandService policyCommandService;
-
-    private Policy mockPolicy;
-    private UserPolicy mockUserPolicy;
-
     @BeforeEach
-    void setUp() {
-        mockPolicy = new Policy();
-        mockPolicy.setId(10L);
-        mockPolicy.setPolicyName("Health Plan");
-        mockPolicy.setDurationInMonths(12);
-        mockPolicy.setPremiumAmount(100.0);
-
-        mockUserPolicy = new UserPolicy();
-        mockUserPolicy.setId(5L);
-        mockUserPolicy.setPolicy(mockPolicy);
-        mockUserPolicy.setUserId(100L);
-        mockUserPolicy.setStatus(PolicyStatus.ACTIVE);
+    public void setupSecurity() {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(1L);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
     }
 
     @AfterEach
-    void tearDown() {
+    public void clearSecurity() {
         SecurityContextHolder.clearContext();
     }
 
     @Test
-    void testPurchasePolicy() {
-        // Mock Security Context
-        Authentication auth = mock(Authentication.class);
-        when(auth.getPrincipal()).thenReturn(100L); // Current user ID
-        SecurityContext context = mock(SecurityContext.class);
-        when(context.getAuthentication()).thenReturn(auth);
-        SecurityContextHolder.setContext(context);
-
-        when(policyRepository.findById(10L)).thenReturn(Optional.of(mockPolicy));
-        when(userPolicyRepository.existsByUserIdAndPolicyIdAndStatus(100L, 10L, PolicyStatus.ACTIVE)).thenReturn(false);
-        when(userPolicyRepository.save(any(UserPolicy.class))).thenReturn(mockUserPolicy);
-
-        UserPolicyResponseDTO response = policyCommandService.purchasePolicy(10L);
-
-        assertNotNull(response);
-        assertEquals(100L, response.getUserId());
-        assertEquals("Health Plan", response.getPolicyName());
-        verify(userPolicyRepository, times(1)).save(any(UserPolicy.class));
-        verify(rabbitTemplate, times(1)).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(RabbitConfig.PURCHASE_ROUTING_KEY), any(PolicyPurchaseEvent.class));
-    }
-
-    @Test
-    void testCreatePolicy_Success() {
+    public void testCreatePolicy_Success() {
         PolicyRequestDTO dto = new PolicyRequestDTO();
+        dto.setPolicyName("New Policy");
         dto.setPolicyTypeId(1L);
-        dto.setPolicyName("New Plan");
-        
-        when(policyTypeRepository.findById(1L)).thenReturn(Optional.of(new PolicyType()));
-        when(policyRepository.save(any(Policy.class))).thenReturn(mockPolicy);
+        dto.setPremiumAmount(100.0);
 
-        PolicyResponseDTO response = policyCommandService.createPolicy(dto);
+        PolicyType type = new PolicyType();
+        type.setId(1L);
 
-        assertNotNull(response);
-        assertEquals("Health Plan", response.getPolicyName()); // mockPolicy has "Health Plan"
-        verify(policyRepository, times(1)).save(any(Policy.class));
+        Policy policy = new Policy();
+        policy.setId(1L);
+        policy.setPolicyName("New Policy");
+        policy.setPolicyType(type);
+
+        when(policyTypeRepository.findById(1L)).thenReturn(Optional.of(type));
+        when(policyRepository.save(any(Policy.class))).thenReturn(policy);
+
+        PolicyResponseDTO result = policyCommandService.createPolicy(dto);
+
+        assertNotNull(result);
+        assertEquals("New Policy", result.getPolicyName());
     }
 
     @Test
-    void testUpdatePolicy() {
+    public void testCreatePolicy_ValidationFail() {
         PolicyRequestDTO dto = new PolicyRequestDTO();
-        dto.setPolicyName("Updated Plan");
-
-        when(policyRepository.findById(10L)).thenReturn(Optional.of(mockPolicy));
+        assertThrows(RuntimeException.class, () -> policyCommandService.createPolicy(dto));
         
-        PolicyResponseDTO response = policyCommandService.updatePolicy(10L, dto);
-
-        assertEquals("Updated Plan", response.getPolicyName());
-        verify(policyRepository, times(1)).save(mockPolicy);
+        dto.setPolicyName("Test");
+        assertThrows(RuntimeException.class, () -> policyCommandService.createPolicy(dto));
     }
 
     @Test
-    void testDeletePolicy() {
-        when(policyRepository.findById(10L)).thenReturn(Optional.of(mockPolicy));
+    public void testDeletePolicy_Success() {
+        Policy policy = new Policy();
+        policy.setId(1L);
+        when(policyRepository.findById(1L)).thenReturn(Optional.of(policy));
 
-        policyCommandService.deletePolicy(10L);
+        policyCommandService.deletePolicy(1L);
 
-        assertEquals(false, mockPolicy.isActive());
-        verify(policyRepository, times(1)).save(mockPolicy);
+        assertFalse(policy.isActive());
+        verify(policyRepository).save(policy);
     }
 
     @Test
-    void testCancelPolicy_Success() {
-        when(userPolicyRepository.findById(5L)).thenReturn(Optional.of(mockUserPolicy));
+    public void testUpdatePolicy_Success() {
+        Policy existing = new Policy();
+        existing.setId(1L);
+        
+        PolicyRequestDTO dto = new PolicyRequestDTO();
+        dto.setPolicyName("Updated");
 
-        UserPolicyResponseDTO response = policyCommandService.cancelPolicy(5L);
+        when(policyRepository.findById(1L)).thenReturn(Optional.of(existing));
 
-        assertEquals(PolicyStatus.CANCELLED, response.getStatus());
-        verify(userPolicyRepository, times(1)).save(mockUserPolicy);
+        PolicyResponseDTO result = policyCommandService.updatePolicy(1L, dto);
+        assertEquals("Updated", result.getPolicyName());
     }
 
     @Test
-    void testCancelPolicy_NotActive() {
-        mockUserPolicy.setStatus(PolicyStatus.CANCELLED);
-        when(userPolicyRepository.findById(5L)).thenReturn(Optional.of(mockUserPolicy));
+    public void testPurchasePolicy_Success() {
+        Policy policy = new Policy();
+        policy.setId(10L);
+        policy.setPolicyName("Health");
+        policy.setDurationInMonths(12);
+        policy.setPremiumAmount(500.0);
 
-        assertThrows(RuntimeException.class, () -> policyCommandService.cancelPolicy(5L));
+        UserPolicy saved = new UserPolicy();
+        saved.setId(100L);
+        saved.setUserId(1L);
+        saved.setPolicy(policy);
+        saved.setStatus(PolicyStatus.PENDING_PAYMENT);
+
+        when(policyRepository.findById(10L)).thenReturn(Optional.of(policy));
+        when(userPolicyRepository.existsByUserIdAndPolicyIdAndStatus(1L, 10L, PolicyStatus.ACTIVE)).thenReturn(false);
+        when(userPolicyRepository.save(any(UserPolicy.class))).thenReturn(saved);
+
+        UserPolicyResponseDTO result = policyCommandService.purchasePolicy(10L);
+
+        assertNotNull(result);
+        assertEquals(PolicyStatus.PENDING_PAYMENT, result.getStatus());
+        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq(RabbitConfig.PURCHASE_ROUTING_KEY), any(PolicyPurchaseEvent.class));
     }
 
     @Test
-    void testRenewPolicy() {
-        when(userPolicyRepository.findById(5L)).thenReturn(Optional.of(mockUserPolicy));
-        mockUserPolicy.setStatus(PolicyStatus.EXPIRED);
+    public void testPurchasePolicy_AlreadyActive() {
+        when(policyRepository.findById(10L)).thenReturn(Optional.of(new Policy()));
+        when(userPolicyRepository.existsByUserIdAndPolicyIdAndStatus(anyLong(), anyLong(), eq(PolicyStatus.ACTIVE))).thenReturn(true);
+        
+        assertThrows(RuntimeException.class, () -> policyCommandService.purchasePolicy(10L));
+    }
 
-        UserPolicyResponseDTO response = policyCommandService.renewPolicy(5L);
+    @Test
+    public void testCancelPolicy_Success() {
+        UserPolicy up = new UserPolicy();
+        up.setStatus(PolicyStatus.ACTIVE);
+        up.setPolicy(new Policy());
 
-        assertEquals(PolicyStatus.ACTIVE, response.getStatus());
-        verify(userPolicyRepository, times(1)).save(mockUserPolicy);
+        when(userPolicyRepository.findById(1L)).thenReturn(Optional.of(up));
+
+        UserPolicyResponseDTO result = policyCommandService.cancelPolicy(1L);
+        assertEquals(PolicyStatus.CANCELLED, result.getStatus());
+    }
+
+    @Test
+    public void testCancelPolicy_InvalidStatus() {
+        UserPolicy up = new UserPolicy();
+        up.setStatus(PolicyStatus.CANCELLED);
+        when(userPolicyRepository.findById(1L)).thenReturn(Optional.of(up));
+
+        assertThrows(RuntimeException.class, () -> policyCommandService.cancelPolicy(1L));
+    }
+
+    @Test
+    public void testRenewPolicy_Success() {
+        Policy p = new Policy();
+        p.setDurationInMonths(6);
+        UserPolicy up = new UserPolicy();
+        up.setPolicy(p);
+        up.setEndDate(LocalDate.now().minusDays(1));
+
+        when(userPolicyRepository.findById(1L)).thenReturn(Optional.of(up));
+
+        UserPolicyResponseDTO result = policyCommandService.renewPolicy(1L);
+        assertEquals(PolicyStatus.ACTIVE, result.getStatus());
+    }
+
+    @Test
+    public void testDeleteUserPolicy_Success() {
+        UserPolicy up = new UserPolicy();
+        up.setUserId(1L);
+        when(userPolicyRepository.findById(1L)).thenReturn(Optional.of(up));
+
+        policyCommandService.deleteUserPolicy(1L);
+        verify(userPolicyRepository).delete(up);
+    }
+
+    @Test
+    public void testDeleteUserPolicy_Unauthorized() {
+        UserPolicy up = new UserPolicy();
+        up.setUserId(2L);
+        when(userPolicyRepository.findById(1L)).thenReturn(Optional.of(up));
+
+        assertThrows(RuntimeException.class, () -> policyCommandService.deleteUserPolicy(1L));
     }
 }

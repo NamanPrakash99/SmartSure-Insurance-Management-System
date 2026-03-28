@@ -1,42 +1,33 @@
 package com.group2.claims_service.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import org.junit.jupiter.api.BeforeEach;
+import com.group2.claims_service.dto.*;
+import com.group2.claims_service.entity.*;
+import com.group2.claims_service.exception.ClaimNotFoundException;
+import com.group2.claims_service.repository.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
-import com.group2.claims_service.dto.ClaimCreatedEvent;
-import com.group2.claims_service.dto.ClaimRequestDTO;
-import com.group2.claims_service.dto.ClaimResponseDTO;
-import com.group2.claims_service.dto.ClaimStatsDTO;
-import com.group2.claims_service.entity.Claim;
-import com.group2.claims_service.entity.ClaimDocument;
-import com.group2.claims_service.entity.ClaimStatus;
-import com.group2.claims_service.exception.ClaimNotFoundException;
-import com.group2.claims_service.repository.ClaimDocumentRepository;
-import com.group2.claims_service.repository.ClaimRepository;
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class ClaimServiceTest {
+
+    @InjectMocks
+    private ClaimService claimService;
 
     @Mock
     private ClaimRepository claimRepository;
@@ -47,184 +38,307 @@ public class ClaimServiceTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
-    @InjectMocks
-    private ClaimService claimService;
-
-    private Claim claim;
-
-    @BeforeEach
-    void setUp() {
-
-        claim = new Claim();
-        claim.setId(1L);
-        claim.setPolicyId(100L);
-        claim.setUserId(200L);
-        claim.setClaimAmount(5000.0);
-        claim.setDescription("Car Damage");
-        claim.setClaimStatus(ClaimStatus.SUBMITTED);
-        claim.setCreatedAt(LocalDateTime.now());
-    }
-
-    /**
-     * Given: ClaimRequestDTO
-     * When: initiateClaim is called
-     * Then: saves to DB, sends RabbitMQ event, returns ClaimResponseDTO
-     */
+    // ==================== initiateClaim ====================
     @Test
-    void testInitiateClaim() {
-        ClaimRequestDTO requestDTO = new ClaimRequestDTO();
-        requestDTO.setPolicyId(100L);
-        requestDTO.setUserId(200L);
-        requestDTO.setClaimAmount(5000.0);
-        requestDTO.setDescription("Car Damage");
+    public void testInitiateClaim() {
+        ClaimRequestDTO request = new ClaimRequestDTO();
+        request.setPolicyId(1L);
+        request.setUserId(1L);
+        request.setClaimAmount(5000.0);
+        request.setDescription("Accident");
+
+        Claim claim = new Claim();
+        claim.setId(1L);
+        claim.setPolicyId(1L);
+        claim.setUserId(1L);
+        claim.setClaimAmount(5000.0);
+        claim.setDescription("Accident");
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
 
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
-        doNothing().when(rabbitTemplate).convertAndSend(eq("claim.exchange"), eq("claim.created"), any(ClaimCreatedEvent.class));
 
-        ClaimResponseDTO response = claimService.initiateClaim(requestDTO);
+        ClaimResponseDTO result = claimService.initiateClaim(request);
 
-        assertNotNull(response);
-        assertEquals(1L, response.getClaimId());
-        assertEquals("SUBMITTED", response.getStatus());
-        verify(claimRepository, times(1)).save(any(Claim.class));
-        verify(rabbitTemplate, times(1)).convertAndSend(eq("claim.exchange"), eq("claim.created"), any(ClaimCreatedEvent.class));
+        assertNotNull(result);
+        assertEquals(1L, result.getClaimId());
+        assertEquals("SUBMITTED", result.getStatus());
+        assertEquals(5000.0, result.getClaimAmount());
+        assertEquals("Accident", result.getDescription());
+        assertEquals("Claim submitted successfully", result.getMessage());
+        verify(rabbitTemplate, times(1)).convertAndSend(anyString(), anyString(), (Object) any());
     }
 
-    /**
-     * Given: Invalid claimId
-     * When: uploadDocument is called
-     * Then: Throws ClaimNotFoundException
-     */
+    // ==================== uploadDocument ====================
     @Test
-    void testUploadDocument_ClaimNotFound() {
-        MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
-        when(claimRepository.findById(1L)).thenReturn(Optional.empty());
+    public void testUploadDocument_Success() throws IOException {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.getContentType()).thenReturn("application/pdf");
+        when(file.getOriginalFilename()).thenReturn("doc.pdf");
+        when(file.getBytes()).thenReturn(new byte[10]);
 
-        assertThrows(ClaimNotFoundException.class, () -> claimService.uploadDocument(1L, file));
-    }
-
-    /**
-     * Given: Valid claimId
-     * When: uploadDocument is called
-     * Then: saves Document and returns success string
-     */
-    @Test
-    void testUploadDocument_Success() {
-        MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
+        Claim claim = new Claim();
+        claim.setId(1L);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-        when(documentRepository.save(any(ClaimDocument.class))).thenReturn(new ClaimDocument());
 
-        String response = claimService.uploadDocument(1L, file);
-
-        assertEquals("Document uploaded Successfully", response);
+        String result = claimService.uploadDocument(1L, file);
+        assertEquals("Document uploaded Successfully", result);
         verify(documentRepository, times(1)).save(any(ClaimDocument.class));
     }
 
-    /**
-     * Given: Valid claimId
-     * When: getClaimStatus is called
-     * Then: returns ClaimResponseDTO with status
-     */
     @Test
-    void testGetClaimStatus() {
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+    public void testUploadDocument_ImageFile() throws IOException {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.getContentType()).thenReturn("image/jpeg");
+        when(file.getOriginalFilename()).thenReturn("photo.jpg");
+        when(file.getBytes()).thenReturn(new byte[10]);
 
-        ClaimResponseDTO response = claimService.getClaimStatus(1L);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(new Claim()));
 
-        assertEquals("SUBMITTED", response.getStatus());
-        assertEquals(1L, response.getClaimId());
+        String result = claimService.uploadDocument(1L, file);
+        assertEquals("Document uploaded Successfully", result);
     }
 
-    /**
-     * Given: Valid claimId
-     * When: getClaimById is called
-     * Then: returns full ClaimResponseDTO
-     */
     @Test
-    void testGetClaimById() {
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+    public void testUploadDocument_InvalidFormat() {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.getContentType()).thenReturn("text/plain");
+        when(file.getOriginalFilename()).thenReturn("readme.txt");
 
-        ClaimResponseDTO response = claimService.getClaimById(1L);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(new Claim()));
 
-        assertEquals(1L, response.getClaimId());
-        assertEquals(100L, response.getPolicyId());
-        assertEquals(5000.0, response.getClaimAmount());
+        assertThrows(IllegalArgumentException.class, () -> claimService.uploadDocument(1L, file));
     }
 
-    /**
-     * Given: Valid Claim ID and legal transition
-     * When: updateClaimStatus is called
-     * Then: Claim status is updated and saved
-     */
     @Test
-    void testUpdateClaimStatus_ValidTransition() {
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim)); // Currently SUBMITTED
-        when(claimRepository.save(any(Claim.class))).thenReturn(claim);
+    public void testUploadDocument_ValidByFilename() throws IOException {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.getContentType()).thenReturn(null);
+        when(file.getOriginalFilename()).thenReturn("photo.png");
+        when(file.getBytes()).thenReturn(new byte[5]);
+
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(new Claim()));
+
+        String result = claimService.uploadDocument(1L, file);
+        assertEquals("Document uploaded Successfully", result);
+    }
+
+    @Test
+    public void testUploadDocument_ClaimNotFound() {
+        MultipartFile file = mock(MultipartFile.class);
+        when(claimRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ClaimNotFoundException.class, () -> claimService.uploadDocument(99L, file));
+    }
+
+    // ==================== getClaimDocument ====================
+    @Test
+    public void testGetClaimDocument_Success() {
+        ClaimDocument doc = new ClaimDocument();
+        doc.setFileData(new byte[]{1, 2, 3});
+        when(documentRepository.findFirstByClaimIdOrderByIdDesc(1L)).thenReturn(Optional.of(doc));
+
+        ClaimDocument result = claimService.getClaimDocument(1L);
+        assertNotNull(result);
+    }
+
+    @Test
+    public void testGetClaimDocument_NotFound() {
+        when(documentRepository.findFirstByClaimIdOrderByIdDesc(99L)).thenReturn(Optional.empty());
+        assertThrows(ClaimNotFoundException.class, () -> claimService.getClaimDocument(99L));
+    }
+
+    // ==================== getClaimStatus ====================
+    @Test
+    public void testGetClaimStatus() {
+        Claim claim = new Claim();
+        claim.setId(1L);
+        claim.setClaimStatus(ClaimStatus.APPROVED);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+
+        ClaimResponseDTO result = claimService.getClaimStatus(1L);
+        assertEquals(1L, result.getClaimId());
+        assertEquals("APPROVED", result.getStatus());
+    }
+
+    @Test
+    public void testGetClaimStatus_NotFound() {
+        when(claimRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(ClaimNotFoundException.class, () -> claimService.getClaimStatus(99L));
+    }
+
+    // ==================== getClaimById ====================
+    @Test
+    public void testGetClaimById() {
+        Claim claim = new Claim();
+        claim.setId(1L);
+        claim.setPolicyId(2L);
+        claim.setUserId(3L);
+        claim.setClaimAmount(500.0);
+        claim.setDescription("Desc");
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+
+        ClaimResponseDTO result = claimService.getClaimById(1L);
+        assertEquals(1L, result.getClaimId());
+        assertEquals(2L, result.getPolicyId());
+        assertEquals(3L, result.getUserId());
+        assertEquals(500.0, result.getClaimAmount());
+        assertEquals("Desc", result.getDescription());
+        assertEquals("SUBMITTED", result.getStatus());
+    }
+
+    // ==================== updateClaimStatus ====================
+    @Test
+    public void testUpdateClaimStatus_SubmittedToUnderReview() {
+        Claim claim = new Claim();
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
         claimService.updateClaimStatus(1L, "UNDER_REVIEW");
-
         assertEquals(ClaimStatus.UNDER_REVIEW, claim.getClaimStatus());
-        verify(claimRepository, times(1)).save(claim);
     }
 
-    /**
-     * Given: Valid Claim ID and illegal transition
-     * When: updateClaimStatus is called
-     * Then: Throws RuntimeException
-     */
     @Test
-    void testUpdateClaimStatus_InvalidTransition() {
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim)); // Currently SUBMITTED
+    public void testUpdateClaimStatus_UnderReviewToApproved() {
+        Claim claim = new Claim();
+        claim.setClaimStatus(ClaimStatus.UNDER_REVIEW);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        // SUBMITTED -> APPROVED is invalid
+        claimService.updateClaimStatus(1L, "APPROVED");
+        assertEquals(ClaimStatus.APPROVED, claim.getClaimStatus());
+    }
+
+    @Test
+    public void testUpdateClaimStatus_UnderReviewToRejected() {
+        Claim claim = new Claim();
+        claim.setClaimStatus(ClaimStatus.UNDER_REVIEW);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+
+        claimService.updateClaimStatus(1L, "REJECTED");
+        assertEquals(ClaimStatus.REJECTED, claim.getClaimStatus());
+    }
+
+    @Test
+    public void testUpdateClaimStatus_InvalidTransition() {
+        Claim claim = new Claim();
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+
         assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, "APPROVED"));
-        verify(claimRepository, times(0)).save(any(Claim.class));
     }
 
-    /**
-     * Given: Invalid status string
-     * When: updateClaimStatus is called
-     * Then: Throws RuntimeException
-     */
     @Test
-    void testUpdateClaimStatus_InvalidStatus() {
+    public void testUpdateClaimStatus_InvalidStatus() {
+        Claim claim = new Claim();
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
         assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, "INVALID"));
     }
 
-    /**
-     * Given: Valid userId
-     * When: getClaimsByUserId is called
-     * Then: returns list of claims mapped to DTO
-     */
     @Test
-    void testGetClaimsByUserId() {
-        when(claimRepository.findByUserId(200L)).thenReturn(Arrays.asList(claim, claim));
+    public void testUpdateClaimStatus_ApprovedToClosed() {
+        Claim claim = new Claim();
+        claim.setClaimStatus(ClaimStatus.APPROVED);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        List<ClaimResponseDTO> responseList = claimService.getClaimsByUserId(200L);
-
-        assertEquals(2, responseList.size());
-        assertEquals(1L, responseList.get(0).getClaimId());
+        claimService.updateClaimStatus(1L, "CLOSED");
+        assertEquals(ClaimStatus.CLOSED, claim.getClaimStatus());
     }
 
-    /**
-     * Given: Requests for claim stats
-     * When: getClaimStats is called
-     * Then: Returns accurate counts mapped in ClaimStatsDTO
-     */
+    // ==================== getClaimsByUserId ====================
     @Test
-    void testGetClaimStats() {
+    public void testGetClaimsByUserId() {
+        Claim claim = new Claim();
+        claim.setId(1L);
+        claim.setPolicyId(2L);
+        claim.setUserId(1L);
+        claim.setClaimAmount(100.0);
+        claim.setDescription("Desc");
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+
+        when(claimRepository.findByUserId(1L)).thenReturn(Collections.singletonList(claim));
+
+        List<ClaimResponseDTO> result = claimService.getClaimsByUserId(1L);
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getClaimId());
+        assertEquals("SUBMITTED", result.get(0).getStatus());
+    }
+
+    // ==================== getClaimStats ====================
+    @Test
+    public void testGetClaimStats() {
         when(claimRepository.count()).thenReturn(10L);
         when(claimRepository.countByClaimStatus(ClaimStatus.SUBMITTED)).thenReturn(5L);
         when(claimRepository.countByClaimStatus(ClaimStatus.APPROVED)).thenReturn(3L);
         when(claimRepository.countByClaimStatus(ClaimStatus.REJECTED)).thenReturn(2L);
 
         ClaimStatsDTO stats = claimService.getClaimStats();
-
         assertEquals(10L, stats.getTotalClaims());
         assertEquals(5L, stats.getSubmittedClaims());
         assertEquals(3L, stats.getApprovedClaims());
         assertEquals(2L, stats.getRejectedClaims());
+    }
+
+    // ==================== getAllClaims ====================
+    @Test
+    public void testGetAllClaims() {
+        Claim claim = new Claim();
+        claim.setId(1L);
+        claim.setPolicyId(2L);
+        claim.setUserId(3L);
+        claim.setClaimAmount(500.0);
+        claim.setDescription("Desc");
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+
+        Page<Claim> page = new PageImpl<>(Collections.singletonList(claim));
+        when(claimRepository.findAll(any(Pageable.class))).thenReturn(page);
+
+        Page<ClaimResponseDTO> result = claimService.getAllClaims(PageRequest.of(0, 10));
+        assertEquals(1, result.getContent().size());
+        assertEquals("SUBMITTED", result.getContent().get(0).getStatus());
+    }
+
+    // ==================== updateClaim ====================
+    @Test
+    public void testUpdateClaim() {
+        Claim existing = new Claim();
+        existing.setId(1L);
+        existing.setClaimAmount(100.0);
+        existing.setDescription("Old");
+        existing.setPolicyId(1L);
+        existing.setUserId(1L);
+        existing.setClaimStatus(ClaimStatus.SUBMITTED);
+
+        ClaimRequestDTO dto = new ClaimRequestDTO();
+        dto.setClaimAmount(200.0);
+        dto.setDescription("New");
+        dto.setPolicyId(2L);
+
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(claimRepository.save(any(Claim.class))).thenReturn(existing);
+
+        ClaimResponseDTO result = claimService.updateClaim(1L, dto);
+        assertNotNull(result);
+        assertEquals("Claim updated successfully by Admin", result.getMessage());
+    }
+
+    // ==================== deleteClaim ====================
+    @Test
+    public void testDeleteClaim() {
+        Claim claim = new Claim();
+        claim.setId(1L);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+
+        claimService.deleteClaim(1L);
+
+        verify(documentRepository, times(1)).deleteByClaimId(1L);
+        verify(claimRepository, times(1)).delete(claim);
+    }
+
+    @Test
+    public void testDeleteClaim_NotFound() {
+        when(claimRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(ClaimNotFoundException.class, () -> claimService.deleteClaim(99L));
     }
 }

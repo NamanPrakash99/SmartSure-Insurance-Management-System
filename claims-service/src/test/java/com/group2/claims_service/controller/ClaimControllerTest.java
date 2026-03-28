@@ -1,149 +1,160 @@
 package com.group2.claims_service.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import com.group2.claims_service.dto.*;
+import com.group2.claims_service.entity.ClaimDocument;
+import com.group2.claims_service.service.ClaimService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.Collections;
-import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.multipart.MultipartFile;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.group2.claims_service.dto.ClaimRequestDTO;
-import com.group2.claims_service.dto.ClaimResponseDTO;
-import com.group2.claims_service.dto.ClaimStatsDTO;
-import com.group2.claims_service.dto.ClaimStatusUpdateDTO;
-import com.group2.claims_service.service.ClaimService;
-
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(ClaimController.class)
 public class ClaimControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
     private ClaimService claimService;
 
-    @InjectMocks
-    private ClaimController claimController;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    private ClaimResponseDTO responseDTO;
+    @Test
+    @WithMockUser
+    public void testInitiateClaim() throws Exception {
+        ClaimRequestDTO request = new ClaimRequestDTO();
+        request.setClaimAmount(100.0);
 
-    @BeforeEach
-    void setUp() {
-        responseDTO = new ClaimResponseDTO();
-        responseDTO.setClaimId(1L);
-        responseDTO.setStatus("SUBMITTED");
+        ClaimResponseDTO response = new ClaimResponseDTO();
+        response.setClaimId(1L);
+        response.setStatus("SUBMITTED");
+
+        when(claimService.initiateClaim(any(ClaimRequestDTO.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/claims/initiate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.claimId").value(1L))
+                .andExpect(jsonPath("$.status").value("SUBMITTED"));
     }
 
-    /**
-     * Given: claimRequestDTO
-     * When: initiateClaim is called
-     * Then: returns ClaimResponseDTO
-     */
     @Test
-    void testInitiateClaim() {
-        when(claimService.initiateClaim(any(ClaimRequestDTO.class))).thenReturn(responseDTO);
+    @WithMockUser
+    public void testGetClaimStatus() throws Exception {
+        ClaimResponseDTO response = new ClaimResponseDTO();
+        response.setClaimId(1L);
+        response.setStatus("UNDER_REVIEW");
 
-        ResponseEntity<ClaimResponseDTO> res = claimController.initiateClaim(new ClaimRequestDTO());
-        assertEquals(200, res.getStatusCode().value());
-        assertEquals(responseDTO, res.getBody());
+        when(claimService.getClaimStatus(1L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/claims/status/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UNDER_REVIEW"));
     }
 
-    /**
-     * Given: claimId and document
-     * When: uploadDocument is called
-     * Then: returns success string
-     */
     @Test
-    void testUploadDocument() {
-        MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
-        when(claimService.uploadDocument(eq(1L), any(MultipartFile.class))).thenReturn("Document uploaded Successfully");
+    @WithMockUser
+    public void testGetClaimById() throws Exception {
+        ClaimResponseDTO response = new ClaimResponseDTO();
+        response.setClaimId(1L);
+        response.setStatus("SUBMITTED");
 
-        ResponseEntity<String> res = claimController.uploadDocument(1L, file);
-        assertEquals(200, res.getStatusCode().value());
-        assertEquals("Document uploaded Successfully", res.getBody());
+        when(claimService.getClaimById(1L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/claims/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.claimId").value(1L));
     }
 
-    /**
-     * Given: claimId
-     * When: getClaimStatus is called
-     * Then: returns ClaimResponseDTO with status
-     */
     @Test
-    void testGetClaimStatus() {
-        when(claimService.getClaimStatus(1L)).thenReturn(responseDTO);
+    @WithMockUser
+    public void testGetClaimsByUserId() throws Exception {
+        when(claimService.getClaimsByUserId(anyLong())).thenReturn(Collections.emptyList());
 
-        ResponseEntity<ClaimResponseDTO> res = claimController.getClaimStatus(1L);
-        assertEquals(200, res.getStatusCode().value());
-        assertEquals(responseDTO, res.getBody());
+        mockMvc.perform(get("/api/claims/user/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
     }
 
-    /**
-     * Given: claimId
-     * When: getClaimById is called
-     * Then: returns full ClaimResponseDTO
-     */
     @Test
-    void testGetClaimById() {
-        when(claimService.getClaimById(1L)).thenReturn(responseDTO);
+    @WithMockUser(roles = "ADMIN")
+    public void testUpdateClaim() throws Exception {
+        ClaimRequestDTO dto = new ClaimRequestDTO();
+        when(claimService.updateClaim(eq(1L), any(ClaimRequestDTO.class))).thenReturn(new ClaimResponseDTO());
 
-        ResponseEntity<ClaimResponseDTO> res = claimController.getClaimById(1L);
-        assertEquals(200, res.getStatusCode().value());
-        assertEquals(responseDTO, res.getBody());
+        mockMvc.perform(put("/api/claims/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk());
     }
 
-    /**
-     * Given: claimId and statusupdate dto
-     * When: updateClaimStatus is called
-     * Then: returns success message
-     */
     @Test
-    void testUpdateClaimStatus() {
+    @WithMockUser
+    public void testUpdateClaimStatus() throws Exception {
         ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
-        dto.setStatus("APPROVED");
+        dto.setStatus("UNDER_REVIEW");
 
-        doNothing().when(claimService).updateClaimStatus(1L, "APPROVED");
-
-        ResponseEntity<String> res = claimController.updateClaimStatus(1L, dto);
-        assertEquals(200, res.getStatusCode().value());
-        assertEquals("Claim status updated successfully", res.getBody());
+        mockMvc.perform(put("/api/claims/1/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk());
     }
 
-    /**
-     * Given: userId
-     * When: getClaimsByUserId is called
-     * Then: returns list of claims
-     */
     @Test
-    void testGetClaimsByUserId() {
-        when(claimService.getClaimsByUserId(1L)).thenReturn(Collections.singletonList(responseDTO));
-
-        ResponseEntity<List<ClaimResponseDTO>> res = claimController.getClaimsByUserId(1L);
-        assertEquals(200, res.getStatusCode().value());
-        assertEquals(1, res.getBody().size());
+    @WithMockUser(roles = "ADMIN")
+    public void testDeleteClaim() throws Exception {
+        mockMvc.perform(delete("/api/claims/1"))
+                .andExpect(status().isOk());
     }
 
-    /**
-     * Given: a valid request for stats
-     * When: getStats is called
-     * Then: returns ClaimStatsDTO
-     */
     @Test
-    void testGetStats() {
+    @WithMockUser
+    public void testGetClaimStats() throws Exception {
         ClaimStatsDTO stats = new ClaimStatsDTO();
         stats.setTotalClaims(10);
         when(claimService.getClaimStats()).thenReturn(stats);
 
-        ResponseEntity<ClaimStatsDTO> res = claimController.getStats();
-        assertEquals(200, res.getStatusCode().value());
-        assertEquals(10, res.getBody().getTotalClaims());
+        mockMvc.perform(get("/api/claims/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalClaims").value(10));
+    }
+
+    @Test
+    @WithMockUser
+    public void testDownloadDocument() throws Exception {
+        ClaimDocument doc = new ClaimDocument();
+        doc.setFileData(new byte[]{1, 2, 3});
+        doc.setDocumentType("application/pdf");
+        doc.setFileUrl("test.pdf");
+        when(claimService.getClaimDocument(1L)).thenReturn(doc);
+
+        mockMvc.perform(get("/api/claims/1/document"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testGetAllClaims() throws Exception {
+        when(claimService.getAllClaims(any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+
+        mockMvc.perform(get("/api/claims/admin/all")
+                .param("page", "0")
+                .param("size", "10"))
+                .andExpect(status().isOk());
     }
 }

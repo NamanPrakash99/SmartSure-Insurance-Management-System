@@ -1,87 +1,103 @@
 package com.group2.policy_service.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group2.policy_service.dto.PolicyRequestDTO;
 import com.group2.policy_service.dto.PolicyResponseDTO;
 import com.group2.policy_service.dto.UserPolicyResponseDTO;
 import com.group2.policy_service.service.PolicyCommandService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(MockitoExtension.class)
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(PolicyCommandController.class)
 public class PolicyCommandControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
     private PolicyCommandService policyCommandService;
 
-    @InjectMocks
-    private PolicyCommandController policyCommandController;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
-    void testPurchasePolicy() {
+    @WithMockUser
+    public void testPurchasePolicy() throws Exception {
         UserPolicyResponseDTO response = new UserPolicyResponseDTO();
+        response.setId(1L);
         when(policyCommandService.purchasePolicy(1L)).thenReturn(response);
 
-        UserPolicyResponseDTO result = policyCommandController.purchasePolicy(1L);
-        assertEquals(response, result);
+        mockMvc.perform(post("/api/policies/purchase")
+                .param("policyId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L));
     }
 
     @Test
-    void testCreatePolicy() {
+    @WithMockUser(roles = "ADMIN")
+    public void testCreatePolicy() throws Exception {
+        PolicyRequestDTO request = new PolicyRequestDTO();
+        request.setPolicyName("Health");
         PolicyResponseDTO response = new PolicyResponseDTO();
-        when(policyCommandService.createPolicy(any(PolicyRequestDTO.class))).thenReturn(response);
+        response.setPolicyName("Health");
+        when(policyCommandService.createPolicy(any())).thenReturn(response);
 
-        PolicyResponseDTO result = policyCommandController.createPolicy(new PolicyRequestDTO());
-        assertEquals(response, result);
+        mockMvc.perform(post("/api/admin/policies")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.policyName").value("Health"));
     }
 
     @Test
-    void testUpdatePolicy() {
-        PolicyResponseDTO response = new PolicyResponseDTO();
-        when(policyCommandService.updatePolicy(eq(1L), any(PolicyRequestDTO.class))).thenReturn(response);
+    @WithMockUser(roles = "ADMIN")
+    public void testUpdatePolicy() throws Exception {
+        PolicyRequestDTO request = new PolicyRequestDTO();
+        when(policyCommandService.updatePolicy(eq(1L), any())).thenReturn(new PolicyResponseDTO());
 
-        PolicyResponseDTO result = policyCommandController.updatePolicy(1L, new PolicyRequestDTO());
-        assertEquals(response, result);
+        mockMvc.perform(put("/api/admin/policies/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testDeletePolicy() {
-        doNothing().when(policyCommandService).deletePolicy(1L);
-
-        policyCommandController.deletePolicy(1L);
-
-        verify(policyCommandService, times(1)).deletePolicy(1L);
+    @WithMockUser(roles = "ADMIN")
+    public void testDeletePolicy() throws Exception {
+        mockMvc.perform(delete("/api/admin/policies/1"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testCancelPolicy() {
-        UserPolicyResponseDTO response = new UserPolicyResponseDTO();
-        when(policyCommandService.cancelPolicy(1L)).thenReturn(response);
-
-        ResponseEntity<UserPolicyResponseDTO> result = policyCommandController.cancelPolicy(1L);
-        assertEquals(200, result.getStatusCode().value());
-        assertEquals(response, result.getBody());
+    @WithMockUser(roles = "ADMIN")
+    public void testCancelPolicy() throws Exception {
+        when(policyCommandService.cancelPolicy(1L)).thenReturn(new UserPolicyResponseDTO());
+        mockMvc.perform(put("/api/admin/policies/1/cancel"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testRenewPolicy() {
-        UserPolicyResponseDTO response = new UserPolicyResponseDTO();
-        when(policyCommandService.renewPolicy(1L)).thenReturn(response);
+    @WithMockUser
+    public void testRenewPolicy() throws Exception {
+        when(policyCommandService.renewPolicy(1L)).thenReturn(new UserPolicyResponseDTO());
+        mockMvc.perform(post("/api/policies/renew/1"))
+                .andExpect(status().isOk());
+    }
 
-        ResponseEntity<UserPolicyResponseDTO> result = policyCommandController.renewPolicy(1L);
-        assertEquals(200, result.getStatusCode().value());
-        assertEquals(response, result.getBody());
+    @Test
+    @WithMockUser
+    public void testDeleteUserPolicy() throws Exception {
+        mockMvc.perform(delete("/api/policies/1"))
+                .andExpect(status().isOk());
     }
 }

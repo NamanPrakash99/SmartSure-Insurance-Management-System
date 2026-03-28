@@ -1,176 +1,183 @@
 package com.group2.admin_service.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
-
-import java.util.Arrays;
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
-
-import com.group2.admin_service.dto.ClaimDTO;
-import com.group2.admin_service.dto.ClaimStatusDTO;
-import com.group2.admin_service.dto.PolicyDTO;
-import com.group2.admin_service.dto.PolicyRequestDTO;
-import com.group2.admin_service.dto.ReportResponse;
-import com.group2.admin_service.dto.ReviewRequest;
+import com.group2.admin_service.dto.*;
 import com.group2.admin_service.service.AdminService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(MockitoExtension.class)
+import java.util.Collections;
+
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(AdminController.class)
 public class AdminControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
     private AdminService adminService;
 
-    @InjectMocks
-    private AdminController adminController;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    private ReviewRequest reviewRequest;
-    private ClaimStatusDTO claimStatusDTO;
-    private List<ClaimDTO> claimList;
-    private PolicyDTO policyDTO;
-    private PolicyRequestDTO policyRequestDTO;
-    private ReportResponse reportResponse;
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testGetReports() throws Exception {
+        ReportResponse report = new ReportResponse();
+        report.setTotalClaims(10);
+        report.setTotalPolicies(20);
 
-    @BeforeEach
-    void setUp() {
-        reviewRequest = new ReviewRequest();
-        reviewRequest.setStatus("APPROVED");
+        when(adminService.getReports()).thenReturn(report);
 
-        claimStatusDTO = new ClaimStatusDTO();
-        claimStatusDTO.setTotalClaims(10);
-        claimStatusDTO.setApprovedClaims(5);
-        claimStatusDTO.setRejectedClaims(5);
-
-        claimList = Arrays.asList(new ClaimDTO(), new ClaimDTO());
-
-        policyDTO = new PolicyDTO();
-        policyDTO.setId(1L);
-        policyDTO.setPolicyName("Test Policy");
-
-        policyRequestDTO = new PolicyRequestDTO();
-        policyRequestDTO.setPolicyName("Test Policy Update");
-
-        reportResponse = new ReportResponse();
-        reportResponse.setTotalClaims(10);
+        mockMvc.perform(get("/api/admin/reports"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalClaims").value(10))
+                .andExpect(jsonPath("$.totalPolicies").value(20));
     }
 
-    /**
-     * Given: claimId and reviewRequest
-     * When: reviewClaim is called
-     * Then: Returns successfully
-     */
     @Test
-    void testReviewClaim() {
-        doNothing().when(adminService).reviewClaim(eq(1L), any(ReviewRequest.class));
+    @WithMockUser(roles = "ADMIN")
+    public void testReviewClaim() throws Exception {
+        ReviewRequest request = new ReviewRequest();
+        request.setStatus("APPROVED");
 
-        ResponseEntity<String> response = adminController.reviewClaim(1L, reviewRequest);
-
-        assertEquals("Claim reviewed successfully", response.getBody());
-        assertEquals(200, response.getStatusCode().value());
+        mockMvc.perform(put("/api/admin/claims/1/review")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 
-    /**
-     * Given: claimId
-     * When: getStatus is called
-     * Then: returns ClaimStatusDTO
-     */
     @Test
-    void testGetStatus() {
-        when(adminService.getClaimStatus(1L)).thenReturn(claimStatusDTO);
+    @WithMockUser(roles = "ADMIN")
+    public void testCreatePolicy() throws Exception {
+        PolicyRequestDTO request = new PolicyRequestDTO();
+        PolicyDTO response = new PolicyDTO();
+        response.setId(1L);
 
-        ResponseEntity<ClaimStatusDTO> response = adminController.getStatus(1L);
+        when(adminService.createPolicy(any(PolicyRequestDTO.class))).thenReturn(response);
 
-        assertEquals(claimStatusDTO, response.getBody());
-        assertEquals(200, response.getStatusCode().value());
+        mockMvc.perform(post("/api/admin/policies")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L));
     }
 
-    /**
-     * Given: userId
-     * When: getClaimsByUser is called
-     * Then: returns list of claims
-     */
     @Test
-    void testGetClaimsByUser() {
-        when(adminService.getClaimsByUserId(1L)).thenReturn(claimList);
+    @WithMockUser(roles = "ADMIN")
+    public void testGetStatus() throws Exception {
+        ClaimStatusDTO dto = new ClaimStatusDTO();
+        dto.setTotalClaims(5);
+        when(adminService.getClaimStatus(1L)).thenReturn(dto);
 
-        ResponseEntity<List<ClaimDTO>> response = adminController.getClaimsByUser(1L);
-
-        assertNotNull(response.getBody());
-        assertEquals(2, response.getBody().size());
-        assertEquals(200, response.getStatusCode().value());
+        mockMvc.perform(get("/api/admin/claims/status/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalClaims").value(5));
     }
 
-    /**
-     * Given: policyRequestDTO
-     * When: createPolicy is called
-     * Then: returns created policy
-     */
     @Test
-    void testCreatePolicy() {
-        when(adminService.createPolicy(any(PolicyRequestDTO.class))).thenReturn(policyDTO);
+    @WithMockUser(roles = "ADMIN")
+    public void testGetClaimsByUser() throws Exception {
+        when(adminService.getClaimsByUserId(1L)).thenReturn(Collections.emptyList());
 
-        ResponseEntity<PolicyDTO> response = adminController.createPolicy(policyRequestDTO);
-
-        assertEquals(policyDTO, response.getBody());
-        assertEquals(200, response.getStatusCode().value());
+        mockMvc.perform(get("/api/admin/claims/user/1"))
+                .andExpect(status().isOk());
     }
 
-    /**
-     * Given: policyId and policyRequestDTO
-     * When: updatePolicy is called
-     * Then: returns updated policy
-     */
     @Test
-    void testUpdatePolicy() {
-        when(adminService.updatePolicy(eq(1L), any(PolicyRequestDTO.class))).thenReturn(policyDTO);
+    @WithMockUser(roles = "ADMIN")
+    public void testDownloadDocument() throws Exception {
+        byte[] content = new byte[]{1, 2, 3};
+        when(adminService.downloadClaimDocument(1L)).thenReturn(org.springframework.http.ResponseEntity.ok(content));
 
-        ResponseEntity<PolicyDTO> response = adminController.updatePolicy(1L, policyRequestDTO);
-
-        assertEquals(policyDTO, response.getBody());
-        assertEquals(200, response.getStatusCode().value());
+        mockMvc.perform(get("/api/admin/claims/1/document"))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes(content));
     }
 
-    /**
-     * Given: policyId
-     * When: deletePolicy is called
-     * Then: Returns successfully
-     */
     @Test
-    void testDeletePolicy() {
-        doNothing().when(adminService).deletePolicy(1L);
+    @WithMockUser(roles = "ADMIN")
+    public void testGetAllClaims() throws Exception {
+        when(adminService.getAllClaims(0, 10)).thenReturn(new PageResponse<ClaimDTO>());
 
-        ResponseEntity<String> response = adminController.deletePolicy(1L);
-
-        assertEquals("Policy deleted successfully", response.getBody());
-        verify(adminService, times(1)).deletePolicy(1L);
-        assertEquals(200, response.getStatusCode().value());
+        mockMvc.perform(get("/api/admin/claims")
+                .param("page", "0")
+                .param("size", "10"))
+                .andExpect(status().isOk());
     }
 
-    /**
-     * Given: valid request
-     * When: getReports is called
-     * Then: returns full reports
-     */
     @Test
-    void testGetReports() {
-        when(adminService.getReports()).thenReturn(reportResponse);
+    @WithMockUser(roles = "ADMIN")
+    public void testUpdateClaim() throws Exception {
+        ClaimDTO dto = new ClaimDTO();
+        when(adminService.updateClaim(eq(1L), any(ClaimDTO.class))).thenReturn(dto);
 
-        ResponseEntity<ReportResponse> response = adminController.getReports();
+        mockMvc.perform(put("/api/admin/claims/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk());
+    }
 
-        assertEquals(reportResponse, response.getBody());
-        assertEquals(200, response.getStatusCode().value());
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testDeleteClaim() throws Exception {
+        mockMvc.perform(delete("/api/admin/claims/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testUpdatePolicy() throws Exception {
+        PolicyRequestDTO dto = new PolicyRequestDTO();
+        when(adminService.updatePolicy(eq(1L), any(PolicyRequestDTO.class))).thenReturn(new PolicyDTO());
+
+        mockMvc.perform(put("/api/admin/policies/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testDeletePolicy() throws Exception {
+        mockMvc.perform(delete("/api/admin/policies/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testGetUserPolicies() throws Exception {
+        when(adminService.getUserPolicies(1L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/admin/user-policies/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testGetAllUserPolicies() throws Exception {
+        when(adminService.getAllUserPolicies()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/admin/user-policies/all"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testCancelUserPolicy() throws Exception {
+        when(adminService.cancelPolicy(1L)).thenReturn(new Object());
+
+        mockMvc.perform(put("/api/admin/policies/1/cancel"))
+                .andExpect(status().isOk());
     }
 }

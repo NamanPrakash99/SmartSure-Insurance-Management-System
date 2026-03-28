@@ -1,40 +1,27 @@
 package com.group2.admin_service.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
+import com.group2.admin_service.dto.*;
+import com.group2.admin_service.feign.ClaimsFeignClient;
+import com.group2.admin_service.feign.PolicyFeignClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.http.ResponseEntity;
 
-import com.group2.admin_service.dto.ClaimDTO;
-import com.group2.admin_service.dto.ClaimReviewEvent;
-import com.group2.admin_service.dto.ClaimStatusDTO;
-import com.group2.admin_service.dto.PolicyDTO;
-import com.group2.admin_service.dto.PolicyRequestDTO;
-import com.group2.admin_service.dto.PolicyStatsDTO;
-import com.group2.admin_service.dto.ReportResponse;
-import com.group2.admin_service.dto.ReviewRequest;
-import com.group2.admin_service.feign.ClaimsFeignClient;
-import com.group2.admin_service.feign.PolicyFeignClient;
-import org.springframework.test.util.ReflectionTestUtils;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class AdminServiceTest {
+
+    @InjectMocks
+    private AdminService adminService;
 
     @Mock
     private ClaimsFeignClient claimsFeignClient;
@@ -45,189 +32,293 @@ public class AdminServiceTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
-    @InjectMocks
-    private AdminService adminService;
-
-    @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(adminService, "rabbitTemplate", rabbitTemplate);
-    }
-
-    /**
-     * Given: claimId and ReviewRequest
-     * When: reviewClaim is called
-     * Then: rabbitTemplate sends the ClaimReviewEvent
-     */
+    // ==================== reviewClaim ====================
     @Test
-    void testReviewClaim() {
+    public void testReviewClaim_Success() {
         ReviewRequest request = new ReviewRequest();
         request.setStatus("APPROVED");
 
-        doNothing().when(rabbitTemplate).convertAndSend(eq("claim.exchange"), eq("claim.review"), any(ClaimReviewEvent.class));
-        
         adminService.reviewClaim(1L, request);
 
         verify(rabbitTemplate, times(1)).convertAndSend(eq("claim.exchange"), eq("claim.review"), any(ClaimReviewEvent.class));
     }
 
-    /**
-     * Given: Exception during reviewClaim
-     * When: recoverReviewClaim is called
-     * Then: RuntimeException is thrown showing fallback
-     */
+    // ==================== getClaimStatus ====================
     @Test
-    void testRecoverReviewClaim() {
-        assertThrows(RuntimeException.class, () -> 
-            adminService.recoverReviewClaim(1L, new ReviewRequest(), new Exception("Network Error"))
-        );
-    }
-
-    /**
-     * Given: valid claimId
-     * When: getClaimStatus is called
-     * Then: Feign client fetches status
-     */
-    @Test
-    void testGetClaimStatus() {
-        ClaimStatusDTO status = new ClaimStatusDTO();
-        when(claimsFeignClient.getClaimStatus(1L)).thenReturn(status);
+    public void testGetClaimStatus() {
+        ClaimStatusDTO dto = new ClaimStatusDTO();
+        dto.setTotalClaims(5);
+        when(claimsFeignClient.getClaimStatus(1L)).thenReturn(dto);
 
         ClaimStatusDTO result = adminService.getClaimStatus(1L);
-        assertNotNull(result);
-        verify(claimsFeignClient, times(1)).getClaimStatus(1L);
-    }
-    
-    /**
-     * Given: Exception while getting claim status
-     * When: recoverGetClaimStatus is called
-     * Then: returns an empty ClaimStatusDTO
-     */
-    @Test
-    void testRecoverGetClaimStatus() {
-        ClaimStatusDTO result = adminService.recoverGetClaimStatus(1L, new Exception("Fail"));
-        assertNotNull(result);
+        assertEquals(dto, result);
+        assertEquals(5, result.getTotalClaims());
     }
 
-    /**
-     * Given: valid userId
-     * When: getClaimsByUserId is called
-     * Then: Feign client returns claim list
-     */
+    // ==================== getClaimsByUserId ====================
     @Test
-    void testGetClaimsByUserId() {
-        when(claimsFeignClient.getClaimsByUserId(1L)).thenReturn(Arrays.asList(new ClaimDTO(), new ClaimDTO()));
+    public void testGetClaimsByUserId() {
+        ClaimDTO c = new ClaimDTO();
+        c.setClaimId(10L);
+        List<ClaimDTO> list = Collections.singletonList(c);
+        when(claimsFeignClient.getClaimsByUserId(1L)).thenReturn(list);
+
         List<ClaimDTO> result = adminService.getClaimsByUserId(1L);
-        assertEquals(2, result.size());
+        assertEquals(1, result.size());
+        assertEquals(10L, result.get(0).getClaimId());
     }
 
-    /**
-     * Given: Valid policy dto
-     * When: createPolicy is called
-     * Then: Returns created Policy
-     */
+    // ==================== downloadClaimDocument ====================
     @Test
-    void testCreatePolicy() {
-        PolicyDTO dto = new PolicyDTO();
-        when(policyFeignClient.createPolicy(any(PolicyRequestDTO.class))).thenReturn(dto);
+    public void testDownloadClaimDocument() {
+        byte[] content = new byte[]{1, 2, 3};
+        ResponseEntity<byte[]> response = ResponseEntity.ok(content);
+        when(claimsFeignClient.downloadDocument(1L)).thenReturn(response);
 
-        PolicyDTO result = adminService.createPolicy(new PolicyRequestDTO());
+        ResponseEntity<byte[]> result = adminService.downloadClaimDocument(1L);
+        assertEquals(response, result);
+    }
+
+    // ==================== getAllClaims (complex mapping) ====================
+    @Test
+    public void testGetAllClaims_Mapping() {
+        Map<String, Object> mockData = new HashMap<>();
+        mockData.put("totalPages", 2);
+        mockData.put("totalElements", 15);
+        mockData.put("number", 0);
+        mockData.put("size", 10);
+
+        List<Map<String, Object>> content = new ArrayList<>();
+        Map<String, Object> claimMap = new HashMap<>();
+        claimMap.put("claimId", 1L);
+        claimMap.put("userId", 5L);
+        claimMap.put("claimAmount", 500.0);
+        claimMap.put("status", "PENDING");
+        claimMap.put("description", "Test claim");
+        content.add(claimMap);
+        mockData.put("content", content);
+
+        when(claimsFeignClient.getAllClaims(0, 10)).thenReturn(mockData);
+
+        PageResponse<ClaimDTO> result = adminService.getAllClaims(0, 10);
+
+        assertEquals(2, result.getTotalPages());
+        assertEquals(15, result.getTotalElements());
+        assertEquals(0, result.getNumber());
+        assertEquals(10, result.getSize());
+        assertEquals(1, result.getContent().size());
+        assertEquals(1L, result.getContent().get(0).getClaimId());
+    }
+
+    @Test
+    public void testGetAllClaims_NullData() {
+        when(claimsFeignClient.getAllClaims(0, 10)).thenReturn(null);
+        PageResponse<ClaimDTO> result = adminService.getAllClaims(0, 10);
         assertNotNull(result);
     }
 
-    /**
-     * Given: Exception while creating policy
-     * When: recoverCreatePolicy is called
-     * Then: Throws RuntimeException
-     */
     @Test
-    void testRecoverCreatePolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverCreatePolicy(new PolicyRequestDTO(), new Exception()));
+    public void testGetAllClaims_EmptyContent() {
+        Map<String, Object> mockData = new HashMap<>();
+        mockData.put("totalPages", 0);
+        mockData.put("totalElements", 0);
+        mockData.put("number", 0);
+        mockData.put("size", 10);
+        mockData.put("content", Collections.emptyList());
+
+        when(claimsFeignClient.getAllClaims(0, 10)).thenReturn(mockData);
+        PageResponse<ClaimDTO> result = adminService.getAllClaims(0, 10);
+        assertEquals(0, result.getContent().size());
     }
 
-    /**
-     * Given: valid policy id and update dto
-     * When: updatePolicy is called
-     * Then: Returns updated Policy
-     */
     @Test
-    void testUpdatePolicy() {
-        PolicyDTO dto = new PolicyDTO();
-        when(policyFeignClient.updatePolicy(eq(1L), any(PolicyRequestDTO.class))).thenReturn(dto);
+    public void testGetAllClaims_NullFields() {
+        Map<String, Object> mockData = new HashMap<>();
+        mockData.put("totalPages", null);
+        mockData.put("totalElements", null);
+        mockData.put("number", null);
+        mockData.put("size", null);
+        mockData.put("content", null);
 
-        PolicyDTO result = adminService.updatePolicy(1L, new PolicyRequestDTO());
+        when(claimsFeignClient.getAllClaims(0, 10)).thenReturn(mockData);
+        PageResponse<ClaimDTO> result = adminService.getAllClaims(0, 10);
         assertNotNull(result);
     }
-    
-    /**
-     * Given: Exception while updating policy
-     * When: recoverUpdatePolicy is called
-     * Then: Throws RuntimeException
-     */
+
+    // ==================== updateClaim ====================
     @Test
-    void testRecoverUpdatePolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverUpdatePolicy(1L, new PolicyRequestDTO(), new Exception()));
+    public void testUpdateClaim() {
+        ClaimDTO dto = new ClaimDTO();
+        dto.setClaimId(1L);
+        when(claimsFeignClient.updateClaim(1L, dto)).thenReturn(dto);
+
+        ClaimDTO result = adminService.updateClaim(1L, dto);
+        assertEquals(1L, result.getClaimId());
     }
 
-    /**
-     * Given: Valid policy id
-     * When: deletePolicy is called
-     * Then: Feign client delete is invoked
-     */
+    // ==================== createPolicy ====================
     @Test
-    void testDeletePolicy() {
-        doNothing().when(policyFeignClient).deletePolicy(1L);
+    public void testCreatePolicy() {
+        PolicyRequestDTO request = new PolicyRequestDTO();
+        PolicyDTO response = new PolicyDTO();
+        response.setId(1L);
+        when(policyFeignClient.createPolicy(request)).thenReturn(response);
+
+        PolicyDTO result = adminService.createPolicy(request);
+        assertEquals(1L, result.getId());
+    }
+
+    // ==================== updatePolicy ====================
+    @Test
+    public void testUpdatePolicy() {
+        PolicyRequestDTO request = new PolicyRequestDTO();
+        PolicyDTO response = new PolicyDTO();
+        response.setId(1L);
+        when(policyFeignClient.updatePolicy(1L, request)).thenReturn(response);
+
+        PolicyDTO result = adminService.updatePolicy(1L, request);
+        assertEquals(1L, result.getId());
+    }
+
+    // ==================== deletePolicy ====================
+    @Test
+    public void testDeletePolicy() {
         adminService.deletePolicy(1L);
         verify(policyFeignClient, times(1)).deletePolicy(1L);
     }
 
-    /**
-     * Given: Exception while deleting policy
-     * When: recoverDeletePolicy is called
-     * Then: Throws RuntimeException
-     */
+    // ==================== getUserPolicies ====================
     @Test
-    void testRecoverDeletePolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverDeletePolicy(1L, new Exception()));
+    public void testGetUserPolicies() {
+        List<Object> list = Collections.singletonList(new Object());
+        when(policyFeignClient.getUserPolicies(1L)).thenReturn(list);
+
+        List<Object> result = adminService.getUserPolicies(1L);
+        assertEquals(1, result.size());
     }
 
-    /**
-     * Given: Feign Clients working correctly
-     * When: getReports is called
-     * Then: Fetches from claims and policy services and aggregates
-     */
+    // ==================== getAllUserPolicies ====================
     @Test
-    void testGetReports() {
+    public void testGetAllUserPolicies() {
+        List<Object> list = Collections.singletonList(new Object());
+        when(policyFeignClient.getAllUserPolicies()).thenReturn(list);
+
+        List<Object> result = adminService.getAllUserPolicies();
+        assertEquals(1, result.size());
+    }
+
+    // ==================== cancelPolicy ====================
+    @Test
+    public void testCancelPolicy() {
+        when(policyFeignClient.cancelPolicy(1L)).thenReturn("Cancelled");
+
+        Object result = adminService.cancelPolicy(1L);
+        assertEquals("Cancelled", result);
+    }
+
+    // ==================== deleteClaim ====================
+    @Test
+    public void testDeleteClaim() {
+        adminService.deleteClaim(1L);
+        verify(claimsFeignClient, times(1)).deleteClaim(1L);
+    }
+
+    // ==================== getReports ====================
+    @Test
+    public void testGetReports() {
         ClaimStatusDTO claimStats = new ClaimStatusDTO();
         claimStats.setTotalClaims(10);
-        claimStats.setApprovedClaims(5);
-        claimStats.setRejectedClaims(5);
+        claimStats.setApprovedClaims(6);
+        claimStats.setRejectedClaims(4);
 
         PolicyStatsDTO policyStats = new PolicyStatsDTO();
-        policyStats.setTotalPolicies(20);
-        policyStats.setTotalRevenue(50000.0);
+        policyStats.setTotalPolicies(5L);
+        policyStats.setTotalRevenue(5000.0);
 
         when(claimsFeignClient.getClaimStats()).thenReturn(claimStats);
         when(policyFeignClient.getPolicyStats()).thenReturn(policyStats);
 
-        ReportResponse report = adminService.getReports();
-
-        assertNotNull(report);
-        assertEquals(10, report.getTotalClaims());
-        assertEquals(5, report.getApprovedClaims());
-        assertEquals(5, report.getRejectedClaims());
-        assertEquals(20, report.getTotalPolicies());
-        assertEquals(50000.0, report.getTotalRevenue());
+        ReportResponse result = adminService.getReports();
+        assertEquals(10, result.getTotalClaims());
+        assertEquals(6, result.getApprovedClaims());
+        assertEquals(4, result.getRejectedClaims());
+        assertEquals(5, result.getTotalPolicies());
+        assertEquals(5000.0, result.getTotalRevenue());
     }
 
-    /**
-     * Given: Exception getting reports
-     * When: recoverGetReports is called
-     * Then: returns empty report
-     */
+    // ==================== ALL FALLBACKS ====================
     @Test
-    void testRecoverGetReports() {
-        ReportResponse report = adminService.recoverGetReports(new Exception());
-        assertNotNull(report);
-        assertEquals(0, report.getTotalClaims());
+    public void testRecoverReviewClaim() {
+        Throwable e = new RuntimeException("Error");
+        assertThrows(RuntimeException.class, () -> adminService.recoverReviewClaim(1L, new ReviewRequest(), e));
+    }
+
+    @Test
+    public void testRecoverGetClaimStatus() {
+        ClaimStatusDTO result = adminService.recoverGetClaimStatus(1L, new RuntimeException("E"));
+        assertNotNull(result);
+    }
+
+    @Test
+    public void testRecoverGetClaimsByUserId() {
+        List<ClaimDTO> result = adminService.recoverGetClaimsByUserId(1L, new RuntimeException("E"));
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testRecoverDownloadClaimDocument() {
+        assertThrows(RuntimeException.class, () -> adminService.recoverDownloadClaimDocument(1L, new RuntimeException("E")));
+    }
+
+    @Test
+    public void testRecoverGetAllClaims() {
+        PageResponse<ClaimDTO> result = adminService.recoverGetAllClaims(0, 10, new RuntimeException("E"));
+        assertNotNull(result);
+    }
+
+    @Test
+    public void testRecoverUpdateClaim() {
+        assertThrows(RuntimeException.class, () -> adminService.recoverUpdateClaim(1L, new ClaimDTO(), new RuntimeException("E")));
+    }
+
+    @Test
+    public void testRecoverCreatePolicy() {
+        assertThrows(RuntimeException.class, () -> adminService.recoverCreatePolicy(new PolicyRequestDTO(), new RuntimeException("E")));
+    }
+
+    @Test
+    public void testRecoverUpdatePolicy() {
+        assertThrows(RuntimeException.class, () -> adminService.recoverUpdatePolicy(1L, new PolicyRequestDTO(), new RuntimeException("E")));
+    }
+
+    @Test
+    public void testRecoverDeletePolicy() {
+        assertThrows(RuntimeException.class, () -> adminService.recoverDeletePolicy(1L, new RuntimeException("E")));
+    }
+
+    @Test
+    public void testRecoverGetUserPolicies() {
+        List<Object> result = adminService.recoverGetUserPolicies(1L, new RuntimeException("E"));
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testRecoverCancelPolicy() {
+        assertThrows(RuntimeException.class, () -> adminService.recoverCancelPolicy(1L, new RuntimeException("E")));
+    }
+
+    @Test
+    public void testRecoverGetReports() {
+        ReportResponse r = adminService.recoverGetReports(new RuntimeException("E"));
+        assertEquals(0, r.getTotalClaims());
+        assertEquals(0, r.getApprovedClaims());
+        assertEquals(0, r.getRejectedClaims());
+        assertEquals(0, r.getTotalPolicies());
+        assertEquals(0.0, r.getTotalRevenue());
+    }
+
+    @Test
+    public void testRecoverDeleteClaim() {
+        assertThrows(RuntimeException.class, () -> adminService.recoverDeleteClaim(1L, new RuntimeException("E")));
     }
 }

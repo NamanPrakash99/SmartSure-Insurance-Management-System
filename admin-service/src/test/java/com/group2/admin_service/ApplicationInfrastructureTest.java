@@ -19,19 +19,21 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class CoverageBoosterTest {
+class ApplicationInfrastructureTest {
 
     @Test
-    public void testApplicationMain() {
+    void testApplicationMain() {
         AdminServiceApplication app = new AdminServiceApplication();
         assertNotNull(app);
     }
 
     @Test
-    public void testSwaggerConfig() {
+    void testSwaggerConfig() {
         SwaggerConfig config = new SwaggerConfig();
         OpenAPI api = config.customOpenAPI();
         assertNotNull(api);
@@ -39,7 +41,7 @@ public class CoverageBoosterTest {
     }
 
     @Test
-    public void testRabbitMQConfig() {
+    void testRabbitMQConfig() {
         RabbitMQConfig config = new RabbitMQConfig();
         TopicExchange exchange = config.exchange();
         assertEquals(RabbitMQConfig.EXCHANGE, exchange.getName());
@@ -60,7 +62,7 @@ public class CoverageBoosterTest {
     }
 
     @Test
-    public void testFeignConfig() {
+    void testFeignConfig() {
         FeignConfig config = new FeignConfig();
         RequestInterceptor interceptor = config.requestInterceptor();
         
@@ -80,7 +82,7 @@ public class CoverageBoosterTest {
     }
 
     @Test
-    public void testLoggingAspect() {
+    void testLoggingAspect() {
         LoggingAspect aspect = new LoggingAspect();
         JoinPoint jp = mock(JoinPoint.class);
         Signature sig = mock(Signature.class);
@@ -94,5 +96,8 @@ public class CoverageBoosterTest {
 
         Throwable e = new RuntimeException("Test Exception");
         aspect.logAfterThrowing(jp, e);
+        
+        assertNotNull(aspect);
+        verify(jp, atLeastOnce()).getSignature();
     }
 }

@@ -3,10 +3,10 @@ package com.group2.admin_service.dto;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AdminDtoTest {
+class AdminDtoTest {
 
     @Test
-    public void testClaimStatusDTO() {
+    void testClaimStatusDTO() {
         ClaimStatusDTO dto = new ClaimStatusDTO();
         dto.setTotalClaims(10);
         dto.setApprovedClaims(5);
@@ -18,7 +18,7 @@ public class AdminDtoTest {
     }
 
     @Test
-    public void testPolicyStatsDTO() {
+    void testPolicyStatsDTO() {
         PolicyStatsDTO dto = new PolicyStatsDTO();
         dto.setTotalPolicies(20L);
         dto.setTotalRevenue(1000.0);
@@ -28,7 +28,7 @@ public class AdminDtoTest {
     }
 
     @Test
-    public void testReportResponse() {
+    void testReportResponse() {
         ReportResponse response = new ReportResponse();
         response.setTotalClaims(10);
         response.setTotalPolicies(20);
@@ -44,14 +44,14 @@ public class AdminDtoTest {
     }
 
     @Test
-    public void testReviewRequest() {
+    void testReviewRequest() {
         ReviewRequest request = new ReviewRequest();
         request.setStatus("APPROVED");
         assertEquals("APPROVED", request.getStatus());
     }
 
     @Test
-    public void testPolicyDTO() {
+    void testPolicyDTO() {
         PolicyDTO dto = new PolicyDTO();
         dto.setId(1L);
         dto.setPolicyName("Health");
@@ -67,7 +67,7 @@ public class AdminDtoTest {
     }
 
     @Test
-    public void testClaimDTO() {
+    void testClaimDTO() {
         ClaimDTO dto = new ClaimDTO();
         dto.setClaimId(1L);
         dto.setUserId(10L);
@@ -83,7 +83,7 @@ public class AdminDtoTest {
     }
 
     @Test
-    public void testPageResponse() {
+    void testPageResponse() {
         PageResponse<String> response = new PageResponse<>();
         java.util.List<String> content = java.util.Collections.singletonList("item");
         response.setContent(content);
@@ -100,7 +100,7 @@ public class AdminDtoTest {
     }
 
     @Test
-    public void testClaimReviewEvent() {
+    void testClaimReviewEvent() {
         ClaimReviewEvent event = new ClaimReviewEvent();
         event.setClaimId(1L);
         event.setStatus("APPROVED");
@@ -110,7 +110,7 @@ public class AdminDtoTest {
     }
 
     @Test
-    public void testPolicyRequestDTO() {
+    void testPolicyRequestDTO() {
         PolicyRequestDTO dto = new PolicyRequestDTO();
         dto.setPolicyName("Policy X");
         dto.setPremiumAmount(100.0);
@@ -126,7 +126,7 @@ public class AdminDtoTest {
     }
 
     @Test
-    public void testClaimCreatedEvent() {
+    void testClaimCreatedEvent() {
         ClaimCreatedEvent event = new ClaimCreatedEvent();
         event.setClaimId(1L);
         event.setPolicyId(2L);
@@ -140,7 +140,7 @@ public class AdminDtoTest {
     }
 
     @Test
-    public void testClaimStatusUpdateDTO() {
+    void testClaimStatusUpdateDTO() {
         ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
         dto.setStatus("APPROVED");
         assertEquals("APPROVED", dto.getStatus());

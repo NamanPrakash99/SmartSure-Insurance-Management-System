@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AdminController.class)
-public class AdminControllerTest {
+class AdminControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -32,7 +32,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testGetReports() throws Exception {
+    void testGetReports() throws Exception {
         ReportResponse report = new ReportResponse();
         report.setTotalClaims(10);
         report.setTotalPolicies(20);
@@ -47,7 +47,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testReviewClaim() throws Exception {
+    void testReviewClaim() throws Exception {
         ReviewRequest request = new ReviewRequest();
         request.setStatus("APPROVED");
 
@@ -59,7 +59,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testCreatePolicy() throws Exception {
+    void testCreatePolicy() throws Exception {
         PolicyRequestDTO request = new PolicyRequestDTO();
         PolicyDTO response = new PolicyDTO();
         response.setId(1L);
@@ -75,7 +75,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testGetStatus() throws Exception {
+    void testGetStatus() throws Exception {
         ClaimStatusDTO dto = new ClaimStatusDTO();
         dto.setTotalClaims(5);
         when(adminService.getClaimStatus(1L)).thenReturn(dto);
@@ -87,7 +87,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testGetClaimsByUser() throws Exception {
+    void testGetClaimsByUser() throws Exception {
         when(adminService.getClaimsByUserId(1L)).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/admin/claims/user/1"))
@@ -96,7 +96,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testDownloadDocument() throws Exception {
+    void testDownloadDocument() throws Exception {
         byte[] content = new byte[]{1, 2, 3};
         when(adminService.downloadClaimDocument(1L)).thenReturn(org.springframework.http.ResponseEntity.ok(content));
 
@@ -107,7 +107,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testGetAllClaims() throws Exception {
+    void testGetAllClaims() throws Exception {
         when(adminService.getAllClaims(0, 10)).thenReturn(new PageResponse<ClaimDTO>());
 
         mockMvc.perform(get("/api/admin/claims")
@@ -118,7 +118,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testUpdateClaim() throws Exception {
+    void testUpdateClaim() throws Exception {
         ClaimDTO dto = new ClaimDTO();
         when(adminService.updateClaim(eq(1L), any(ClaimDTO.class))).thenReturn(dto);
 
@@ -130,14 +130,14 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testDeleteClaim() throws Exception {
+    void testDeleteClaim() throws Exception {
         mockMvc.perform(delete("/api/admin/claims/1"))
                 .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testUpdatePolicy() throws Exception {
+    void testUpdatePolicy() throws Exception {
         PolicyRequestDTO dto = new PolicyRequestDTO();
         when(adminService.updatePolicy(eq(1L), any(PolicyRequestDTO.class))).thenReturn(new PolicyDTO());
 
@@ -149,14 +149,14 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testDeletePolicy() throws Exception {
+    void testDeletePolicy() throws Exception {
         mockMvc.perform(delete("/api/admin/policies/1"))
                 .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testGetUserPolicies() throws Exception {
+    void testGetUserPolicies() throws Exception {
         when(adminService.getUserPolicies(1L)).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/admin/user-policies/1"))
@@ -165,7 +165,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testGetAllUserPolicies() throws Exception {
+    void testGetAllUserPolicies() throws Exception {
         when(adminService.getAllUserPolicies()).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/admin/user-policies/all"))
@@ -174,7 +174,7 @@ public class AdminControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    public void testCancelUserPolicy() throws Exception {
+    void testCancelUserPolicy() throws Exception {
         when(adminService.cancelPolicy(1L)).thenReturn(new Object());
 
         mockMvc.perform(put("/api/admin/policies/1/cancel"))

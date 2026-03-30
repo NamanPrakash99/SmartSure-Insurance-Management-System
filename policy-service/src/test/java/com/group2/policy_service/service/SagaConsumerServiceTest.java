@@ -5,6 +5,7 @@ import com.group2.policy_service.entity.Policy;
 import com.group2.policy_service.entity.PolicyStatus;
 import com.group2.policy_service.entity.UserPolicy;
 import com.group2.policy_service.repository.UserPolicyRepository;
+import com.group2.policy_service.service.impl.SagaConsumerServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,7 +29,7 @@ public class SagaConsumerServiceTest {
     private CacheManager cacheManager;
 
     @InjectMocks
-    private SagaConsumerService sagaConsumerService;
+    private SagaConsumerServiceImpl sagaConsumerService;
 
     @Test
     public void testConsumePaymentStatus_Success() {

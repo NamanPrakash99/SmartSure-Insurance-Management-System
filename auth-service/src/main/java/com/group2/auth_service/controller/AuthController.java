@@ -94,4 +94,12 @@ public class AuthController {
         return ResponseEntity.ok("Password reset successfully");
     }
 
+    @org.springframework.web.bind.annotation.GetMapping("/customers")
+    public java.util.List<User> getAllCustomers() {
+        return service.getAllCustomers();
+    }
+    @org.springframework.web.bind.annotation.PutMapping("/users/{id}")
+    public ResponseEntity<User> updateUser(@org.springframework.web.bind.annotation.PathVariable Long id, @Valid @RequestBody com.group2.auth_service.dto.UpdateProfileRequest request) {
+        return ResponseEntity.ok(service.updateUser(id, request));
+    }
 }

@@ -25,6 +25,10 @@ import AdminReports from '../pages/admin/AdminReports'
 // Layout & Pages
 import DashboardLayout from '../components/layout/DashboardLayout'
 import LandingPage from '../pages/LandingPage'
+import Profile from '../pages/common/Profile'
+import AboutUs from '../pages/public/AboutUs'
+import ContactUs from '../pages/public/ContactUs'
+import Terms from '../pages/public/Terms'
 import NotFound from '../pages/NotFound'
 
 // Protected Route Component
@@ -53,6 +57,9 @@ export default function AppRouter() {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/about" element={<DashboardLayout><AboutUs /></DashboardLayout>} />
+      <Route path="/contact" element={<DashboardLayout><ContactUs /></DashboardLayout>} />
+      <Route path="/terms" element={<DashboardLayout><Terms /></DashboardLayout>} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -114,6 +121,13 @@ export default function AppRouter() {
       <Route path="/admin/reports" element={
         <ProtectedRoute allowedRoles={['ADMIN']}>
           <DashboardLayout><AdminReports /></DashboardLayout>
+        </ProtectedRoute>
+      } />
+
+      {/* Profille (Common) */}
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <DashboardLayout><Profile /></DashboardLayout>
         </ProtectedRoute>
       } />
 

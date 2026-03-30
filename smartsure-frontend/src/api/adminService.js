@@ -47,4 +47,7 @@ export const adminService = {
 
   getReports: () =>
     API.get(`${ADMIN_BASE}/reports`),
+
+  getCustomers: () =>
+    API.get(`${ADMIN_BASE}/customers`),
 }

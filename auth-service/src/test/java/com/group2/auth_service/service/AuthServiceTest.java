@@ -10,6 +10,8 @@ import com.group2.auth_service.entity.User;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.repository.PasswordResetTokenRepository;
 import com.group2.auth_service.security.JwtUtil;
+import com.group2.auth_service.service.impl.AuthServiceImpl;
+import com.group2.auth_service.service.impl.RefreshTokenServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,7 +42,7 @@ public class AuthServiceTest {
     private EmailService emailService;
 
     @InjectMocks
-    private AuthService authService;
+    private AuthServiceImpl authService;
 
     @Test
     public void testRegister_Success() {

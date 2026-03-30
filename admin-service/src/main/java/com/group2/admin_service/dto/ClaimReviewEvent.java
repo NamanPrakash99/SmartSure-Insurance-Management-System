@@ -5,7 +5,9 @@ public class ClaimReviewEvent {
     private Long claimId;
     private String status;
 
-    public ClaimReviewEvent() {}
+    public ClaimReviewEvent() {
+        // Default constructor for deserialization
+    }
 
     public Long getClaimId() {
         return claimId;

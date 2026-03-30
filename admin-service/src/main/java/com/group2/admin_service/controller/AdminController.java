@@ -2,6 +2,8 @@ package com.group2.admin_service.controller;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,7 @@ import com.group2.admin_service.dto.PolicyDTO;
 import com.group2.admin_service.dto.PolicyRequestDTO;
 import com.group2.admin_service.dto.ReportResponse;
 import com.group2.admin_service.dto.ReviewRequest;
+import com.group2.admin_service.dto.UserDTO;
 import com.group2.admin_service.service.AdminService;
 
 @PreAuthorize("hasRole('ADMIN')")
@@ -19,6 +22,7 @@ import com.group2.admin_service.service.AdminService;
 @RequestMapping("/api/admin")
 public class AdminController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
     private AdminService adminService;
     
     public AdminController(AdminService adminService) {
@@ -38,7 +42,7 @@ public class AdminController {
         return ResponseEntity.ok("Claim reviewed successfully");
     }
 
-    // Get Claim Status (via AdminService → Feign → Claims Service)
+    // Get Claim Status
     @GetMapping("/claims/status/{id}")
     public ResponseEntity<ClaimStatusDTO> getStatus(@PathVariable("id") Long id) {
         return ResponseEntity.ok(adminService.getClaimStatus(id));
@@ -66,8 +70,7 @@ public class AdminController {
         try {
             return ResponseEntity.ok(adminService.getAllClaims(page, size));
         } catch (Exception e) {
-            System.err.println("❌ Error in AdminController.getAllClaims: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("❌ Error in AdminController.getAllClaims: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
@@ -80,8 +83,7 @@ public class AdminController {
         try {
             return ResponseEntity.ok(adminService.updateClaim(id, dto));
         } catch (Exception e) {
-            System.err.println("❌ Error in AdminController.updateClaim: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("❌ Error in AdminController.updateClaim: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
@@ -92,18 +94,13 @@ public class AdminController {
         return ResponseEntity.ok("Claim deleted successfully");
     }
 
-
-
-
     // ==================== POLICY PRODUCT MANAGEMENT ====================
 
-    // Create a new policy product
     @PostMapping("/policies")
     public ResponseEntity<PolicyDTO> createPolicy(@RequestBody PolicyRequestDTO dto) {
         return ResponseEntity.ok(adminService.createPolicy(dto));
     }
 
-    // Update an existing policy product
     @PutMapping("/policies/{id}")
     public ResponseEntity<PolicyDTO> updatePolicy(
             @PathVariable Long id,
@@ -111,14 +108,12 @@ public class AdminController {
         return ResponseEntity.ok(adminService.updatePolicy(id, dto));
     }
 
-    // Delete (soft-delete) a policy product
     @DeleteMapping("/policies/{id}")
     public ResponseEntity<String> deletePolicy(@PathVariable Long id) {
         adminService.deletePolicy(id);
         return ResponseEntity.ok("Policy deleted successfully");
     }
 
-    // Get purchased policies for a specific user
     @GetMapping("/user-policies/{userId}")
     public ResponseEntity<java.util.List<Object>> getUserPolicies(@PathVariable("userId") Long userId) {
         return ResponseEntity.ok(adminService.getUserPolicies(userId));
@@ -129,17 +124,18 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getAllUserPolicies());
     }
 
-
-    // Cancel a user's purchased policy
     @PutMapping("/policies/{id}/cancel")
     public ResponseEntity<Object> cancelUserPolicy(@PathVariable Long id) {
         return ResponseEntity.ok(adminService.cancelPolicy(id));
     }
 
-    // ==================== REPORTS ====================
+    // ==================== CUSTOMER MANAGEMENT ====================
 
+    @GetMapping("/customers")
+    public ResponseEntity<List<UserDTO>> getAllCustomers() {
+        return ResponseEntity.ok(adminService.getAllCustomers());
+    }
 
-    // Reports API
     @GetMapping("/reports")
     public ResponseEntity<ReportResponse> getReports() {
         return ResponseEntity.ok(adminService.getReports());

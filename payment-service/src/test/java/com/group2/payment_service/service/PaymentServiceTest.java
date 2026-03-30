@@ -7,6 +7,7 @@ import com.group2.payment_service.entity.Transaction;
 import com.group2.payment_service.repository.PolicyRepository;
 import com.group2.payment_service.repository.TransactionRepository;
 import com.group2.payment_service.repository.UserRepository;
+import com.group2.payment_service.service.impl.PaymentServiceImpl;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
@@ -33,7 +34,7 @@ import static org.mockito.Mockito.*;
 public class PaymentServiceTest {
 
     @InjectMocks
-    private PaymentService paymentService;
+    private PaymentServiceImpl paymentService;
 
     @Mock
     private TransactionRepository transactionRepository;

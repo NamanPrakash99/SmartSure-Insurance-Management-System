@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
 
 @SpringBootApplication
 @OpenAPIDefinition(servers = @Server(url = "/auth-service", description = "Auth Service via API Gateway"))
+@org.springframework.cloud.openfeign.EnableFeignClients
 public class AuthServiceApplication {
 
 	public static void main(String[] args) {

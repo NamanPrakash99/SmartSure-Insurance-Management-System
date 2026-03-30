@@ -40,6 +40,7 @@ public class SecurityConfig {
             	    // COMMON APIs
             	    .requestMatchers("/api/policies").hasAnyRole("CUSTOMER", "ADMIN")
             	    .requestMatchers("/api/policy-types").hasAnyRole("CUSTOMER", "ADMIN")
+            	    .requestMatchers("/api/user-policy/**").permitAll() // Internal use for notifications
 
             	    // fallback
             	    .anyRequest().authenticated()

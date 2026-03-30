@@ -1,6 +1,6 @@
 package com.group2.config_server.util;
 
-public class CoverageBooster {
+public class CoreCommonUtils {
     public int boost() {
         int a = 1;
         int b = 2;

@@ -34,7 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
-public class CoverageBoosterTest {
+public class ApplicationInfrastructureTest {
 
     @Test
     public void testApplicationMain() {

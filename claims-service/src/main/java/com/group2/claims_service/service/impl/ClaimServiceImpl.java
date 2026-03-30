@@ -1,0 +1,322 @@
+package com.group2.claims_service.service.impl;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import com.group2.claims_service.dto.ClaimCreatedEvent;
+import com.group2.claims_service.dto.ClaimRequestDTO;
+import com.group2.claims_service.dto.ClaimResponseDTO;
+import com.group2.claims_service.dto.ClaimStatsDTO;
+import com.group2.claims_service.entity.Claim;
+import com.group2.claims_service.entity.ClaimDocument;
+import com.group2.claims_service.entity.ClaimStatus;
+import com.group2.claims_service.exception.ClaimNotFoundException;
+import com.group2.claims_service.repository.ClaimDocumentRepository;
+import com.group2.claims_service.repository.ClaimRepository;
+import com.group2.claims_service.repository.UserRepository;
+import com.group2.claims_service.service.ClaimService;
+import com.group2.claims_service.service.EmailService;
+
+@Service
+public class ClaimServiceImpl implements ClaimService {
+	
+	private final ClaimRepository claimRepository;
+	private final ClaimDocumentRepository documentRepository;
+	private final RabbitTemplate rabbitTemplate;
+	private final UserRepository userRepository;
+	private final EmailService emailService;
+	
+	public ClaimServiceImpl(ClaimRepository claimRepository, 
+	                  ClaimDocumentRepository documentRepository,
+	                  RabbitTemplate rabbitTemplate,
+	                  UserRepository userRepository,
+	                  EmailService emailService) {
+		this.claimRepository = claimRepository;
+		this.documentRepository = documentRepository;
+		this.rabbitTemplate = rabbitTemplate;
+		this.userRepository = userRepository;
+		this.emailService = emailService;
+	}
+	
+	public ClaimResponseDTO initiateClaim(ClaimRequestDTO requestDTO) {
+
+	    // 1. Create Claim Entity
+	    Claim claim = new Claim();
+	    claim.setPolicyId(requestDTO.getPolicyId());
+	    claim.setUserId(requestDTO.getUserId());
+	    claim.setClaimAmount(requestDTO.getClaimAmount());
+	    claim.setDescription(requestDTO.getDescription());
+	    claim.setClaimStatus(ClaimStatus.SUBMITTED);
+	    claim.setCreatedAt(LocalDateTime.now());
+
+	    // 2. Save to DB
+	    Claim savedClaim = claimRepository.save(claim);
+
+	    // 3. Create Event DTO (for RabbitMQ)
+	    ClaimCreatedEvent event = new ClaimCreatedEvent();
+	    event.setClaimId(savedClaim.getId());
+	    event.setPolicyId(savedClaim.getPolicyId());
+	    event.setUserId(savedClaim.getUserId());
+	    event.setClaimAmount(savedClaim.getClaimAmount());
+
+	    // 4. Send Event to RabbitMQ
+	    rabbitTemplate.convertAndSend(
+	            "claim.exchange",
+	            "claim.created",
+	            event
+	    );
+
+	    System.out.println("✅ Claim event sent to RabbitMQ for claimId: " + savedClaim.getId());
+
+	    // 5. Prepare API Response
+	    ClaimResponseDTO response = new ClaimResponseDTO();
+	    response.setClaimId(savedClaim.getId());
+	    response.setPolicyId(savedClaim.getPolicyId());
+	    response.setUserId(savedClaim.getUserId());
+	    response.setClaimAmount(savedClaim.getClaimAmount());
+	    response.setDescription(savedClaim.getDescription());
+	    response.setStatus(savedClaim.getClaimStatus().name());
+	    response.setMessage("Claim submitted successfully");
+
+	    // Send Claim Initiation Email
+	    try {
+	        userRepository.findById(savedClaim.getUserId()).ifPresent(user -> {
+	            String subject = "Claim Filed Successfully - SmartSure";
+	            String body = "Hi " + user.getName() + ",\n\n" +
+	                    "Your claim for Policy ID: " + savedClaim.getPolicyId() + " has been successfully submitted.\n" +
+	                    "Claim ID: " + savedClaim.getId() + "\n" +
+	                    "Claim Amount: ₹" + savedClaim.getClaimAmount() + "\n" +
+	                    "Status: " + savedClaim.getClaimStatus() + "\n\n" +
+	                    "Our team will review your claim and get back to you shortly.\n" +
+	                    "Best regards,\nSmartSure Team";
+	            emailService.sendEmail(user.getEmail(), subject, body);
+	        });
+	    } catch (Exception e) {
+	        System.err.println("Failed to send claim initiation email: " + e.getMessage());
+	    }
+
+	    // 6. Return response
+	    return response;
+	}
+	
+	public String uploadDocument(Long claimId, MultipartFile file) {
+		
+		claimRepository.findById(claimId)
+		.orElseThrow(()-> new ClaimNotFoundException("Claim not found with id: "+claimId));
+		
+		String contentType = file.getContentType();
+		String filename = file.getOriginalFilename();
+		boolean isValid = false;
+
+		if (contentType != null && (contentType.startsWith("image/") || contentType.equalsIgnoreCase("application/pdf"))) {
+			isValid = true;
+		} else if (filename != null) {
+			String lower = filename.toLowerCase();
+			if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".gif") || lower.endsWith(".pdf")) {
+				isValid = true;
+			}
+		}
+
+		if (!isValid) {
+			throw new IllegalArgumentException("Invalid file format. Only Image and PDF files are allowed.");
+		}
+		
+		ClaimDocument document=new ClaimDocument();
+		
+		document.setClaimId(claimId);
+		document.setFileUrl(file.getOriginalFilename());
+		document.setDocumentType(file.getContentType());
+		document.setUploadedDate(LocalDateTime.now());
+		try {
+			document.setFileData(file.getBytes());
+		} catch (java.io.IOException e) {
+			throw new RuntimeException("Failed to store file data", e);
+		}
+		
+		documentRepository.save(document);
+		
+		return "Document uploaded Successfully";
+	}
+	
+	@org.springframework.transaction.annotation.Transactional(readOnly = true)
+	public ClaimDocument getClaimDocument(Long claimId) {
+		return documentRepository.findFirstByClaimIdOrderByIdDesc(claimId)
+			.orElseThrow(() -> new ClaimNotFoundException("Document not found for claim id: " + claimId));
+	}
+
+	
+	public ClaimResponseDTO getClaimStatus(Long claimId) {
+		
+		Claim claim=claimRepository.findById(claimId)
+				.orElseThrow(()-> new ClaimNotFoundException("Claim not found with id: "+claimId));
+		
+		
+		ClaimResponseDTO response=new ClaimResponseDTO();
+		response.setClaimId(claim.getId());
+		response.setStatus(claim.getClaimStatus().name());
+		response.setMessage("Claim Status fetched Successfully");
+		
+		return response;
+		
+	}
+	
+	public ClaimResponseDTO getClaimById(Long claimId) {
+
+	    Claim claim = claimRepository.findById(claimId)
+	            .orElseThrow(() ->
+	                    new ClaimNotFoundException("Claim not found with id: " + claimId));
+
+	    ClaimResponseDTO response = new ClaimResponseDTO();
+
+	    response.setClaimId(claim.getId());
+	    response.setStatus(claim.getClaimStatus().name());
+	    response.setMessage("Claim fetched successfully");
+
+	    response.setPolicyId(claim.getPolicyId());
+	    response.setUserId(claim.getUserId());
+	    response.setClaimAmount(claim.getClaimAmount());
+	    response.setDescription(claim.getDescription());
+
+	    return response;
+	}
+	
+	// Update claim status (called by Admin Service via Feign)
+	public void updateClaimStatus(Long claimId, String newStatus) {
+
+		Claim claim = claimRepository.findById(claimId)
+				.orElseThrow(() -> new ClaimNotFoundException("Claim not found with id: " + claimId));
+
+		ClaimStatus targetStatus;
+		try {
+			targetStatus = ClaimStatus.valueOf(newStatus.toUpperCase());
+		} catch (IllegalArgumentException e) {
+			throw new RuntimeException("Invalid claim status: " + newStatus);
+		}
+
+		// Validate lifecycle transitions
+		ClaimStatus currentStatus = claim.getClaimStatus();
+		boolean validTransition = switch (targetStatus) {
+			case UNDER_REVIEW -> currentStatus == ClaimStatus.SUBMITTED;
+			case APPROVED, REJECTED -> currentStatus == ClaimStatus.UNDER_REVIEW;
+			case CLOSED -> currentStatus == ClaimStatus.APPROVED || currentStatus == ClaimStatus.REJECTED;
+			default -> false;
+		};
+
+		if (!validTransition) {
+			throw new RuntimeException(
+					"Invalid status transition from " + currentStatus + " to " + targetStatus);
+		}
+
+		claim.setClaimStatus(targetStatus);
+		Claim savedClaim = claimRepository.save(claim);
+
+		// Send Claim Status Update Email
+		try {
+			userRepository.findById(savedClaim.getUserId()).ifPresent(user -> {
+				String subject = "Claim Status Updated - SmartSure";
+				String body = "Hi " + user.getName() + ",\n\n" +
+						"The status of your Claim (ID: " + savedClaim.getId() + ") has been updated.\n" +
+						"New Status: " + savedClaim.getClaimStatus() + "\n\n" +
+						"You can check the details on your dashboard.\n" +
+						"Best regards,\nSmartSure Team";
+				emailService.sendEmail(user.getEmail(), subject, body);
+			});
+		} catch (Exception e) {
+			System.err.println("Failed to send claim status update email: " + e.getMessage());
+		}
+	}
+	
+	// Get all claims for a specific user
+	public List<ClaimResponseDTO> getClaimsByUserId(Long userId) {
+
+		return claimRepository.findByUserId(userId)
+				.stream()
+				.map(claim -> {
+					ClaimResponseDTO dto = new ClaimResponseDTO();
+					dto.setClaimId(claim.getId());
+					dto.setPolicyId(claim.getPolicyId());
+					dto.setUserId(claim.getUserId());
+					dto.setClaimAmount(claim.getClaimAmount());
+					dto.setDescription(claim.getDescription());
+					dto.setStatus(claim.getClaimStatus().name());
+					dto.setMessage("Claim fetched successfully");
+					return dto;
+				})
+				.toList();
+	}
+	
+	
+	public ClaimStatsDTO getClaimStats() {
+
+	    long total = claimRepository.count();
+	    long submitted = claimRepository.countByClaimStatus(ClaimStatus.SUBMITTED);
+	    long approved = claimRepository.countByClaimStatus(ClaimStatus.APPROVED);
+	    long rejected = claimRepository.countByClaimStatus(ClaimStatus.REJECTED);
+
+	    ClaimStatsDTO stats = new ClaimStatsDTO();
+	    stats.setTotalClaims(total);
+	    stats.setSubmittedClaims(submitted);
+	    stats.setApprovedClaims(approved);
+	    stats.setRejectedClaims(rejected);
+
+	    return stats;
+	}
+
+	public org.springframework.data.domain.Page<ClaimResponseDTO> getAllClaims(org.springframework.data.domain.Pageable pageable) {
+		return claimRepository.findAll(pageable)
+				.map(claim -> {
+					ClaimResponseDTO dto = new ClaimResponseDTO();
+					dto.setClaimId(claim.getId());
+					dto.setPolicyId(claim.getPolicyId());
+					dto.setUserId(claim.getUserId());
+					dto.setClaimAmount(claim.getClaimAmount());
+					dto.setDescription(claim.getDescription());
+					dto.setStatus(claim.getClaimStatus().name());
+					dto.setMessage("Claim fetched successfully");
+					return dto;
+				});
+	}
+
+	@org.springframework.transaction.annotation.Transactional
+	public ClaimResponseDTO updateClaim(Long claimId, com.group2.claims_service.dto.ClaimRequestDTO dto) {
+		com.group2.claims_service.entity.Claim claim = claimRepository.findById(claimId)
+				.orElseThrow(() -> new com.group2.claims_service.exception.ClaimNotFoundException("Claim not found with id: " + claimId));
+		
+		if (dto.getClaimAmount() > 0) claim.setClaimAmount(dto.getClaimAmount());
+
+		if (dto.getDescription() != null) claim.setDescription(dto.getDescription());
+		if (dto.getPolicyId() != null) claim.setPolicyId(dto.getPolicyId());
+		
+		com.group2.claims_service.entity.Claim updated = claimRepository.save(claim);
+		
+		ClaimResponseDTO response = new ClaimResponseDTO();
+		response.setClaimId(updated.getId());
+		response.setPolicyId(updated.getPolicyId());
+		response.setUserId(updated.getUserId());
+		response.setClaimAmount(updated.getClaimAmount());
+		response.setDescription(updated.getDescription());
+		response.setStatus(updated.getClaimStatus().name());
+		response.setMessage("Claim updated successfully by Admin");
+		
+		return response;
+	}
+
+
+	@org.springframework.transaction.annotation.Transactional
+	public void deleteClaim(Long claimId) {
+		Claim claim = claimRepository.findById(claimId)
+				.orElseThrow(() -> new ClaimNotFoundException("Claim not found with id: " + claimId));
+		
+		// Delete documents first
+		documentRepository.deleteByClaimId(claimId);
+		
+		// Delete claim
+		claimRepository.delete(claim);
+	}
+
+
+}
+
+

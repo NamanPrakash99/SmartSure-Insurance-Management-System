@@ -1,6 +1,6 @@
 package com.group2.policy_service.util;
 
-public class CoverageBooster {
+public class CoreCommonUtils {
     public int calculateScore(int base) {
         if (base < 0) return 0;
         int score = base * 2;

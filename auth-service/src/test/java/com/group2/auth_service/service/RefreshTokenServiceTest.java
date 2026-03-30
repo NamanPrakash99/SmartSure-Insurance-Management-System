@@ -1,9 +1,9 @@
 package com.group2.auth_service.service;
 
 import com.group2.auth_service.entity.RefreshToken;
-import com.group2.auth_service.entity.User;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.repository.RefreshTokenRepository;
+import com.group2.auth_service.service.impl.RefreshTokenServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,10 +18,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RefreshTokenServiceTest {
+class RefreshTokenServiceTest {
 
     @InjectMocks
-    private RefreshTokenService refreshTokenService;
+    private RefreshTokenServiceImpl refreshTokenService;
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;

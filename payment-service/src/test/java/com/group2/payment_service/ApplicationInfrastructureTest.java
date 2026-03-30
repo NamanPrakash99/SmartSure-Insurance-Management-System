@@ -8,7 +8,7 @@ import org.springframework.amqp.core.Queue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class CoverageBoosterTest {
+public class ApplicationInfrastructureTest {
 
     @Test
     public void testApplicationMain() {

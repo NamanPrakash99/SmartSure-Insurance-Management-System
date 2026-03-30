@@ -3,7 +3,7 @@ package com.group2.auth_service.dto;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AuthDtoTest {
+class AuthDtoTest {
 
     @Test
     public void testAuthResponse() {

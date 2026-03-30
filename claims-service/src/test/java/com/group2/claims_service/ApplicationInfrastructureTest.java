@@ -1,8 +1,9 @@
-package com.group2.auth_service;
+package com.group2.claims_service;
 
-import com.group2.auth_service.aspect.LoggingAspect;
-import com.group2.auth_service.config.SwaggerConfig;
-import com.group2.auth_service.security.JwtUtil;
+import com.group2.claims_service.aspect.LoggingAspect;
+import com.group2.claims_service.config.RabbitMQConfig;
+import com.group2.claims_service.config.SwaggerConfig;
+import com.group2.claims_service.security.JwtUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Encoders;
@@ -11,22 +12,48 @@ import io.swagger.v3.oas.models.OpenAPI;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class CoverageBoosterTest {
+public class ApplicationInfrastructureTest {
 
     @Test
     public void testApplicationMain() {
-        AuthServiceApplication app = new AuthServiceApplication();
+        ClaimsServiceApplication app = new ClaimsServiceApplication();
         assertNotNull(app);
+    }
+
+    @Test
+    public void testRabbitMQConfig() {
+        RabbitMQConfig config = new RabbitMQConfig();
+        TopicExchange exchange = config.exchange();
+        assertEquals(RabbitMQConfig.EXCHANGE, exchange.getName());
+
+        Queue cQueue = config.claimCreatedQueue();
+        assertEquals(RabbitMQConfig.CLAIM_CREATED_QUEUE, cQueue.getName());
+
+        Queue rQueue = config.claimReviewQueue();
+        assertEquals(RabbitMQConfig.CLAIM_REVIEW_QUEUE, rQueue.getName());
+
+        Binding cBinding = config.claimCreatedBinding();
+        assertNotNull(cBinding);
+
+        Binding rBinding = config.claimReviewBinding();
+        assertNotNull(rBinding);
+
+        assertNotNull(config.jsonMessageConverter());
     }
 
     @Test
@@ -34,7 +61,7 @@ public class CoverageBoosterTest {
         SwaggerConfig config = new SwaggerConfig();
         OpenAPI api = config.customOpenAPI();
         assertNotNull(api);
-        assertEquals("Auth Service API", api.getInfo().getTitle());
+        assertEquals("Claims Service API", api.getInfo().getTitle());
     }
 
     @Test
@@ -44,20 +71,22 @@ public class CoverageBoosterTest {
         SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
         String secretString = Encoders.BASE64.encode(key.getEncoded());
         ReflectionTestUtils.setField(util, "secret", secretString);
-        ReflectionTestUtils.setField(util, "jwtExpirationMs", 3600000);
 
-        String token = util.generateToken("test@test.com", 1L, "CUSTOMER");
-        assertNotNull(token);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", 123L);
+        claims.put("role", "CUSTOMER");
 
-        String tokenFromClaims = Jwts.builder()
+        String token = Jwts.builder()
+                .setClaims(claims)
                 .setSubject("test@test.com")
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 10000))
                 .signWith(key)
                 .compact();
 
-        // Test generation logic instead of non-existent extractEmail
-        assertNotNull(tokenFromClaims);
+        assertEquals("test@test.com", util.extractEmail(token));
+        assertEquals(123L, util.extractUserId(token));
+        assertEquals("CUSTOMER", util.extractRole(token));
     }
 
     @Test

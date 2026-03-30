@@ -12,5 +12,5 @@ import com.group2.auth_service.entity.User;
 public interface AuthServiceRepository extends JpaRepository<User, Long>{
 	
 	public Optional<User> findByEmail(String email);
-
+    public java.util.List<User> findByRole(com.group2.auth_service.entity.Role role);
 }

@@ -3,6 +3,7 @@ package com.group2.payment_service.service;
 import com.group2.payment_service.dto.event.PolicyPurchaseEvent;
 import com.group2.payment_service.entity.Transaction;
 import com.group2.payment_service.repository.TransactionRepository;
+import com.group2.payment_service.service.impl.PaymentSagaConsumerImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,7 +18,7 @@ import static org.mockito.Mockito.verify;
 public class PaymentSagaConsumerTest {
 
     @InjectMocks
-    private PaymentSagaConsumer paymentSagaConsumer;
+    private PaymentSagaConsumerImpl paymentSagaConsumer;
 
     @Mock
     private TransactionRepository transactionRepository;

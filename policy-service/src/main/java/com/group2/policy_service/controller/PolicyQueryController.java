@@ -58,4 +58,9 @@ public class PolicyQueryController {
     public ResponseEntity<PolicyStatsDTO> getPolicyStats() {
         return ResponseEntity.ok(policyQueryService.getPolicyStats());
     }
+
+    @GetMapping("/user-policy/{id}")
+    public UserPolicyResponseDTO getUserPolicyById(@PathVariable Long id) {
+        return policyQueryService.getUserPolicyById(id);
+    }
 }

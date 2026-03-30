@@ -4,6 +4,7 @@ import com.group2.auth_service.entity.Otp;
 import com.group2.auth_service.exception.OtpException;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.repository.OtpRepository;
+import com.group2.auth_service.service.impl.OtpServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,7 +29,7 @@ public class OtpServiceTest {
     private EmailService emailService;
 
     @InjectMocks
-    private OtpService otpService;
+    private OtpServiceImpl otpService;
 
     @Test
     public void testSendOtp_Success() {

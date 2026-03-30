@@ -7,7 +7,9 @@ public class ClaimCreatedEvent {
     private Long userId;
     private Double claimAmount;
 
-    public ClaimCreatedEvent() {}
+    public ClaimCreatedEvent() {
+        // Default constructor for deserialization
+    }
 
 	public Long getClaimId() {
 		return claimId;

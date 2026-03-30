@@ -4,6 +4,7 @@ import com.group2.claims_service.dto.*;
 import com.group2.claims_service.entity.*;
 import com.group2.claims_service.exception.ClaimNotFoundException;
 import com.group2.claims_service.repository.*;
+import com.group2.claims_service.service.impl.ClaimServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.*;
 public class ClaimServiceTest {
 
     @InjectMocks
-    private ClaimService claimService;
+    private ClaimServiceImpl claimService;
 
     @Mock
     private ClaimRepository claimRepository;

@@ -6,6 +6,7 @@ import com.group2.auth_service.exception.OtpException;
 import com.group2.auth_service.exception.UserAlreadyExistsException;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.repository.OtpRepository;
+import com.group2.auth_service.service.impl.OtpServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,7 +24,7 @@ import static org.mockito.Mockito.*;
 public class AuthServiceExtraTest {
 
     @InjectMocks
-    private OtpService otpService;
+    private OtpServiceImpl otpService;
 
     @Mock
     private OtpRepository otpRepository;

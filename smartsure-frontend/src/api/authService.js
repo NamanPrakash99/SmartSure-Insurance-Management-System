@@ -23,4 +23,7 @@ export const authService = {
 
   resetPassword: (data) =>
     API.post(`${AUTH_BASE}/reset-password`, data),
+
+  updateProfile: (id, data) =>
+    API.put(`${AUTH_BASE}/users/${id}`, data),
 }

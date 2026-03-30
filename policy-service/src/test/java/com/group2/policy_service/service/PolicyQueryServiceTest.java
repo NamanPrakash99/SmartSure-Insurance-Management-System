@@ -7,6 +7,7 @@ import com.group2.policy_service.entity.*;
 import com.group2.policy_service.repository.PolicyRepository;
 import com.group2.policy_service.repository.PolicyTypeRepository;
 import com.group2.policy_service.repository.UserPolicyRepository;
+import com.group2.policy_service.service.impl.PolicyQueryServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,7 +25,7 @@ import static org.mockito.Mockito.when;
 public class PolicyQueryServiceTest {
 
     @InjectMocks
-    private PolicyQueryService policyQueryService;
+    private PolicyQueryServiceImpl policyQueryService;
 
     @Mock
     private PolicyRepository policyRepository;

@@ -3,6 +3,7 @@ package com.group2.admin_service.service;
 import com.group2.admin_service.dto.*;
 import com.group2.admin_service.feign.ClaimsFeignClient;
 import com.group2.admin_service.feign.PolicyFeignClient;
+import com.group2.admin_service.service.impl.AdminServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,10 +19,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class AdminServiceTest {
+class AdminServiceTest {
 
     @InjectMocks
-    private AdminService adminService;
+    private AdminServiceImpl adminService;
 
     @Mock
     private ClaimsFeignClient claimsFeignClient;
@@ -34,7 +35,7 @@ public class AdminServiceTest {
 
     // ==================== reviewClaim ====================
     @Test
-    public void testReviewClaim_Success() {
+    void testReviewClaim_Success() {
         ReviewRequest request = new ReviewRequest();
         request.setStatus("APPROVED");
 
@@ -45,7 +46,7 @@ public class AdminServiceTest {
 
     // ==================== getClaimStatus ====================
     @Test
-    public void testGetClaimStatus() {
+    void testGetClaimStatus() {
         ClaimStatusDTO dto = new ClaimStatusDTO();
         dto.setTotalClaims(5);
         when(claimsFeignClient.getClaimStatus(1L)).thenReturn(dto);
@@ -57,7 +58,7 @@ public class AdminServiceTest {
 
     // ==================== getClaimsByUserId ====================
     @Test
-    public void testGetClaimsByUserId() {
+    void testGetClaimsByUserId() {
         ClaimDTO c = new ClaimDTO();
         c.setClaimId(10L);
         List<ClaimDTO> list = Collections.singletonList(c);
@@ -70,7 +71,7 @@ public class AdminServiceTest {
 
     // ==================== downloadClaimDocument ====================
     @Test
-    public void testDownloadClaimDocument() {
+    void testDownloadClaimDocument() {
         byte[] content = new byte[]{1, 2, 3};
         ResponseEntity<byte[]> response = ResponseEntity.ok(content);
         when(claimsFeignClient.downloadDocument(1L)).thenReturn(response);
@@ -81,7 +82,7 @@ public class AdminServiceTest {
 
     // ==================== getAllClaims (complex mapping) ====================
     @Test
-    public void testGetAllClaims_Mapping() {
+    void testGetAllClaims_Mapping() {
         Map<String, Object> mockData = new HashMap<>();
         mockData.put("totalPages", 2);
         mockData.put("totalElements", 15);
@@ -111,14 +112,14 @@ public class AdminServiceTest {
     }
 
     @Test
-    public void testGetAllClaims_NullData() {
+    void testGetAllClaims_NullData() {
         when(claimsFeignClient.getAllClaims(0, 10)).thenReturn(null);
         PageResponse<ClaimDTO> result = adminService.getAllClaims(0, 10);
         assertNotNull(result);
     }
 
     @Test
-    public void testGetAllClaims_EmptyContent() {
+    void testGetAllClaims_EmptyContent() {
         Map<String, Object> mockData = new HashMap<>();
         mockData.put("totalPages", 0);
         mockData.put("totalElements", 0);
@@ -132,7 +133,7 @@ public class AdminServiceTest {
     }
 
     @Test
-    public void testGetAllClaims_NullFields() {
+    void testGetAllClaims_NullFields() {
         Map<String, Object> mockData = new HashMap<>();
         mockData.put("totalPages", null);
         mockData.put("totalElements", null);
@@ -147,7 +148,7 @@ public class AdminServiceTest {
 
     // ==================== updateClaim ====================
     @Test
-    public void testUpdateClaim() {
+    void testUpdateClaim() {
         ClaimDTO dto = new ClaimDTO();
         dto.setClaimId(1L);
         when(claimsFeignClient.updateClaim(1L, dto)).thenReturn(dto);
@@ -158,7 +159,7 @@ public class AdminServiceTest {
 
     // ==================== createPolicy ====================
     @Test
-    public void testCreatePolicy() {
+    void testCreatePolicy() {
         PolicyRequestDTO request = new PolicyRequestDTO();
         PolicyDTO response = new PolicyDTO();
         response.setId(1L);
@@ -170,7 +171,7 @@ public class AdminServiceTest {
 
     // ==================== updatePolicy ====================
     @Test
-    public void testUpdatePolicy() {
+    void testUpdatePolicy() {
         PolicyRequestDTO request = new PolicyRequestDTO();
         PolicyDTO response = new PolicyDTO();
         response.setId(1L);
@@ -182,14 +183,14 @@ public class AdminServiceTest {
 
     // ==================== deletePolicy ====================
     @Test
-    public void testDeletePolicy() {
+    void testDeletePolicy() {
         adminService.deletePolicy(1L);
         verify(policyFeignClient, times(1)).deletePolicy(1L);
     }
 
     // ==================== getUserPolicies ====================
     @Test
-    public void testGetUserPolicies() {
+    void testGetUserPolicies() {
         List<Object> list = Collections.singletonList(new Object());
         when(policyFeignClient.getUserPolicies(1L)).thenReturn(list);
 
@@ -199,7 +200,7 @@ public class AdminServiceTest {
 
     // ==================== getAllUserPolicies ====================
     @Test
-    public void testGetAllUserPolicies() {
+    void testGetAllUserPolicies() {
         List<Object> list = Collections.singletonList(new Object());
         when(policyFeignClient.getAllUserPolicies()).thenReturn(list);
 
@@ -209,7 +210,7 @@ public class AdminServiceTest {
 
     // ==================== cancelPolicy ====================
     @Test
-    public void testCancelPolicy() {
+    void testCancelPolicy() {
         when(policyFeignClient.cancelPolicy(1L)).thenReturn("Cancelled");
 
         Object result = adminService.cancelPolicy(1L);
@@ -218,14 +219,14 @@ public class AdminServiceTest {
 
     // ==================== deleteClaim ====================
     @Test
-    public void testDeleteClaim() {
+    void testDeleteClaim() {
         adminService.deleteClaim(1L);
         verify(claimsFeignClient, times(1)).deleteClaim(1L);
     }
 
     // ==================== getReports ====================
     @Test
-    public void testGetReports() {
+    void testGetReports() {
         ClaimStatusDTO claimStats = new ClaimStatusDTO();
         claimStats.setTotalClaims(10);
         claimStats.setApprovedClaims(6);
@@ -248,67 +249,77 @@ public class AdminServiceTest {
 
     // ==================== ALL FALLBACKS ====================
     @Test
-    public void testRecoverReviewClaim() {
+    void testRecoverReviewClaim() {
         Throwable e = new RuntimeException("Error");
-        assertThrows(RuntimeException.class, () -> adminService.recoverReviewClaim(1L, new ReviewRequest(), e));
+        ReviewRequest request = new ReviewRequest();
+        assertThrows(RuntimeException.class, () -> adminService.recoverReviewClaim(1L, request, e));
     }
 
     @Test
-    public void testRecoverGetClaimStatus() {
+    void testRecoverGetClaimStatus() {
         ClaimStatusDTO result = adminService.recoverGetClaimStatus(1L, new RuntimeException("E"));
         assertNotNull(result);
     }
 
     @Test
-    public void testRecoverGetClaimsByUserId() {
+    void testRecoverGetClaimsByUserId() {
         List<ClaimDTO> result = adminService.recoverGetClaimsByUserId(1L, new RuntimeException("E"));
         assertTrue(result.isEmpty());
     }
 
     @Test
-    public void testRecoverDownloadClaimDocument() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverDownloadClaimDocument(1L, new RuntimeException("E")));
+    void testRecoverDownloadClaimDocument() {
+        RuntimeException e = new RuntimeException("E");
+        assertThrows(RuntimeException.class, () -> adminService.recoverDownloadClaimDocument(1L, e));
     }
 
     @Test
-    public void testRecoverGetAllClaims() {
+    void testRecoverGetAllClaims() {
         PageResponse<ClaimDTO> result = adminService.recoverGetAllClaims(0, 10, new RuntimeException("E"));
         assertNotNull(result);
     }
 
     @Test
-    public void testRecoverUpdateClaim() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverUpdateClaim(1L, new ClaimDTO(), new RuntimeException("E")));
+    void testRecoverUpdateClaim() {
+        ClaimDTO dto = new ClaimDTO();
+        RuntimeException e = new RuntimeException("E");
+        assertThrows(RuntimeException.class, () -> adminService.recoverUpdateClaim(1L, dto, e));
     }
 
     @Test
-    public void testRecoverCreatePolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverCreatePolicy(new PolicyRequestDTO(), new RuntimeException("E")));
+    void testRecoverCreatePolicy() {
+        PolicyRequestDTO dto = new PolicyRequestDTO();
+        RuntimeException e = new RuntimeException("E");
+        assertThrows(RuntimeException.class, () -> adminService.recoverCreatePolicy(dto, e));
     }
 
     @Test
-    public void testRecoverUpdatePolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverUpdatePolicy(1L, new PolicyRequestDTO(), new RuntimeException("E")));
+    void testRecoverUpdatePolicy() {
+        PolicyRequestDTO dto = new PolicyRequestDTO();
+        RuntimeException e = new RuntimeException("E");
+        assertThrows(RuntimeException.class, () -> adminService.recoverUpdatePolicy(1L, dto, e));
     }
 
     @Test
-    public void testRecoverDeletePolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverDeletePolicy(1L, new RuntimeException("E")));
+    void testRecoverDeletePolicy() {
+        RuntimeException e = new RuntimeException("E");
+        assertThrows(RuntimeException.class, () -> adminService.recoverDeletePolicy(1L, e));
     }
 
     @Test
-    public void testRecoverGetUserPolicies() {
+    void testRecoverGetUserPolicies() {
         List<Object> result = adminService.recoverGetUserPolicies(1L, new RuntimeException("E"));
         assertTrue(result.isEmpty());
     }
 
     @Test
-    public void testRecoverCancelPolicy() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverCancelPolicy(1L, new RuntimeException("E")));
+    void testRecoverCancelPolicy() {
+        RuntimeException e = new RuntimeException("E");
+        assertThrows(RuntimeException.class, () -> adminService.recoverCancelPolicy(1L, e));
     }
 
     @Test
-    public void testRecoverGetReports() {
+    void testRecoverGetReports() {
         ReportResponse r = adminService.recoverGetReports(new RuntimeException("E"));
         assertEquals(0, r.getTotalClaims());
         assertEquals(0, r.getApprovedClaims());
@@ -318,7 +329,8 @@ public class AdminServiceTest {
     }
 
     @Test
-    public void testRecoverDeleteClaim() {
-        assertThrows(RuntimeException.class, () -> adminService.recoverDeleteClaim(1L, new RuntimeException("E")));
+    void testRecoverDeleteClaim() {
+        RuntimeException e = new RuntimeException("E");
+        assertThrows(RuntimeException.class, () -> adminService.recoverDeleteClaim(1L, e));
     }
 }

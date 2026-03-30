@@ -6,12 +6,12 @@ import org.springframework.http.ResponseEntity;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AdminExceptionTest {
+class AdminExceptionTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
-    public void testHandleRuntimeException() {
+    void testHandleRuntimeException() {
         RuntimeException ex = new RuntimeException("Error occurred");
         ResponseEntity<Map<String, String>> response = handler.handleException(ex);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());

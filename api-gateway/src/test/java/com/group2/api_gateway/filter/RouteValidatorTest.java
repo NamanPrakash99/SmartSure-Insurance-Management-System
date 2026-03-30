@@ -9,12 +9,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RouteValidatorTest {
+class RouteValidatorTest {
 
     private final RouteValidator validator = new RouteValidator();
 
     @Test
-    public void testIsOpenEndpoint_True() {
+    void testIsOpenEndpoint_True() {
         ServerHttpRequest request = mock(ServerHttpRequest.class);
         when(request.getURI()).thenReturn(URI.create("http://localhost:8080/api/auth/register"));
         
@@ -22,7 +22,7 @@ public class RouteValidatorTest {
     }
 
     @Test
-    public void testIsOpenEndpoint_False() {
+    void testIsOpenEndpoint_False() {
         ServerHttpRequest request = mock(ServerHttpRequest.class);
         when(request.getURI()).thenReturn(URI.create("http://localhost:8080/api/policy/all"));
         

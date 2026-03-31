@@ -64,26 +64,26 @@ public class AuthController {
     }
     
     @PostMapping("/send-otp")
-    public String sendOtp(@RequestParam String email) {
+    public String sendOtp(@RequestParam("email") String email) {
         otpService.sendOtp(email);
         return "OTP sent to email";
     }
     
     @PostMapping("/verify-otp")
-    public String verifyOtp(@RequestParam String email,
-                            @RequestParam String otp) {
+    public String verifyOtp(@RequestParam("email") String email,
+                            @RequestParam("otp") String otp) {
 
         otpService.verifyOtp(email, otp);
         return "OTP verified successfully";
     }
 
     @org.springframework.web.bind.annotation.GetMapping("/users/{id}")
-    public ResponseEntity<User> getUserById(@org.springframework.web.bind.annotation.PathVariable Long id) {
+    public ResponseEntity<User> getUserById(@org.springframework.web.bind.annotation.PathVariable("id") Long id) {
         return ResponseEntity.ok(service.getUserById(id));
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestParam String email) {
+    public ResponseEntity<String> forgotPassword(@RequestParam("email") String email) {
         service.forgotPassword(email);
         return ResponseEntity.ok("Recovery email sent successfully (Simulated)");
     }
@@ -99,7 +99,7 @@ public class AuthController {
         return service.getAllCustomers();
     }
     @org.springframework.web.bind.annotation.PutMapping("/users/{id}")
-    public ResponseEntity<User> updateUser(@org.springframework.web.bind.annotation.PathVariable Long id, @Valid @RequestBody com.group2.auth_service.dto.UpdateProfileRequest request) {
+    public ResponseEntity<User> updateUser(@org.springframework.web.bind.annotation.PathVariable("id") Long id, @Valid @RequestBody com.group2.auth_service.dto.UpdateProfileRequest request) {
         return ResponseEntity.ok(service.updateUser(id, request));
     }
 }

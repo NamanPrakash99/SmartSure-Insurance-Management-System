@@ -44,7 +44,6 @@ public class ApplicationInfrastructureTest {
         SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
         String secretString = Encoders.BASE64.encode(key.getEncoded());
         ReflectionTestUtils.setField(util, "secret", secretString);
-        ReflectionTestUtils.setField(util, "jwtExpirationMs", 3600000);
 
         String token = util.generateToken("test@test.com", 1L, "CUSTOMER");
         assertNotNull(token);

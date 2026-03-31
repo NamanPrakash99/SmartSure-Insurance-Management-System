@@ -20,7 +20,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 @WebMvcTest(AuthController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class AuthControllerTest {
 
     @Autowired
@@ -54,6 +57,7 @@ class AuthControllerTest {
         when(authService.register(any(RegisterRequest.class))).thenReturn(user);
 
         mockMvc.perform(post("/api/auth/register")
+                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -71,6 +75,7 @@ class AuthControllerTest {
         when(authService.login(any(LoginRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/auth/login")
+                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -97,15 +102,17 @@ class AuthControllerTest {
         when(jwtUtil.generateToken(anyString(), anyLong(), anyString())).thenReturn("newToken");
 
         mockMvc.perform(post("/api/auth/refresh-token")
+                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("newToken"));
+                .andExpect(jsonPath("$.accessToken").value("newToken"));
     }
 
     @Test
     public void testSendOtp() throws Exception {
         mockMvc.perform(post("/api/auth/send-otp")
+                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
                 .param("email", "user@test.com"))
                 .andExpect(status().isOk());
     }
@@ -113,6 +120,7 @@ class AuthControllerTest {
     @Test
     public void testVerifyOtp() throws Exception {
         mockMvc.perform(post("/api/auth/verify-otp")
+                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
                 .param("email", "user@test.com")
                 .param("otp", "123456"))
                 .andExpect(status().isOk());
@@ -124,7 +132,8 @@ class AuthControllerTest {
         user.setId(1L);
         when(authService.getUserById(1L)).thenReturn(user);
 
-        mockMvc.perform(get("/api/auth/users/1"))
+        mockMvc.perform(get("/api/auth/users/1")
+                .header("X-Gateway-Secret", "SmartSureSecretKey2026"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L));
     }
@@ -132,6 +141,7 @@ class AuthControllerTest {
     @Test
     public void testForgotPassword() throws Exception {
         mockMvc.perform(post("/api/auth/forgot-password")
+                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
                 .param("email", "user@test.com"))
                 .andExpect(status().isOk());
     }
@@ -143,6 +153,7 @@ class AuthControllerTest {
         request.setNewPassword("NewPass123");
 
         mockMvc.perform(post("/api/auth/reset-password")
+                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());

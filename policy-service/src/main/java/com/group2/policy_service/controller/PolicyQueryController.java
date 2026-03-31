@@ -39,13 +39,13 @@ public class PolicyQueryController {
     }
 
     @GetMapping("/policies/{policyId}")
-    public PolicyResponseDTO getPolicy(@PathVariable Long policyId) {
+    public PolicyResponseDTO getPolicy(@PathVariable("policyId") Long policyId) {
         return policyQueryService.getPolicyById(policyId);
     }
     
     @GetMapping("/admin/user-policies/{userId}")
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or principal.toString() == #userId.toString()")
-    public List<UserPolicyResponseDTO> getUserPolicies(@PathVariable Long userId) {
+    public List<UserPolicyResponseDTO> getUserPolicies(@PathVariable("userId") Long userId) {
         return policyQueryService.getPoliciesByUserId(userId);
     }
 
@@ -60,7 +60,7 @@ public class PolicyQueryController {
     }
 
     @GetMapping("/user-policy/{id}")
-    public UserPolicyResponseDTO getUserPolicyById(@PathVariable Long id) {
+    public UserPolicyResponseDTO getUserPolicyById(@PathVariable("id") Long id) {
         return policyQueryService.getUserPolicyById(id);
     }
 }

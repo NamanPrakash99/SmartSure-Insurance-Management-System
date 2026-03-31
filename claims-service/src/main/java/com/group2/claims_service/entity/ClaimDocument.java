@@ -11,7 +11,8 @@ import jakarta.persistence.Id;
 @Entity
 public class ClaimDocument {
 	@Id
-	@GeneratedValue(strategy=GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "claim_document_seq")
+	@jakarta.persistence.SequenceGenerator(name = "claim_document_seq", sequenceName = "claim_document_seq", allocationSize = 1)
 	private Long id;
 	private Long claimId;
 	private String fileUrl;

@@ -15,7 +15,8 @@ import jakarta.persistence.Id;
 public class Claim {
 	
 	@Id
-	@GeneratedValue(strategy=GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "claim_seq")
+	@jakarta.persistence.SequenceGenerator(name = "claim_seq", sequenceName = "claim_seq", allocationSize = 1)
 	private Long id;
 	private Long policyId;
 	private Long userId;

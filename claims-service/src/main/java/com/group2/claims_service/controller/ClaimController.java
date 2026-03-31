@@ -43,7 +43,7 @@ public class ClaimController {
 	
 	
 	@PostMapping(value = "/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<String> uploadDocument(@RequestParam Long claimId, @RequestParam("file") MultipartFile file){
+	public ResponseEntity<String> uploadDocument(@RequestParam("claimId") Long claimId, @RequestParam("file") MultipartFile file){
 		
 		String response=claimService.uploadDocument(claimId, file);
 		
@@ -99,7 +99,7 @@ public class ClaimController {
 	// Get all claims for a specific user
 	@GetMapping("/user/{userId}")
 	@PreAuthorize("hasRole('ADMIN') or principal == #userId")
-	public ResponseEntity<List<ClaimResponseDTO>> getClaimsByUserId(@PathVariable Long userId) {
+	public ResponseEntity<List<ClaimResponseDTO>> getClaimsByUserId(@PathVariable("userId") Long userId) {
 		return ResponseEntity.ok(claimService.getClaimsByUserId(userId));
 	}
 	
@@ -114,8 +114,8 @@ public class ClaimController {
 	@PreAuthorize("hasRole('ADMIN')")
 
 	public ResponseEntity<java.util.Map<String, Object>> getAllClaims(
-			@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "10") int size) {
+			@RequestParam(name = "page", defaultValue = "0") int page,
+			@RequestParam(name = "size", defaultValue = "10") int size) {
 		org.springframework.data.domain.Page<ClaimResponseDTO> claimPage = claimService.getAllClaims(org.springframework.data.domain.PageRequest.of(page, size));
 		
 		java.util.Map<String, Object> response = new java.util.HashMap<>();

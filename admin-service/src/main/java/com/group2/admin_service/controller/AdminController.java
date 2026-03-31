@@ -24,11 +24,11 @@ public class AdminController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
     private AdminService adminService;
-    
+
     public AdminController(AdminService adminService) {
-		super();
-		this.adminService = adminService;
-	}
+        super();
+        this.adminService = adminService;
+    }
 
     // ==================== CLAIM APIs ====================
 
@@ -55,8 +55,8 @@ public class AdminController {
     }
 
     // Download a claim's uploaded document
-    @GetMapping(value = "/claims/{id}/document", produces = { 
-    	"application/pdf", "image/jpeg", "image/png", "application/octet-stream" 
+    @GetMapping(value = "/claims/{id}/document", produces = {
+            "application/pdf", "image/jpeg", "image/png", "application/octet-stream"
     })
     public ResponseEntity<byte[]> downloadDocument(@PathVariable("id") Long id) {
         return adminService.downloadClaimDocument(id);
@@ -65,12 +65,12 @@ public class AdminController {
     // Get all claims with pagination
     @GetMapping("/claims")
     public ResponseEntity<Object> getAllClaims(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
         try {
             return ResponseEntity.ok(adminService.getAllClaims(page, size));
         } catch (Exception e) {
-            logger.error("❌ Error in AdminController.getAllClaims: {}", e.getMessage(), e);
+            logger.error("Error in AdminController.getAllClaims: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
@@ -87,7 +87,7 @@ public class AdminController {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
-    
+
     @DeleteMapping("/claims/{id}")
     public ResponseEntity<String> deleteClaim(@PathVariable("id") Long id) {
         adminService.deleteClaim(id);
@@ -103,13 +103,13 @@ public class AdminController {
 
     @PutMapping("/policies/{id}")
     public ResponseEntity<PolicyDTO> updatePolicy(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody PolicyRequestDTO dto) {
         return ResponseEntity.ok(adminService.updatePolicy(id, dto));
     }
 
     @DeleteMapping("/policies/{id}")
-    public ResponseEntity<String> deletePolicy(@PathVariable Long id) {
+    public ResponseEntity<String> deletePolicy(@PathVariable("id") Long id) {
         adminService.deletePolicy(id);
         return ResponseEntity.ok("Policy deleted successfully");
     }
@@ -125,7 +125,7 @@ public class AdminController {
     }
 
     @PutMapping("/policies/{id}/cancel")
-    public ResponseEntity<Object> cancelUserPolicy(@PathVariable Long id) {
+    public ResponseEntity<Object> cancelUserPolicy(@PathVariable("id") Long id) {
         return ResponseEntity.ok(adminService.cancelPolicy(id));
     }
 

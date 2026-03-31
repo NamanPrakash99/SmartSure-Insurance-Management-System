@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.SequenceGenerator;
 
 
 @Entity
@@ -15,7 +16,8 @@ import jakarta.persistence.Table;
 public class Policy {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "policy_seq")
+    @SequenceGenerator(name = "policy_seq", sequenceName = "policy_sequence", allocationSize = 1)
     private Long id;
 
     private String policyName;

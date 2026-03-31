@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 public class PasswordResetToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "pwd_reset_seq")
+    @jakarta.persistence.SequenceGenerator(name = "pwd_reset_seq", sequenceName = "pwd_reset_seq", allocationSize = 1)
     private Long id;
 
     @Column(nullable = false, unique = true)

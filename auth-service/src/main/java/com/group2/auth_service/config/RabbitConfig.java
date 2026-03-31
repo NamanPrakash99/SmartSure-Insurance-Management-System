@@ -5,6 +5,7 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 @Configuration
 public class RabbitConfig {
@@ -49,18 +50,18 @@ public class RabbitConfig {
     }
 
     @Bean
-    public Binding authPolicyStatusBinding() {
-        return BindingBuilder.bind(authPolicyStatusQueue()).to(policyExchange()).with(PAYMENT_STATUS_ROUTING_KEY);
+    public Binding authPolicyStatusBinding(@Qualifier("authPolicyStatusQueue") Queue authPolicyStatusQueue, @Qualifier("policyExchange") DirectExchange policyExchange) {
+        return BindingBuilder.bind(authPolicyStatusQueue).to(policyExchange).with(PAYMENT_STATUS_ROUTING_KEY);
     }
 
     @Bean
-    public Binding authClaimCreatedBinding() {
-        return BindingBuilder.bind(authClaimCreatedQueue()).to(claimExchange()).with(CLAIM_CREATED_ROUTING_KEY);
+    public Binding authClaimCreatedBinding(@Qualifier("authClaimCreatedQueue") Queue authClaimCreatedQueue, @Qualifier("claimExchange") TopicExchange claimExchange) {
+        return BindingBuilder.bind(authClaimCreatedQueue).to(claimExchange).with(CLAIM_CREATED_ROUTING_KEY);
     }
 
     @Bean
-    public Binding authClaimReviewBinding() {
-        return BindingBuilder.bind(authClaimReviewQueue()).to(claimExchange()).with(CLAIM_REVIEW_ROUTING_KEY);
+    public Binding authClaimReviewBinding(@Qualifier("authClaimReviewQueue") Queue authClaimReviewQueue, @Qualifier("claimExchange") TopicExchange claimExchange) {
+        return BindingBuilder.bind(authClaimReviewQueue).to(claimExchange).with(CLAIM_REVIEW_ROUTING_KEY);
     }
 
     @Bean

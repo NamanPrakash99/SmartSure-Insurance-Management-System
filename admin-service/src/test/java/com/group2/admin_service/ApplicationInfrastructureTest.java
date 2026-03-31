@@ -52,10 +52,10 @@ class ApplicationInfrastructureTest {
         Queue rQueue = config.claimReviewQueue();
         assertEquals(RabbitMQConfig.CLAIM_REVIEW_QUEUE, rQueue.getName());
 
-        Binding cBinding = config.claimCreatedBinding();
+        Binding cBinding = config.claimCreatedBinding(cQueue, exchange);
         assertNotNull(cBinding);
 
-        Binding rBinding = config.claimReviewBinding();
+        Binding rBinding = config.claimReviewBinding(rQueue, exchange);
         assertNotNull(rBinding);
 
         assertNotNull(config.jsonMessageConverter());

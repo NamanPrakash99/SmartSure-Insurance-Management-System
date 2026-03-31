@@ -16,8 +16,8 @@ import java.io.PrintWriter;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class GatewaySecurityFilter extends OncePerRequestFilter {
 
-    private static final String GATEWAY_SECRET_HEADER = "X-Gateway-Secret";
-    private static final String GATEWAY_SECRET_VALUE = "SmartSureSecretKey2026";
+    private static final String AUTH_GATEWAY_HEADER = "X-Gateway-Secret";
+    private static final String AUTH_GATEWAY_TOKEN = "SmartSureSecretKey2026";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -31,8 +31,8 @@ public class GatewaySecurityFilter extends OncePerRequestFilter {
             return;
         }
 
-        String secret = request.getHeader(GATEWAY_SECRET_HEADER);
-        if (secret != null && secret.contains(GATEWAY_SECRET_VALUE)) {
+        String secret = request.getHeader(AUTH_GATEWAY_HEADER);
+        if (secret != null && secret.contains(AUTH_GATEWAY_TOKEN)) {
             filterChain.doFilter(request, response);
         } else {
 

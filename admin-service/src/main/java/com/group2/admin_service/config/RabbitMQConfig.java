@@ -8,6 +8,7 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 
 @Configuration
@@ -37,18 +38,18 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding claimCreatedBinding() {
+    public Binding claimCreatedBinding(@Qualifier("claimCreatedQueue") Queue claimCreatedQueue, TopicExchange exchange) {
         return BindingBuilder
-                .bind(claimCreatedQueue())
-                .to(exchange())
+                .bind(claimCreatedQueue)
+                .to(exchange)
                 .with(CLAIM_CREATED_ROUTING_KEY);
     }
 
     @Bean
-    public Binding claimReviewBinding() {
+    public Binding claimReviewBinding(@Qualifier("claimReviewQueue") Queue claimReviewQueue, TopicExchange exchange) {
         return BindingBuilder
-                .bind(claimReviewQueue())
-                .to(exchange())
+                .bind(claimReviewQueue)
+                .to(exchange)
                 .with(CLAIM_REVIEW_ROUTING_KEY);
     }
     

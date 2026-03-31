@@ -11,7 +11,8 @@ import jakarta.persistence.Id;
 public class Otp {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "otp_seq")
+    @jakarta.persistence.SequenceGenerator(name = "otp_seq", sequenceName = "otp_seq", allocationSize = 1)
     private Long id;
 
     private String email;

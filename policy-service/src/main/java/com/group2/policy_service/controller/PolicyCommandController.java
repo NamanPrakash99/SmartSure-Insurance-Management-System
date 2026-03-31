@@ -30,7 +30,7 @@ public class PolicyCommandController {
     }
 
     @PostMapping("/policies/purchase")
-    public UserPolicyResponseDTO purchasePolicy(@RequestParam Long policyId) {
+    public UserPolicyResponseDTO purchasePolicy(@RequestParam("policyId") Long policyId) {
         return policyCommandService.purchasePolicy(policyId);
     }
 
@@ -42,30 +42,30 @@ public class PolicyCommandController {
 
     @PutMapping("/admin/policies/{id}")
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
-    public PolicyResponseDTO updatePolicy(@PathVariable Long id,
+    public PolicyResponseDTO updatePolicy(@PathVariable("id") Long id,
                                           @RequestBody PolicyRequestDTO dto) {
         return policyCommandService.updatePolicy(id, dto);
     }
 
     @DeleteMapping("/admin/policies/{id}")
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
-    public void deletePolicy(@PathVariable Long id) {
+    public void deletePolicy(@PathVariable("id") Long id) {
         policyCommandService.deletePolicy(id);
     }
 
     @PutMapping("/admin/policies/{id}/cancel")
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserPolicyResponseDTO> cancelPolicy(@PathVariable Long id) {
+    public ResponseEntity<UserPolicyResponseDTO> cancelPolicy(@PathVariable("id") Long id) {
         return ResponseEntity.ok(policyCommandService.cancelPolicy(id));
     }
 
     @PostMapping("/policies/renew/{id}")
-    public ResponseEntity<UserPolicyResponseDTO> renewPolicy(@PathVariable Long id) {
+    public ResponseEntity<UserPolicyResponseDTO> renewPolicy(@PathVariable("id") Long id) {
         return ResponseEntity.ok(policyCommandService.renewPolicy(id));
     }
 
     @DeleteMapping("/policies/{id}")
-    public ResponseEntity<String> deleteUserPolicy(@PathVariable Long id) {
+    public ResponseEntity<String> deleteUserPolicy(@PathVariable("id") Long id) {
         policyCommandService.deleteUserPolicy(id);
         return ResponseEntity.ok("Policy instance deleted");
     }

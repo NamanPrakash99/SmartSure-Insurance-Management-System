@@ -7,6 +7,7 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 @Configuration
 public class RabbitConfig {
@@ -33,12 +34,12 @@ public class RabbitConfig {
     }
 
     @Bean
-    public Binding purchaseBinding(Queue purchaseQueue, DirectExchange exchange) {
+    public Binding purchaseBinding(@Qualifier("purchaseQueue") Queue purchaseQueue, DirectExchange exchange) {
         return BindingBuilder.bind(purchaseQueue).to(exchange).with(PURCHASE_ROUTING_KEY);
     }
 
     @Bean
-    public Binding paymentStatusBinding(Queue paymentStatusQueue, DirectExchange exchange) {
+    public Binding paymentStatusBinding(@Qualifier("paymentStatusQueue") Queue paymentStatusQueue, DirectExchange exchange) {
         return BindingBuilder.bind(paymentStatusQueue).to(exchange).with(PAYMENT_STATUS_ROUTING_KEY);
     }
 

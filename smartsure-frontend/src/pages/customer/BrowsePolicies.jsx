@@ -94,15 +94,13 @@ export default function BrowsePolicies() {
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature
             }
-            // Step 3: Verify on backend. 
-            // The backend verify will auto-emit PaymentSuccess event to RabbitMQ
-            // which tells the Policy Service to turn this record status to "ACTIVE"
+            // Step 3: Verify on backend
             await paymentService.verifyPayment(verifyData)
 
-            toast.success('Payment successful! Your policy will be active shortly.')
+            toast.success('Payment verified! Policy activated.')
             setTimeout(() => {
               navigate('/my-policies')
-            }, 1000)
+            }, 1500)
           } catch (err) {
             toast.error('Payment verification failed')
             console.error(err)

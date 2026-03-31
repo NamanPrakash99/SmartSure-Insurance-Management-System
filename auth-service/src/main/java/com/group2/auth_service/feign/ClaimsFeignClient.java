@@ -6,8 +6,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.Map;
 
-@FeignClient(name = "claims-service")
+import com.group2.auth_service.config.FeignConfig;
+
+@FeignClient(name = "claims-service", configuration = FeignConfig.class)
 public interface ClaimsFeignClient {
-    @GetMapping("/claims/{claimId}")
+    @GetMapping("/api/claims/{claimId}")
     Map<String, Object> getClaimById(@PathVariable("claimId") Long claimId);
 }

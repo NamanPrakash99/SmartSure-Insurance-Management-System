@@ -291,17 +291,17 @@ export default function PolicyManagement() {
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1">Duration (Months)</label>
-              <input required type="number" min="1" className="input-field" value={formData.durationInMonths} onChange={e => setFormData({ ...formData, durationInMonths: e.target.value })} />
+              <input required type="number" min="1" className="input-field" value={formData.durationInMonths} onChange={e => setFormData({ ...formData, durationInMonths: Number(e.target.value) })} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold mb-1">Premium Amount (₹)</label>
-              <input required type="number" min="1" className="input-field" value={formData.premiumAmount} onChange={e => setFormData({ ...formData, premiumAmount: e.target.value })} />
+              <input required type="number" min="1" className="input-field" value={formData.premiumAmount} onChange={e => setFormData({ ...formData, premiumAmount: Number(e.target.value) })} />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1">Total Coverage (₹)</label>
-              <input required type="number" min="1" className="input-field" value={formData.coverageAmount} onChange={e => setFormData({ ...formData, coverageAmount: e.target.value })} />
+              <input required type="number" min="1" className="input-field" value={formData.coverageAmount} onChange={e => setFormData({ ...formData, coverageAmount: Number(e.target.value) })} />
             </div>
           </div>
           <div className="pt-4 border-t border-surface-200 dark:border-surface-800 mt-6 flex justify-end gap-3">

@@ -63,12 +63,10 @@ export default function PolicyDetails() {
             await paymentService.verifyPayment(verifyData)
             
             // 4. Actually purchase/attach policy to user 
-            // The backend has a /policies/purchase endpoint separately from payment.
-            // In a real system, the verified payment webhook would trigger this.
-            // Here, we trigger it manually upon UI success.
+            // Note: In premium setup, this might be redundant if the verifyPayment event triggers it.
             await policyService.purchasePolicy(policy.id)
 
-            toast.success('Payment successful! Policy purchased.')
+            toast.success('Payment verified! Policy purchased.')
             navigate('/my-policies')
           } catch (err) {
             toast.error('Payment verification failed')

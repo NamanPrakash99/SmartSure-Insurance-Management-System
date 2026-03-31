@@ -8,6 +8,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication
 @EnableDiscoveryClient
+@org.springframework.scheduling.annotation.EnableAsync
 @OpenAPIDefinition(servers = {@Server(url = "/payment-service", description = "Payment Service via API Gateway")})
 public class PaymentServiceApplication {
 

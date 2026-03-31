@@ -168,8 +168,7 @@ public class AdminServiceImpl implements AdminService {
             return policyFeignClient.createPolicy(dto);
         } catch (feign.FeignException e) {
             String message = e.contentUTF8();
-            // If the message contains a JSON, you could parse it, but let's just use the raw text if short
-            throw new RuntimeException("Policy Creation Failed: " + (message.length() < 100 ? message : "Invalid Data"));
+            throw new RuntimeException("Policy Creation Failed: " + message);
         } catch (Exception e) {
             throw new RuntimeException("Policy Service unreachable: " + e.getMessage());
         }
@@ -177,7 +176,7 @@ public class AdminServiceImpl implements AdminService {
 
     public PolicyDTO recoverCreatePolicy(PolicyRequestDTO dto, Throwable e) {
         logger.error("Fallback: Could not create policy. Reason: {}", e.getMessage());
-        throw new RuntimeException("Fallback: Could not create policy. Service might be down.");
+        throw new RuntimeException(e.getMessage());
     }
 
     // Update policy product

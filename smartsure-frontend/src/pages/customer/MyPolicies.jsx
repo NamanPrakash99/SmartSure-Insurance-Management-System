@@ -68,12 +68,12 @@ export default function MyPolicies() {
               razorpaySignature: response.razorpay_signature
             }
             await paymentService.verifyPayment(verifyData)
-            toast.success('Payment successful! Your policy will be active shortly.')
+            toast.success('Payment verified! Your policy will be active shortly.')
             setSelectedPolicyForRenewal(null)
             // Delay fetch to allow RabbitMQ event processing on backend
             setTimeout(() => {
               fetchPolicies()
-            }, 1000)
+            }, 2000)
           } catch (err) {
             toast.error('Payment verification failed')
             console.error(err)

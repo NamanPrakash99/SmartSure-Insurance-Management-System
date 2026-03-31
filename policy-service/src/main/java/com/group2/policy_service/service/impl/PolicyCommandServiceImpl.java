@@ -96,7 +96,6 @@ public class PolicyCommandServiceImpl implements PolicyCommandService {
         policy.setCoverageAmount(dto.getCoverageAmount());
         policy.setDurationInMonths(dto.getDurationInMonths());
         policy.setActive(true);
-
         policyRepository.save(policy);
         return mapToPolicyResponse(policy);
     }

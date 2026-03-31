@@ -318,5 +318,3 @@ public class ClaimServiceImpl implements ClaimService {
 
 
 }
-
-

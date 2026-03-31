@@ -342,21 +342,6 @@ export default function MyClaims() {
                                <HiOutlineDownload className="text-xl" />
                             </button>
 
-                             <button 
-                               onClick={async () => {
-                                 if (window.confirm('Delete this claim? This action cannot be undone.')) {
-                                   try {
-                                     await claimService.deleteClaim(claim.claimId)
-                                     toast.success('Claim deleted successfully')
-                                     fetchData()
-                                   } catch (err) { toast.error('Failed to delete claim') }
-                                 }
-                               }}
-                               title="Delete Claim"
-                               className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 hover:bg-red-500 border border-red-500/20 text-red-500 hover:text-white dark:bg-red-500/10 dark:hover:bg-red-500 transition-all shadow-sm active:scale-95"
-                             >
-                               <HiOutlineX className="text-xl" />
-                             </button>
                           </div>
                       </div>
                     </div>

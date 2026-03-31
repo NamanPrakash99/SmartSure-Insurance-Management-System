@@ -31,7 +31,7 @@ public interface ClaimsFeignClient {
     @GetMapping("/api/claims/user/{userId}")
     List<ClaimDTO> getClaimsByUserId(@PathVariable("userId") Long userId);
 
-    @GetMapping(value = "/api/claims/{id}/document", consumes = "application/octet-stream")
+    @GetMapping(value = "/api/claims/{id}/document")
     org.springframework.http.ResponseEntity<byte[]> downloadDocument(@PathVariable("id") Long id);
 
     @GetMapping("/api/claims/admin/all")

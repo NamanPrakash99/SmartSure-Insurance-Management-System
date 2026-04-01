@@ -17,8 +17,10 @@ public class RouteValidator {
             "/v3/api-docs",
             "/swagger-ui",
             "/swagger-ui.html",
+            "/webjars",
             "/actuator",
-            "/eureka"
+            "/eureka",
+            "/error"
     );
 
     public boolean isOpenEndpoint(ServerHttpRequest request) {

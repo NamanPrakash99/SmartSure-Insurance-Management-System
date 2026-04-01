@@ -199,7 +199,7 @@ public class ClaimServiceImpl implements ClaimService {
 		ClaimStatus currentStatus = claim.getClaimStatus();
 		boolean validTransition = switch (targetStatus) {
 			case UNDER_REVIEW -> currentStatus == ClaimStatus.SUBMITTED;
-			case APPROVED, REJECTED -> currentStatus == ClaimStatus.UNDER_REVIEW;
+			case APPROVED, REJECTED -> currentStatus == ClaimStatus.SUBMITTED || currentStatus == ClaimStatus.UNDER_REVIEW;
 			case CLOSED -> currentStatus == ClaimStatus.APPROVED || currentStatus == ClaimStatus.REJECTED;
 			default -> false;
 		};

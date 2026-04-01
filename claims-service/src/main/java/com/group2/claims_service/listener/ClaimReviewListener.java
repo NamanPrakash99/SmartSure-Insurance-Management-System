@@ -1,34 +1,29 @@
 package com.group2.claims_service.listener;
 
 import com.group2.claims_service.dto.ClaimReviewEvent;
-import com.group2.claims_service.entity.ClaimStatus;
-
-import com.group2.claims_service.repository.ClaimRepository;
+import com.group2.claims_service.service.ClaimService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ClaimReviewListener {
 
-    private final ClaimRepository claimRepository;
+    private final ClaimService claimService;
 
-    public ClaimReviewListener(ClaimRepository claimRepository) {
-        this.claimRepository = claimRepository;
+    public ClaimReviewListener(ClaimService claimService) {
+        this.claimService = claimService;
     }
 
     @RabbitListener(queues = "claim.review.queue")
     public void processClaimReview(ClaimReviewEvent event) {
-        System.out.println("Processing Claim Review Event for Claim ID: " + event.getClaimId());
+        System.out.println("Processing Claim Review Event for Claim ID: " + event.getClaimId() + " to " + event.getStatus());
         
-        claimRepository.findById(event.getClaimId()).ifPresent(claim -> {
-            try {
-                ClaimStatus newStatus = ClaimStatus.valueOf(event.getStatus());
-                claim.setClaimStatus(newStatus);
-                claimRepository.save(claim);
-                System.out.println("Successfully updated Claim " + event.getClaimId() + " to " + newStatus);
-            } catch (IllegalArgumentException e) {
-                System.err.println("Invalid status received in event: " + event.getStatus());
-            }
-        });
+        try {
+            // Using claimService to ensure consistent logic and email notification
+            claimService.updateClaimStatus(event.getClaimId(), event.getStatus());
+            System.out.println("Successfully processed claim review for Claim ID: " + event.getClaimId());
+        } catch (Exception e) {
+            System.err.println("❌ Failed to process Claim Review Event: " + e.getMessage());
+        }
     }
 }

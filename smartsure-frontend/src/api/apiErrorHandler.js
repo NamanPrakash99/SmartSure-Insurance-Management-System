@@ -81,6 +81,7 @@ export const handleRequest = async (requestPromise) => {
       success: true,
       data: response.data,
       status: response.status,
+      headers: response.headers,
     }
   } catch (error) {
     return normalizeError(error)

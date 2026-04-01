@@ -40,20 +40,15 @@ public class AdminServiceImpl implements AdminService {
     @CircuitBreaker(name = "adminService", fallbackMethod = "recoverReviewClaim")
 	public void reviewClaim(Long claimId, ReviewRequest request) {
 	
-	    // 1. Create Event DTO (DO NOT send ReviewRequest directly)
-	    ClaimReviewEvent event = new ClaimReviewEvent();
-	    event.setClaimId(claimId);
-	    event.setStatus(request.getStatus());
+	    // 1. Create Status Update DTO
+	    ClaimStatusUpdateDTO statusDto = new ClaimStatusUpdateDTO();
+	    statusDto.setStatus(request.getStatus());
 	
-	    // 2. Send message to RabbitMQ
-	    rabbitTemplate.convertAndSend(
-	            "claim.exchange",
-	            "claim.review",
-	            event
-	    );
+	    // 2. Synchronous call to Claims service (ensures immediate DB update before UI refreshes)
+	    claimsFeignClient.updateClaimStatus(claimId, statusDto);
 	
-	    // 3. Logging (very useful for debugging)
-	    logger.info("🔥 Claim review event sent for claimId: {}", claimId);
+	    // 3. Optional: Logging
+	    logger.info("✅ Claim status updated to {} for claimId: {}", request.getStatus(), claimId);
 	}
 
     public void recoverReviewClaim(Long claimId, ReviewRequest request, Throwable e) {

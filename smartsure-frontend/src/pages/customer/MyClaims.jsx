@@ -66,6 +66,10 @@ export default function MyClaims() {
     try {
       const res = await claimService.downloadDocument(claimId)
       
+      if (!res.success) {
+        throw new Error(res.message);
+      }
+
       const contentType = res.headers['content-type']
       const extension = contentType?.includes('image') ? 'jpg' : 'pdf'
       
@@ -86,6 +90,11 @@ export default function MyClaims() {
   const handleView = async (claimId) => {
     try {
       const res = await claimService.downloadDocument(claimId)
+      
+      if (!res.success) {
+        throw new Error(res.message);
+      }
+
       const contentType = res.headers['content-type']
       
       const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }))

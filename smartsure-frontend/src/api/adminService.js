@@ -1,53 +1,110 @@
 import API from './axios'
+import { handleRequest } from './apiErrorHandler'
 
 const ADMIN_BASE = '/admin-service/api/admin'
 
+/**
+ * Admin Service
+ * 
+ * Provides administrative oversight for the entire SmartSure system, 
+ * including claims management, policy creation, reporting, and customer oversight.
+ */
 export const adminService = {
-  // Claims
+  // ── Claims Management ───────────────────────────────────────────────
+
+  /**
+   * Reviews a specific claim and updates its approval status.
+   */
   reviewClaim: (id, data) =>
-    API.put(`${ADMIN_BASE}/claims/${id}/review`, data),
+    handleRequest(API.put(`${ADMIN_BASE}/claims/${id}/review`, data)),
 
+  /**
+   * Fetches the current processing status of a claim.
+   */
   getClaimStatus: (id) =>
-    API.get(`${ADMIN_BASE}/claims/status/${id}`),
+    handleRequest(API.get(`${ADMIN_BASE}/claims/status/${id}`)),
 
+  /**
+   * Fetches all claims associated with a given user ID.
+   */
   getClaimsByUser: (userId) =>
-    API.get(`${ADMIN_BASE}/claims/user/${userId}`),
+    handleRequest(API.get(`${ADMIN_BASE}/claims/user/${userId}`)),
 
+  /**
+   * Downloads the raw document file for a claim.
+   */
   downloadClaimDocument: (id) =>
-    API.get(`${ADMIN_BASE}/claims/${id}/document`, { responseType: 'blob' }),
+    handleRequest(
+      API.get(`${ADMIN_BASE}/claims/${id}/document`, { responseType: 'blob' })
+    ),
 
+  /**
+   * Fetches a paginated list of all claims across the system.
+   */
   getAllClaims: (page = 0, size = 10) =>
-    API.get(`${ADMIN_BASE}/claims`, { params: { page, size } }),
-  updateClaim: (id, data) => API.put(`${ADMIN_BASE}/claims/${id}`, data),
-  deleteClaim: (id) => API.delete(`${ADMIN_BASE}/claims/${id}`),
+    handleRequest(API.get(`${ADMIN_BASE}/claims`, { params: { page, size } })),
 
+  /**
+   * Updates an existing claim's data.
+   */
+  updateClaim: (id, data) =>
+    handleRequest(API.put(`${ADMIN_BASE}/claims/${id}`, data)),
 
+  /**
+   * Permanently deletes a claim entry.
+   */
+  deleteClaim: (id) =>
+    handleRequest(API.delete(`${ADMIN_BASE}/claims/${id}`)),
 
-  // Policies
+  // ── Policies Oversight ──────────────────────────────────────────────
+
+  /**
+   * Creates a new policy template.
+   */
   createPolicy: (data) =>
-    API.post(`${ADMIN_BASE}/policies`, data),
+    handleRequest(API.post(`${ADMIN_BASE}/policies`, data)),
 
+  /**
+   * Updates an existing policy template.
+   */
   updatePolicy: (id, data) =>
-    API.put(`${ADMIN_BASE}/policies/${id}`, data),
+    handleRequest(API.put(`${ADMIN_BASE}/policies/${id}`, data)),
 
+  /**
+   * Deletes a policy template from the catalogue.
+   */
   deletePolicy: (id) =>
-    API.delete(`${ADMIN_BASE}/policies/${id}`),
+    handleRequest(API.delete(`${ADMIN_BASE}/policies/${id}`)),
 
+  /**
+   * Fetches all active policies held by a specific user.
+   */
   getUserPolicies: (userId) =>
-    API.get(`${ADMIN_BASE}/user-policies/${userId}`),
+    handleRequest(API.get(`${ADMIN_BASE}/user-policies/${userId}`)),
 
+  /**
+   * Fetches all registered user policies in the system.
+   */
   getAllUserPolicies: () =>
-    API.get(`${ADMIN_BASE}/user-policies/all`),
+    handleRequest(API.get(`${ADMIN_BASE}/user-policies/all`)),
 
+  /**
+   * Forces the cancellation of a user's active policy.
+   */
   cancelUserPolicy: (id) =>
+    handleRequest(API.put(`${ADMIN_BASE}/policies/${id}/cancel`)),
 
-    API.put(`${ADMIN_BASE}/policies/${id}/cancel`),
+  // ── Reports and Customer Data ───────────────────────────────────────
 
-  // Reports
-
+  /**
+   * Fetches aggregate system reports and performance data.
+   */
   getReports: () =>
-    API.get(`${ADMIN_BASE}/reports`),
+    handleRequest(API.get(`${ADMIN_BASE}/reports`)),
 
+  /**
+   * Fetches a list of all registered customers.
+   */
   getCustomers: () =>
-    API.get(`${ADMIN_BASE}/customers`),
+    handleRequest(API.get(`${ADMIN_BASE}/customers`)),
 }

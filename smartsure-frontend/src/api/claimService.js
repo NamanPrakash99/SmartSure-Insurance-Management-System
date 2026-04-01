@@ -1,33 +1,63 @@
 import API from './axios'
+import { handleRequest } from './apiErrorHandler'
 
 const CLAIMS_BASE = '/claims-service/api/claims'
 
+/**
+ * Claims Service
+ * 
+ * Manages filing, monitoring, and validating insurance claims.
+ */
 export const claimService = {
+  /**
+   * Initiates a new insurance claim.
+   */
   initiateClaim: (data) =>
-    API.post(`${CLAIMS_BASE}/initiate`, data),
+    handleRequest(API.post(`${CLAIMS_BASE}/initiate`, data)),
 
+  /**
+   * Uploads a document related to a specific claim.
+   */
   uploadDocument: (claimId, file) => {
     const formData = new FormData()
     formData.append('claimId', claimId)
     formData.append('file', file)
-    return API.post(`${CLAIMS_BASE}/upload`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    return handleRequest(
+      API.post(`${CLAIMS_BASE}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    )
   },
 
+  /**
+   * Fetches the current status of a claim.
+   */
   getClaimStatus: (claimId) =>
-    API.get(`${CLAIMS_BASE}/status/${claimId}`),
+    handleRequest(API.get(`${CLAIMS_BASE}/status/${claimId}`)),
 
+  /**
+   * Fetches complete details of a claim by ID.
+   */
   getClaimById: (claimId) =>
-    API.get(`${CLAIMS_BASE}/${claimId}`),
+    handleRequest(API.get(`${CLAIMS_BASE}/${claimId}`)),
 
+  /**
+   * Fetches all claims associated with a specific user.
+   */
   getClaimsByUser: (userId) =>
-    API.get(`${CLAIMS_BASE}/user/${userId}`),
+    handleRequest(API.get(`${CLAIMS_BASE}/user/${userId}`)),
 
-
+  /**
+   * Downloads a specific claim document (returns a Blob).
+   */
   downloadDocument: (claimId) =>
-    API.get(`${CLAIMS_BASE}/${claimId}/document`, { responseType: 'blob' }),
+    handleRequest(
+      API.get(`${CLAIMS_BASE}/${claimId}/document`, { responseType: 'blob' })
+    ),
 
+  /**
+   * Deletes an existing claim.
+   */
   deleteClaim: (claimId) =>
-    API.delete(`${CLAIMS_BASE}/${claimId}`),
+    handleRequest(API.delete(`${CLAIMS_BASE}/${claimId}`)),
 }

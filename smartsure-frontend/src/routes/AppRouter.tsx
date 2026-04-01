@@ -1,3 +1,4 @@
+import { ReactNode } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -32,7 +33,12 @@ import Terms from '../pages/public/Terms'
 import NotFound from '../pages/NotFound'
 
 // Protected Route Component
-function ProtectedRoute({ children, allowedRoles }) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+  allowedRoles?: ('ADMIN' | 'CUSTOMER')[];
+}
+
+function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { isAuthenticated, user, loading } = useAuth()
 
   if (loading) return null
@@ -41,15 +47,15 @@ function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" replace />
   }
 
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/login" replace />
   }
 
-  return children
+  return <>{children}</>
 }
 
 export default function AppRouter() {
-  const { isAuthenticated, user, loading } = useAuth()
+  const { loading } = useAuth()
 
   if (loading) return null
 
@@ -124,7 +130,7 @@ export default function AppRouter() {
         </ProtectedRoute>
       } />
 
-      {/* Profille (Common) */}
+      {/* Profile (Common) */}
       <Route path="/profile" element={
         <ProtectedRoute>
           <DashboardLayout><Profile /></DashboardLayout>
@@ -136,4 +142,3 @@ export default function AppRouter() {
     </Routes>
   )
 }
-

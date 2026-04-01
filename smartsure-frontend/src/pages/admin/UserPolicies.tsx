@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { adminService } from '../../api/adminService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/StatusBadge'
@@ -18,8 +18,9 @@ import {
   HiOutlineRefresh,
   HiOutlineExclamationCircle
 } from 'react-icons/hi'
+import { User, UserPolicy, Claim } from '../../types'
 
-const getAvatarColor = (userId) => {
+const getAvatarColor = (userId: string | number) => {
   const colors = [
     'from-violet-500 to-indigo-600',
     'from-sky-500 to-blue-600',
@@ -27,14 +28,15 @@ const getAvatarColor = (userId) => {
     'from-amber-500 to-orange-600',
     'from-rose-500 to-pink-600',
   ]
-  return colors[(userId || 0) % colors.length]
+  const id = typeof userId === 'number' ? userId : parseInt(userId) || 0
+  return colors[id % colors.length]
 }
 
 export default function UserPolicies() {
-  const [customers, setCustomers] = useState([])
-  const [selectedUser, setSelectedUser] = useState(null)
-  const [userPolicies, setUserPolicies] = useState([])
-  const [userClaims, setUserClaims] = useState([])
+  const [customers, setCustomers] = useState<User[]>([])
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [userPolicies, setUserPolicies] = useState<UserPolicy[]>([])
+  const [userClaims, setUserClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -47,9 +49,12 @@ export default function UserPolicies() {
 
   const fetchGlobalStats = async () => {
     try {
-      const { data } = await adminService.getAllUserPolicies()
-      const activeCount = (data || []).filter(p => p.status === 'ACTIVE').length
-      setTotalActivePolicies(activeCount)
+      const response = await adminService.getAllUserPolicies()
+      if (response.success) {
+        const data = response.data || []
+        const activeCount = data.filter(p => p.status === 'ACTIVE').length
+        setTotalActivePolicies(activeCount)
+      }
     } catch (error) {
       console.error('Failed to fetch global stats', error)
     }
@@ -58,10 +63,13 @@ export default function UserPolicies() {
   const fetchCustomers = async () => {
     setLoading(true)
     try {
-      const { data } = await adminService.getCustomers()
-      setCustomers(data || [])
-      if (data && data.length > 0) {
-        handleUserClick(data[0])
+      const response = await adminService.getCustomers()
+      if (response.success) {
+        const data = response.data || []
+        setCustomers(data)
+        if (data.length > 0) {
+          handleUserClick(data[0])
+        }
       }
     } catch (error) {
       toast.error('Failed to fetch customers')
@@ -70,7 +78,7 @@ export default function UserPolicies() {
     }
   }
 
-  const handleUserClick = async (user) => {
+  const handleUserClick = async (user: User) => {
     setSelectedUser(user)
     setDetailLoading(true)
     try {
@@ -78,8 +86,8 @@ export default function UserPolicies() {
         adminService.getUserPolicies(user.id),
         adminService.getClaimsByUser(user.id)
       ])
-      setUserPolicies(policiesRes.data || [])
-      setUserClaims(claimsRes.data || [])
+      if (policiesRes.success) setUserPolicies(policiesRes.data || [])
+      if (claimsRes.success) setUserClaims(claimsRes.data || [])
     } catch (error) {
       toast.error('Failed to fetch user portfolio')
     } finally {
@@ -87,12 +95,14 @@ export default function UserPolicies() {
     }
   }
 
-  const handleCancelPolicy = async (id) => {
+  const handleCancelPolicy = async (id: string | number) => {
     if (!window.confirm('Cancel this policy?')) return
     try {
-      await adminService.cancelUserPolicy(id)
-      toast.success('Policy cancelled')
-      handleUserClick(selectedUser) 
+      const response = await adminService.cancelUserPolicy(id)
+      if (response.success) {
+        toast.success('Policy cancelled')
+        if (selectedUser) handleUserClick(selectedUser) 
+      }
     } catch (error) {
       toast.error('Failed to cancel')
     }
@@ -265,7 +275,7 @@ export default function UserPolicies() {
                       <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
                         {userPolicies.length === 0 ? (
                           <tr>
-                            <td colSpan="5" className="px-6 py-12 text-center">
+                            <td colSpan={5} className="px-6 py-12 text-center">
                               <HiOutlineExclamationCircle className="mx-auto text-3xl text-surface-300 dark:text-surface-600 mb-2" />
                               <p className="text-sm font-medium text-surface-400">No active policies found.</p>
                             </td>
@@ -273,7 +283,7 @@ export default function UserPolicies() {
                         ) : userPolicies.map(p => (
                           <tr key={p.id} className="hover:bg-surface-50/80 dark:hover:bg-surface-800/30 transition-colors">
                             <td className="px-6 py-4">
-                              <div className="font-bold text-sm text-surface-900 dark:text-white">{p.policyName}</div>
+                              <div className="font-bold text-sm text-surface-900 dark:text-white">{p.policy?.name || 'Policy'}</div>
                               <div className="text-[10px] text-surface-400 font-mono">{p.id}</div>
                             </td>
                             <td className="px-6 py-4"><StatusBadge status={p.status} /></td>
@@ -321,14 +331,14 @@ export default function UserPolicies() {
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {userClaims.slice(0, 4).map(claim => (
-                          <div key={claim.claimId} className="flex items-center gap-4 p-4 rounded-2xl bg-surface-50 dark:bg-surface-800 border border-surface-100 dark:border-surface-700">
+                          <div key={claim.id} className="flex items-center gap-4 p-4 rounded-2xl bg-surface-50 dark:bg-surface-800 border border-surface-100 dark:border-surface-700">
                             <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center text-accent-500 flex-shrink-0">
                               <HiOutlineClipboardList className="text-xl" />
                             </div>
                             <div className="flex-1 overflow-hidden">
-                              <div className="font-bold text-sm truncate">{claim.policyName || 'Claim'}</div>
+                              <div className="font-bold text-sm truncate">{claim.description || 'Claim'}</div>
                               <div className="text-[10px] text-surface-500 flex items-center gap-2">
-                                <span>₹{claim.claimAmount}</span>
+                                <span>₹{claim.amount}</span>
                                 <span>•</span>
                                 <span className="uppercase">{claim.status}</span>
                               </div>
@@ -337,7 +347,8 @@ export default function UserPolicies() {
                           </div>
                         ))}
                       </div>
-                    )}
+                    )
+                    }
                   </div>
                 )}
               </div>

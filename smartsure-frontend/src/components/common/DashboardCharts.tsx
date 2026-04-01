@@ -1,10 +1,21 @@
 import React from 'react';
 
+interface ChartDataItem {
+  label: string
+  value: number
+  color?: string
+}
+
+interface AreaChartProps {
+  data: ChartDataItem[]
+  color?: string
+}
+
 /**
  * A ultra-premium, zero-dependency Area Chart using pure SVG.
  * Perfect for a high-performance dashboard.
  */
-export const AreaChart = ({ data, color = '#6366f1' }) => {
+export const AreaChart: React.FC<AreaChartProps> = ({ data, color = '#6366f1' }) => {
   if (!data || data.length === 0) return null;
 
   const width = 500;
@@ -64,6 +75,7 @@ export const AreaChart = ({ data, color = '#6366f1' }) => {
           strokeLinecap="round" 
           strokeLinejoin="round"
           className="animate-draw-path"
+          // @ts-ignore
           style={{ strokeDasharray: 1000, strokeDashoffset: 1000 }}
         />
 
@@ -93,7 +105,13 @@ export const AreaChart = ({ data, color = '#6366f1' }) => {
   );
 };
 
-export const DonutChart = ({ percent, label, color = '#10b981' }) => {
+interface DonutChartProps {
+  percent: number
+  label?: string
+  color?: string
+}
+
+export const DonutChart: React.FC<DonutChartProps> = ({ percent, label, color = '#10b981' }) => {
   const size = 160;
   const strokeWidth = 16;
   const center = size / 2;
@@ -134,7 +152,11 @@ export const DonutChart = ({ percent, label, color = '#10b981' }) => {
   );
 };
 
-export const BarChart = ({ data }) => {
+interface BarChartProps {
+  data: ChartDataItem[]
+}
+
+export const BarChart: React.FC<BarChartProps> = ({ data }) => {
   if (!data || data.length === 0) return null;
   const maxVal = Math.max(...data.map(d => Number(d.value) || 0)) || 1;
 
@@ -172,7 +194,12 @@ export const BarChart = ({ data }) => {
   );
 };
 
-export const GaugeChart = ({ percent, color = '#6366f1' }) => {
+interface GaugeChartProps {
+  percent: number
+  color?: string
+}
+
+export const GaugeChart: React.FC<GaugeChartProps> = ({ percent, color = '#6366f1' }) => {
   const size = 200;
   const strokeWidth = 20;
   const center = size / 2;

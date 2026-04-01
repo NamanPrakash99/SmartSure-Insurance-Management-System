@@ -72,11 +72,15 @@ const defaultConfig = {
   pulse: false,
 }
 
-export function StatusBadge({ status }) {
-  const config = statusConfig[status] || defaultConfig
+interface StatusBadgeProps {
+  status: string
+}
 
-  const formatStatus = (s) =>
-    s ? s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : ''
+export function StatusBadge({ status }: StatusBadgeProps) {
+  const config = (statusConfig as any)[status] || defaultConfig
+
+  const formatStatus = (s: string) =>
+    s ? s.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : ''
 
   return (
     <span

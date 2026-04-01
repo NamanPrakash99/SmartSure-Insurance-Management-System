@@ -8,6 +8,7 @@ import { StatsSkeleton } from '../../components/common/LoadingSpinner'
 import { EmptyState } from '../../components/common/EmptyState'
 import { HiOutlineDocumentText, HiOutlineShieldCheck, HiOutlineCurrencyRupee } from 'react-icons/hi'
 import { Link } from 'react-router-dom'
+import { UserPolicy, Claim } from '../../types'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -18,20 +19,36 @@ function getGreeting() {
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const [policies, setPolicies] = useState([])
-  const [claims, setClaims] = useState([])
+  const [policies, setPolicies] = useState<UserPolicy[]>([])
+  const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!user) return
+
     const fetchData = async () => {
       try {
-        const [policiesRes, claimsRes] = await Promise.all([
-          policyService.getUserPolicies(user.id).catch(() => ({ data: [] })),
-          claimService.getClaimsByUser(user.id).catch(() => ({ data: [] }))
+        const [policiesRes, allAvailablePoliciesRes, claimsRes] = await Promise.all([
+          policyService.getUserPolicies(user.id),
+          policyService.getAllPolicies(),
+          claimService.getClaimsByUser(user.id)
         ])
 
-        setPolicies(policiesRes.data)
-        setClaims(claimsRes.data)
+        const allAvailablePolicies = allAvailablePoliciesRes.success ? allAvailablePoliciesRes.data : [];
+
+        if (policiesRes.success) {
+          let data = policiesRes.data || []
+          // Manually map policy details if missing
+          data = data.map((up: UserPolicy) => {
+            if (!up.policy && allAvailablePolicies.length > 0) {
+              const found = allAvailablePolicies.find((p: any) => p.id === up.policyId);
+              if (found) return { ...up, policy: found };
+            }
+            return up;
+          });
+          setPolicies(data)
+        }
+        if (claimsRes.success) setClaims(claimsRes.data)
       } catch (error) {
         console.error("Dashboard fetch error:", error)
       } finally {
@@ -39,10 +56,12 @@ export default function Dashboard() {
       }
     }
     fetchData()
-  }, [user.id])
+  }, [user?.id])
 
   const activePolicies = policies.filter(p => p.status === 'ACTIVE').length
-  const pendingClaims = claims.filter(c => ['SUBMITTED', 'UNDER_REVIEW'].includes(c.status)).length
+  const pendingClaims = claims.filter(c => ['SUBMITTED', 'UNDER_REVIEW', 'PENDING'].includes(c.status)).length
+
+  if (!user) return null
 
   return (
     <div className="space-y-8 pb-8">
@@ -80,18 +99,21 @@ export default function Dashboard() {
               value={activePolicies}
               icon={HiOutlineShieldCheck}
               color="green"
+              trend={0}
             />
             <StatsCard
               title="Pending Claims"
               value={pendingClaims}
               icon={HiOutlineDocumentText}
               color="amber"
+              trend={0}
             />
             <StatsCard
               title="Total Claims Filed"
               value={claims.length}
               icon={HiOutlineCurrencyRupee}
               color="blue"
+              trend={0}
             />
           </>
         )}
@@ -122,7 +144,9 @@ export default function Dashboard() {
                 {policies.slice(0, 5).map(policy => (
                   <div key={policy.id} className="p-4 sm:px-5 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors flex justify-between items-center">
                     <div className="min-w-0 flex-1 mr-3">
-                      <p className="font-semibold text-sm text-surface-900 dark:text-white truncate">{policy.policyName}</p>
+                      <p className="font-semibold text-sm text-surface-900 dark:text-white truncate">
+                        {policy.policy?.policyName || policy.policy?.name || 'Policy ' + policy.id}
+                      </p>
                       <p className="text-[11px] text-surface-500 mt-0.5">Start: {policy.startDate || 'N/A'}</p>
                     </div>
                     <StatusBadge status={policy.status} />
@@ -155,13 +179,13 @@ export default function Dashboard() {
             ) : (
               <div className="divide-y divide-surface-100 dark:divide-surface-800/60">
                 {claims.slice(0, 5).map(claim => (
-                  <div key={claim.claimId} className="p-4 sm:px-5 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors flex justify-between items-center">
+                  <div key={claim.id} className="p-4 sm:px-5 hover:bg-surface-50 dark:hover:bg-surface-800/30 transition-colors flex justify-between items-center">
                     <div className="min-w-0 flex-1 mr-3">
                       <p className="font-semibold text-sm text-surface-900 dark:text-white flex items-center gap-2">
-                        Claim {claim.claimId}
-                        {claim.claimAmount && <span className="text-xs font-medium text-surface-500">₹{claim.claimAmount.toLocaleString()}</span>}
+                        Claim {claim.id}
+                        {claim.amount && <span className="text-xs font-medium text-surface-500">₹{claim.amount.toLocaleString()}</span>}
                       </p>
-                      <p className="text-[11px] text-surface-500 mt-0.5 truncate max-w-[200px]">{claim.description || claim.message}</p>
+                      <p className="text-[11px] text-surface-500 mt-0.5 truncate max-w-[200px]">{claim.description}</p>
                     </div>
                     <StatusBadge status={claim.status} />
                   </div>
@@ -174,3 +198,4 @@ export default function Dashboard() {
     </div>
   )
 }
+

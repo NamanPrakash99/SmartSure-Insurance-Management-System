@@ -3,17 +3,22 @@ import axios from 'axios'
 // Your active Gemini API Key
 const GEMINI_API_KEY = 'AIzaSyA1bcypUKaLbh1fRcqtyVXdvxauSMBfzz8'
 
+interface GeminiModel {
+  name: string
+  supportedGenerationMethods: string[]
+}
+
 /**
  * AI Service for Gemini integration with automatic model discovery and STRICT SmartSure custom instructions.
  * This version enforces a "Zero Outside Knowledge" policy to keep responses 100% website-relevant.
  */
-export const fetchAIResponse = async (userMessage) => {
+export const fetchAIResponse = async (userMessage: string): Promise<string> => {
   if (!GEMINI_API_KEY) throw new Error('API Key is missing.')
 
   try {
     // 1. PROJECT-SPECIFIC DISCOVERY: Find which model version Google wants for this account
     const discoveryUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
-    const discoveryResponse = await axios.get(discoveryUrl)
+    const discoveryResponse = await axios.get<{ models: GeminiModel[] }>(discoveryUrl)
     
     // We'll pick the most useful generative model for this account
     const discoveredModel = discoveryResponse.data.models.find(m => 
@@ -67,7 +72,7 @@ export const fetchAIResponse = async (userMessage) => {
 
     throw new Error('No valid content parts in AI response')
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('DIAGNOSTIC AI ERROR:', error.response?.data || error.message)
     throw error 
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { adminService } from '../../api/adminService'
 import { authService } from '../../api/authService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
@@ -20,9 +20,10 @@ import {
   HiOutlineSwitchVertical
 } from 'react-icons/hi'
 import { Pagination } from '../../components/common/Pagination'
+import { Claim } from '../../types'
 
 // Generates a consistent pastel color from a userId
-const getAvatarColor = (userId) => {
+const getAvatarColor = (userId: number | string) => {
   const colors = [
     'from-violet-500 to-purple-600',
     'from-sky-500 to-blue-600',
@@ -33,29 +34,30 @@ const getAvatarColor = (userId) => {
     'from-cyan-500 to-teal-600',
     'from-fuchsia-500 to-pink-600',
   ]
-  return colors[(userId || 0) % colors.length]
+  const id = typeof userId === 'number' ? userId : parseInt(userId) || 0
+  return colors[id % colors.length]
 }
 
 export default function ClaimsReview() {
-  const [claims, setClaims] = useState([])
+  const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [totalElements, setTotalElements] = useState(0)
-  const [filteredClaims, setFilteredClaims] = useState([])
+  const [filteredClaims, setFilteredClaims] = useState<Claim[]>([])
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [selectedClaim, setSelectedClaim] = useState(null)
+  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null)
 
   const [reviewRemark, setReviewRemark] = useState('')
   const [targetStatus, setTargetStatus] = useState('')
-  const [editingClaim, setEditingClaim] = useState({ claimAmount: 0, description: '' })
+  const [editingClaim, setEditingClaim] = useState({ amount: 0, description: '' })
   const [searchTerm, setSearchTerm] = useState('')
   const [statusTab, setStatusTab] = useState('ALL')
-  const [userNames, setUserNames] = useState({}) // cache: { userId: name }
-  const [sortBy, setSortBy] = useState({ field: 'id', dir: 'desc' }) // field: 'id' | 'name' | 'amount'
+  const [userNames, setUserNames] = useState<Record<string | number, string>>({}) // cache: { userId: name }
+  const [sortBy, setSortBy] = useState<{ field: 'id' | 'name' | 'amount'; dir: 'asc' | 'desc' }>({ field: 'id', dir: 'desc' })
 
   useEffect(() => {
     if (searchTerm === '') {
@@ -63,30 +65,35 @@ export default function ClaimsReview() {
     }
   }, [page, searchTerm, pageSize])
 
-  const fetchAllClaims = async (pageNum) => {
+  const fetchAllClaims = async (pageNum: number) => {
     setLoading(true)
     try {
-      const { data } = await adminService.getAllClaims(pageNum, pageSize)
-      const claimsList = data?.content || []
-      setClaims(claimsList)
-      setFilteredClaims(claimsList)
-      setTotalPages(data?.totalPages || 0)
-      setTotalElements(data?.totalElements || 0)
+      const response = await adminService.getAllClaims(pageNum, pageSize)
+      if (response.success) {
+        // @ts-ignore - Assuming response.data has content, totalPages, totalElements
+        const data = response.data as any
+        const claimsList = data?.content || []
+        setClaims(claimsList)
+        setFilteredClaims(claimsList)
+        setTotalPages(data?.totalPages || 0)
+        setTotalElements(data?.totalElements || 0)
 
-      // Fetch user names for all unique userIds
-      const uniqueUserIds = [...new Set(claimsList.map(c => c.userId).filter(Boolean))]
-      const namesToFetch = uniqueUserIds.filter(uid => !userNames[uid])
-      if (namesToFetch.length > 0) {
-        const results = await Promise.allSettled(
-          namesToFetch.map(uid => authService.getUserById(uid))
-        )
-        const newNames = { ...userNames }
-        results.forEach((result, idx) => {
-          if (result.status === 'fulfilled' && result.value?.data) {
-            newNames[namesToFetch[idx]] = result.value.data.name || result.value.data.email || `User ${namesToFetch[idx]}`
-          }
-        })
-        setUserNames(newNames)
+        // Fetch user names for all unique userIds
+        const uniqueUserIds = [...new Set(claimsList.map((c: Claim) => c.userId).filter(Boolean))] as (string | number)[]
+        const namesToFetch = uniqueUserIds.filter(uid => !userNames[uid])
+        if (namesToFetch.length > 0) {
+          const results = await Promise.allSettled(
+            namesToFetch.map(uid => authService.getUserById(uid))
+          )
+          const newNames = { ...userNames }
+          results.forEach((result, idx) => {
+            if (result.status === 'fulfilled' && result.value?.success) {
+              const uData = result.value.data
+              newNames[namesToFetch[idx]] = uData.name || uData.email || `User ${namesToFetch[idx]}`
+            }
+          })
+          setUserNames(newNames)
+        }
       }
     } catch (error) {
       console.error('Fetch all claims failed:', error)
@@ -97,7 +104,7 @@ export default function ClaimsReview() {
     }
   }
 
-  const handleSearch = async (e) => {
+  const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!searchTerm) {
       setPage(0)
@@ -108,11 +115,18 @@ export default function ClaimsReview() {
     try {
       const numericTerm = searchTerm.replace(/\D/g, '')
       if (numericTerm) {
-        const { data } = await adminService.getClaimsByUser(numericTerm)
-        setClaims(data || [])
-        setFilteredClaims(data || [])
-        setTotalPages(1)
-        setTotalElements(data?.length || 0)
+        const response = await adminService.getClaimsByUser(numericTerm)
+        if (response.success) {
+          const data = response.data || []
+          setClaims(data)
+          setFilteredClaims(data)
+          setTotalPages(1)
+          setTotalElements(data.length)
+        }
+      } else {
+        // If not numeric, just filter locally
+        setPage(0)
+        fetchAllClaims(0)
       }
     } catch (error) {
       toast.error('No claims found.')
@@ -134,14 +148,14 @@ export default function ClaimsReview() {
   }, [claims, totalElements])
 
   // Toggle sort
-  const toggleSort = (field) => {
+  const toggleSort = (field: 'id' | 'name' | 'amount') => {
     setSortBy(prev => ({
       field,
       dir: prev.field === field && prev.dir === 'asc' ? 'desc' : 'asc'
     }))
   }
 
-  const SortBtn = ({ field }) => {
+  const SortBtn = ({ field }: { field: 'id' | 'name' | 'amount' }) => {
     const isActive = sortBy.field === field
     const Icon = isActive ? (sortBy.dir === 'asc' ? HiSortAscending : HiSortDescending) : HiOutlineSwitchVertical
     return (
@@ -169,8 +183,8 @@ export default function ClaimsReview() {
       const term = searchTerm.toLowerCase()
       result = result.filter(c => {
         const uid = (c.userId || '').toString()
-        const cid = (c.claimId || c.id || '').toString()
-        const name = (userNames[c.userId] || '').toLowerCase()
+        const cid = (c.id || '').toString()
+        const name = (userNames[c.userId || ''] || '').toLowerCase()
         const desc = (c.description || '').toLowerCase()
         return uid.includes(term) || cid.includes(term) || name.includes(term) || desc.includes(term)
       })
@@ -179,57 +193,71 @@ export default function ClaimsReview() {
     const dir = sortBy.dir === 'asc' ? 1 : -1
     result.sort((a, b) => {
       if (sortBy.field === 'name') {
-        const nameA = (userNames[a.userId] || '').toLowerCase()
-        const nameB = (userNames[b.userId] || '').toLowerCase()
+        const nameA = (userNames[a.userId || ''] || '').toLowerCase()
+        const nameB = (userNames[b.userId || ''] || '').toLowerCase()
         return nameA.localeCompare(nameB) * dir
       }
       if (sortBy.field === 'amount') {
-        return ((a.claimAmount || 0) - (b.claimAmount || 0)) * dir
+        const amtA = a.amount || a.claimAmount || 0
+        const amtB = b.amount || b.claimAmount || 0
+        return (amtA - amtB) * dir
       }
       // default: sort by id
-      return ((a.claimId || a.id || 0) - (b.claimId || b.id || 0)) * dir
+      const idA = Number(a.claimId || a.id || 0)
+      const idB = Number(b.claimId || b.id || 0)
+      return (idA - idB) * dir
     })
     setFilteredClaims(result)
   }, [searchTerm, claims, statusTab, userNames, sortBy])
 
-  const handleOpenReview = (claim) => {
+  const handleOpenReview = (claim: Claim) => {
     setSelectedClaim(claim)
     setReviewRemark('')
     const validActions = ['UNDER_REVIEW', 'APPROVED', 'REJECTED', 'CLOSED']
-    setTargetStatus(validActions.includes(claim.status) ? claim.status : 'UNDER_REVIEW')
+    setTargetStatus(validActions.includes(claim.status || '') ? claim.status! : 'UNDER_REVIEW')
     setIsReviewModalOpen(true)
   }
 
-  const handleOpenEdit = (claim) => {
+  const handleOpenEdit = (claim: Claim) => {
     setSelectedClaim(claim)
     setEditingClaim({
-      claimAmount: claim.claimAmount,
-      description: claim.description
+      amount: claim.amount || claim.claimAmount || 0,
+      description: claim.description || ''
     })
     setIsEditModalOpen(true)
   }
 
-  const submitReview = async (newStatus) => {
+  const submitReview = async (newStatus: string) => {
+    if (!selectedClaim) return
     try {
       const claimId = selectedClaim.claimId || selectedClaim.id
-      await adminService.reviewClaim(claimId, {
+      const response = await adminService.reviewClaim(claimId, {
         status: newStatus,
-        remark: reviewRemark
+        remarks: reviewRemark
       })
-      toast.success(`Claim status updated to ${newStatus.replace('_', ' ')}`)
-      setIsReviewModalOpen(false)
-      refreshList()
+      if (response.success) {
+        toast.success(`Claim status updated to ${newStatus.replace('_', ' ')}`)
+        setIsReviewModalOpen(false)
+        refreshList()
+      } else {
+        toast.error('Action failed. Check if claim state allows this transition.')
+      }
     } catch (error) {
       toast.error('Action failed. Check if claim state allows this transition.')
     }
   }
 
   const submitEdit = async () => {
+    if (!selectedClaim) return
     try {
-      await adminService.updateClaim(selectedClaim.claimId, editingClaim)
-      toast.success('Claim details updated!')
-      setIsEditModalOpen(false)
-      refreshList()
+      const response = await adminService.updateClaim(selectedClaim.claimId || selectedClaim.id, editingClaim)
+      if (response.success) {
+        toast.success('Claim details updated!')
+        setIsEditModalOpen(false)
+        refreshList()
+      } else {
+        toast.error('Failed to update claim details.')
+      }
     } catch (error) {
       toast.error('Failed to update claim details.')
     }
@@ -243,11 +271,14 @@ export default function ClaimsReview() {
     }
   }
 
-  const handleDownload = async (claimId) => {
+  const handleDownload = async (claimId: string | number) => {
     try {
-      if (!claimId) throw new Error("Missing Claim ID")
-      const res = await adminService.downloadClaimDocument(claimId)
-      const contentType = res.headers['content-type']
+      const id = claimId
+      if (!id) throw new Error("Missing Claim ID")
+      const res = await adminService.downloadClaimDocument(id)
+      if (!res.success) throw new Error("Download failed")
+      
+      const contentType = (res as any).headers?.['content-type'] || 'application/octet-stream'
       const extension = contentType?.includes('image') ? 'jpg' : 'pdf'
       const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }))
       const link = document.createElement('a')
@@ -359,14 +390,15 @@ export default function ClaimsReview() {
                 <tbody>
                   {filteredClaims.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="px-6 py-16 text-center">
+                      <td colSpan={5} className="px-6 py-16 text-center">
                         <HiOutlineExclamationCircle className="mx-auto text-4xl text-surface-300 dark:text-surface-600 mb-3" />
                         <p className="text-surface-500 font-medium">No claims match your filters.</p>
                       </td>
                     </tr>
                   ) : filteredClaims.map((claim, idx) => {
                     const id = claim.claimId || claim.id
-                    const name = userNames[claim.userId] || `User ${claim.userId}`
+                    const userId = claim.userId || ''
+                    const name = userNames[userId] || `User ${userId}`
                     const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2)
                     return (
                       <tr
@@ -376,7 +408,7 @@ export default function ClaimsReview() {
                         {/* Claimant - Name + User ID */}
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(claim.userId)} flex items-center justify-center text-white text-xs font-black shadow-md flex-shrink-0`}>
+                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(userId)} flex items-center justify-center text-white text-xs font-black shadow-md flex-shrink-0`}>
                               {initials}
                             </div>
                             <div className="min-w-0">
@@ -384,7 +416,7 @@ export default function ClaimsReview() {
                                 {name}
                               </div>
                               <div className="text-[11px] text-surface-400 font-mono mt-0.5">
-                                ID {claim.userId}
+                                ID {userId}
                               </div>
                             </div>
                           </div>
@@ -398,7 +430,7 @@ export default function ClaimsReview() {
                         {/* Amount */}
                         <td className="px-6 py-5">
                           <span className="text-base font-black text-surface-900 dark:text-white tabular-nums">
-                            ₹{(claim.claimAmount || 0).toLocaleString('en-IN')}
+                            ₹{(claim.amount || claim.claimAmount || 0).toLocaleString('en-IN')}
                           </span>
                         </td>
                         {/* Status */}
@@ -422,10 +454,13 @@ export default function ClaimsReview() {
                             </button>
                             <button
                               onClick={() => {
-                                if (window.confirm('Permanently delete this claim?')) {
-                                  adminService.deleteClaim(id).then(() => {
-                                    toast.success('Claim deleted')
-                                    refreshList()
+                                 const idToDelete = claim.claimId || claim.id
+                                 if (window.confirm('Permanently delete this claim?')) {
+                                   adminService.deleteClaim(idToDelete).then((res) => {
+                                    if (res.success) {
+                                      toast.success('Claim deleted')
+                                      refreshList()
+                                    }
                                   }).catch(() => toast.error('Failed to delete'))
                                 }
                               }}
@@ -448,8 +483,8 @@ export default function ClaimsReview() {
             currentPage={page + 1}
             totalItems={totalElements}
             itemsPerPage={pageSize}
-            onPageChange={(p) => setPage(p - 1)}
-            onItemsPerPageChange={(size) => {
+            onPageChange={(p: number) => setPage(p - 1)}
+            onItemsPerPageChange={(size: number) => {
               setPageSize(size)
               setPage(0)
             }}
@@ -459,16 +494,16 @@ export default function ClaimsReview() {
 
       {/* Review Modal */}
       {selectedClaim && (
-        <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title={`Review Case #${selectedClaim.claimId}`}>
+        <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title={`Review Case #${selectedClaim.claimId || selectedClaim.id}`}>
           <div className="space-y-6">
             <div className="bg-surface-50 dark:bg-surface-800/50 p-5 rounded-xl space-y-3 border border-surface-200 dark:border-surface-700">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-semibold text-surface-500">Claimant</span>
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${getAvatarColor(selectedClaim.userId)} flex items-center justify-center text-white text-[8px] font-black`}>
-                    {(userNames[selectedClaim.userId] || 'U').charAt(0)}
+                  <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${getAvatarColor(selectedClaim.userId || '')} flex items-center justify-center text-white text-[8px] font-black`}>
+                    {(userNames[selectedClaim.userId || ''] || 'U').charAt(0)}
                   </div>
-                  <span className="text-sm font-bold">{userNames[selectedClaim.userId] || `User ${selectedClaim.userId}`}</span>
+                  <span className="text-sm font-bold">{userNames[selectedClaim.userId || ''] || `User ${selectedClaim.userId}`}</span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
@@ -477,7 +512,7 @@ export default function ClaimsReview() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-semibold text-surface-500">Requested Amount</span>
-                <span className="font-bold text-lg">₹{(selectedClaim.claimAmount || 0).toLocaleString()}</span>
+                <span className="font-bold text-lg">₹{(selectedClaim.amount || selectedClaim.claimAmount || 0).toLocaleString()}</span>
               </div>
               <div className="pt-2">
                 <span className="text-sm font-semibold text-surface-500 block mb-1.5">Description</span>
@@ -533,7 +568,7 @@ export default function ClaimsReview() {
 
       {/* Edit Modal */}
       {selectedClaim && (
-        <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={`Edit Case #${selectedClaim.claimId}`}>
+        <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={`Edit Case #${selectedClaim.claimId || selectedClaim.id}`}>
           <div className="space-y-6">
             <p className="text-sm text-surface-500">Correct the amount or description for this security audit.</p>
 
@@ -543,15 +578,15 @@ export default function ClaimsReview() {
                 <input
                   type="number"
                   className="input-field"
-                  value={editingClaim.claimAmount}
-                  onChange={(e) => setEditingClaim({ ...editingClaim, claimAmount: parseFloat(e.target.value) || 0 })}
+                  value={editingClaim.amount}
+                  onChange={(e) => setEditingClaim({ ...editingClaim, amount: parseFloat(e.target.value) || 0 })}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-surface-400 uppercase tracking-wider mb-2">Updated Description</label>
                 <textarea
-                  rows="4"
+                  rows={4}
                   className="input-field resize-none"
                   value={editingClaim.description}
                   onChange={(e) => setEditingClaim({ ...editingClaim, description: e.target.value })}

@@ -1,19 +1,30 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { User } from '../types'
 
-const AuthContext = createContext()
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isCustomer: boolean;
+  login: (authResponse: any) => void;
+  logout: () => void;
+}
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(null)
-  const [loading, setLoading] = useState(true)
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
   const navigate = useNavigate()
 
   // Load auth state from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('smartsure-token')
     const savedUser = localStorage.getItem('smartsure-user')
-    const savedRefreshToken = localStorage.getItem('smartsure-refresh-token')
     if (savedToken && savedUser) {
       try {
         setToken(savedToken)
@@ -27,9 +38,9 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }, [])
 
-  const login = (authResponse) => {
+  const login = (authResponse: any) => {
     // authResponse = { token, role, id, name }
-    const userData = {
+    const userData: User = {
       id: authResponse.id,
       role: authResponse.role,
       name: authResponse.name,
@@ -78,4 +89,10 @@ export function AuthProvider({ children }) {
   )
 }
 
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}

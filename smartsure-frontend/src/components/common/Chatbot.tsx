@@ -1,8 +1,15 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { RiCloseLine, RiSendPlane2Line, RiUser3Line, RiSparklingLine, RiShieldUserLine, RiChat3Line } from 'react-icons/ri'
 import { fetchAIResponse } from '../../api/aiService'
 
-const INITIAL_MESSAGES = [
+interface Message {
+  id: number
+  type: 'bot' | 'user'
+  text: string
+  time: string
+}
+
+const INITIAL_MESSAGES: Message[] = [
   {
     id: 1,
     type: 'bot',
@@ -13,10 +20,10 @@ const INITIAL_MESSAGES = [
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState(INITIAL_MESSAGES)
+  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES)
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const scrollRef = useRef(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -28,7 +35,7 @@ export default function Chatbot() {
     if (!inputValue.trim()) return
 
     const userMsgText = inputValue
-    const newMessage = {
+    const newMessage: Message = {
       id: Date.now(),
       type: 'user',
       text: userMsgText,
@@ -40,8 +47,12 @@ export default function Chatbot() {
     setIsTyping(true)
 
     try {
-      const botResponseText = await fetchAIResponse(userMsgText)
-      addBotMsg(botResponseText)
+      const response = await fetchAIResponse(userMsgText)
+      if (response.success && response.data) {
+        addBotMsg(response.data)
+      } else {
+        addBotMsg("I'm sorry, I specialize exclusively in providing information about SmartSure's digital insurance services (Health, Life, and Vehicle). How can I assist you with those today?")
+      }
     } catch (e) {
       setTimeout(() => {
         addBotMsg("I'm sorry, I specialize exclusively in providing information about SmartSure's digital insurance services (Health, Life, and Vehicle). How can I assist you with those today?")
@@ -49,8 +60,8 @@ export default function Chatbot() {
     }
   }
 
-  const addBotMsg = (text) => {
-    const botResponse = {
+  const addBotMsg = (text: string) => {
+    const botResponse: Message = {
       id: Date.now() + 1,
       type: 'bot',
       text: text,

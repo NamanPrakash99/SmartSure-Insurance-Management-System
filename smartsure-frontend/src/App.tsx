@@ -22,7 +22,6 @@ function App() {
             draggable
             pauseOnHover
             toastClassName="!bg-surface-900 !text-white !rounded-2xl !shadow-2xl !border !border-surface-800 !p-4 !font-sans !tracking-tight"
-            bodyClassName="!font-medium"
           />
         </AuthProvider>
       </ThemeProvider>

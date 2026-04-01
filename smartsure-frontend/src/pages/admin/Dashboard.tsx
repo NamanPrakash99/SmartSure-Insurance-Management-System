@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { adminService } from '../../api/adminService'
 import { StatsCard } from '../../components/common/StatsCard'
 import { StatsSkeleton } from '../../components/common/LoadingSpinner'
@@ -12,15 +12,27 @@ import {
 } from 'react-icons/hi'
 import { toast } from 'react-toastify'
 
+interface AdminReportsData {
+  totalPolicies: number
+  totalClaims: number
+  approvedClaims: number
+  rejectedClaims: number
+  totalRevenue: number
+}
+
 export default function AdminDashboard() {
-  const [reports, setReports] = useState(null)
+  const [reports, setReports] = useState<AdminReportsData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
-        const { data } = await adminService.getReports()
-        setReports(data)
+        const response = await adminService.getReports()
+        if (response.success) {
+          setReports(response.data)
+        } else {
+          toast.error('Failed to load admin reports')
+        }
       } catch (error) {
         toast.error('Failed to load admin reports')
       } finally {
@@ -61,11 +73,11 @@ export default function AdminDashboard() {
   }
 
   const stats = [
-    { title: "Total Enrollments", value: reports.totalPolicies, icon: HiOutlineShieldCheck, color: 'blue' },
-    { title: "Total Claims", value: reports.totalClaims, icon: HiOutlineDocumentText },
-    { title: "Approved Claims", value: reports.approvedClaims, icon: HiOutlineCheckCircle, color: 'green' },
-    { title: "Rejected Claims", value: reports.rejectedClaims, icon: HiOutlineXCircle, color: 'red' },
-    { title: "Total Revenue", value: `₹${(reports.totalRevenue || 0).toLocaleString()}`, icon: HiOutlineCurrencyRupee, color: 'amber' }
+    { title: "Total Enrollments", value: reports.totalPolicies, icon: HiOutlineShieldCheck, color: 'blue' as const },
+    { title: "Total Claims", value: reports.totalClaims, icon: HiOutlineDocumentText, color: 'indigo' as const },
+    { title: "Approved Claims", value: reports.approvedClaims, icon: HiOutlineCheckCircle, color: 'green' as const },
+    { title: "Rejected Claims", value: reports.rejectedClaims, icon: HiOutlineXCircle, color: 'red' as const },
+    { title: "Total Revenue", value: `₹${(reports.totalRevenue || 0).toLocaleString()}`, icon: HiOutlineCurrencyRupee, color: 'amber' as const }
   ]
 
   const revenueTrend = [

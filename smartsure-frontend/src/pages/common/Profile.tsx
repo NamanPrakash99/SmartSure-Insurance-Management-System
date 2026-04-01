@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { authService } from '../../api/authService'
 import { useAuth } from '../../context/AuthContext'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { toast } from 'react-toastify'
+import { User } from '../../types'
 import { 
   HiOutlineUser, 
   HiOutlineMail, 
@@ -14,7 +15,7 @@ import {
 
 export default function Profile() {
   const { user: authUser } = useAuth()
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
@@ -28,15 +29,21 @@ export default function Profile() {
   }, [])
 
   const fetchProfile = async () => {
+    if (!authUser) return
     setLoading(true)
     try {
-      const { data } = await authService.getUserById(authUser.id)
-      setUser(data)
-      setFormData({
-        name: data.name || '',
-        phone: data.phone || '',
-        address: data.address || ''
-      })
+      const response = await authService.getUserById(authUser.id)
+      if (response.success) {
+        const data = response.data
+        setUser(data)
+        setFormData({
+          name: data.name || '',
+          phone: data.phone || '',
+          address: data.address || ''
+        })
+      } else {
+        toast.error('Failed to fetch profile details')
+      }
     } catch (error) {
       toast.error('Failed to fetch profile details')
     } finally {
@@ -44,13 +51,18 @@ export default function Profile() {
     }
   }
 
-  const handleUpdate = async (e) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!authUser) return
     setSaving(true)
     try {
-      await authService.updateProfile(authUser.id, formData)
-      toast.success('Profile updated successfully!')
-      fetchProfile() 
+      const response = await authService.updateProfile(authUser.id, formData)
+      if (response.success) {
+        toast.success('Profile updated successfully!')
+        fetchProfile() 
+      } else {
+        toast.error('Failed to update profile')
+      }
     } catch (error) {
       toast.error('Failed to update profile')
     } finally {
@@ -159,7 +171,7 @@ export default function Profile() {
                     <HiOutlineLocationMarker className="absolute left-3 top-4 text-surface-400" />
                     <textarea 
                       required
-                      rows="3"
+                      rows={3}
                       className="input-field pl-10 !py-3 w-full"
                       placeholder="Street, City, State, Zip"
                       value={formData.address}

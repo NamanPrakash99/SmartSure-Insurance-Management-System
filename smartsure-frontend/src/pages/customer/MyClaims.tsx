@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { claimService } from '../../api/claimService'
@@ -6,18 +6,19 @@ import { policyService } from '../../api/policyService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { EmptyState } from '../../components/common/EmptyState'
-import { HiOutlineDownload, HiOutlineDocumentText, HiOutlinePlus, HiOutlineArrowLeft, HiOutlineUpload, HiOutlineDocumentAdd, HiArrowRight, HiOutlineEye, HiOutlineX } from 'react-icons/hi'
+import { HiOutlineDownload, HiOutlineDocumentText, HiOutlinePlus, HiOutlineArrowLeft, HiOutlineUpload, HiOutlineDocumentAdd, HiArrowRight, HiOutlineEye } from 'react-icons/hi'
 import { toast } from 'react-toastify'
 import { Pagination } from '../../components/common/Pagination'
+import { Claim, UserPolicy } from '../../types'
 
 export default function MyClaims() {
   const { user } = useAuth()
   const location = useLocation()
   const defaultPolicyId = location.state?.policyId?.toString() || ''
 
-  const [claims, setClaims] = useState([])
-  const [policies, setPolicies] = useState([])
-  const [allPolicies, setAllPolicies] = useState([])
+  const [claims, setClaims] = useState<Claim[]>([])
+  const [policies, setPolicies] = useState<UserPolicy[]>([])
+  const [allPolicies, setAllPolicies] = useState<UserPolicy[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(!!defaultPolicyId)
   const [submitting, setSubmitting] = useState(false)
@@ -25,20 +26,45 @@ export default function MyClaims() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
 
+  // Form State
+  const [policyId, setPolicyId] = useState(defaultPolicyId)
+  const [amount, setAmount] = useState('')
+  const [description, setDescription] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
   useEffect(() => {
-    fetchData()
-  }, [user.id])
+    if (user) {
+      fetchData()
+    }
+  }, [user?.id])
 
   const fetchData = async () => {
+    if (!user) return
     setLoading(true)
     try {
-      const [claimsRes, policiesRes] = await Promise.all([
+      const [claimsRes, policiesRes, allAvailablePoliciesRes] = await Promise.all([
         claimService.getClaimsByUser(user.id),
-        policyService.getUserPolicies(user.id)
+        policyService.getUserPolicies(user.id),
+        policyService.getAllPolicies()
       ])
-      setClaims(claimsRes.data || [])
-      setAllPolicies(policiesRes.data || [])
-      setPolicies((policiesRes.data || []).filter(p => p.status === 'ACTIVE' || p.status === 'EXPIRED'))
+      
+      const allAvailablePolicies = allAvailablePoliciesRes.success ? allAvailablePoliciesRes.data : [];
+
+      if (claimsRes.success) setClaims(claimsRes.data || [])
+      if (policiesRes.success) {
+        let data = policiesRes.data || []
+        // Manually map policy details if they are missing from the bridge table
+        data = data.map(up => {
+          if (!up.policy && allAvailablePolicies.length > 0) {
+            const found = allAvailablePolicies.find(p => p.id === up.policyId);
+            if (found) return { ...up, policy: found };
+          }
+          return up;
+        });
+        setAllPolicies(data)
+        setPolicies(data.filter(p => p.status === 'ACTIVE' || p.status === 'EXPIRED'))
+      }
     } catch (error) {
       console.error("Failed to load data", error)
       toast.error('Failed to load claims portal')
@@ -55,22 +81,16 @@ export default function MyClaims() {
     setCurrentPage(1)
   }, [showForm, itemsPerPage])
 
-  // Form State
-  const [policyId, setPolicyId] = useState(defaultPolicyId)
-  const [amount, setAmount] = useState('')
-  const [description, setDescription] = useState('')
-  const [file, setFile] = useState(null)
-  const [isDragging, setIsDragging] = useState(false)
-
-  const handleDownload = async (claimId) => {
+  const handleDownload = async (claimId: string | number) => {
     try {
       const res = await claimService.downloadDocument(claimId)
       
       if (!res.success) {
-        throw new Error(res.message);
+        throw new Error('Failed to download document');
       }
 
-      const contentType = res.headers['content-type']
+      // @ts-ignore - Assuming res.headers exists or handle it safely
+      const contentType = (res as any).headers?.['content-type'] || 'application/octet-stream'
       const extension = contentType?.includes('image') ? 'jpg' : 'pdf'
       
       const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }))
@@ -87,28 +107,29 @@ export default function MyClaims() {
     }
   }
 
-  const handleView = async (claimId) => {
+  const handleView = async (claimId: string | number) => {
     try {
       const res = await claimService.downloadDocument(claimId)
       
       if (!res.success) {
-        throw new Error(res.message);
+        throw new Error('Failed to view document');
       }
 
-      const contentType = res.headers['content-type']
+      // @ts-ignore
+      const contentType = (res as any).headers?.['content-type'] || 'application/octet-stream'
       
       const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }))
       window.open(url, '_blank')
       
-      // Cleanup after a short delay to ensure it opens
       setTimeout(() => window.URL.revokeObjectURL(url), 1000)
     } catch (err) {
       toast.error('Could not view document. It may not have been uploaded.')
     }
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user) return
     if (!policyId || !amount || !description) {
       toast.warning('Please fill in all required fields')
       return
@@ -116,19 +137,28 @@ export default function MyClaims() {
 
     setSubmitting(true)
     try {
-      const claimData = { policyId: Number(policyId), userId: user.id, claimAmount: Number(amount), description }
-      const initiateRes = await claimService.initiateClaim(claimData)
-      const claimId = initiateRes.data.claimId
-
-      if (file && claimId) {
-        await claimService.uploadDocument(claimId, file)
+      const claimData: Partial<Claim> = { 
+        policyId: Number(policyId), 
+        userId: Number(user.id), 
+        amount: Number(amount), 
+        claimAmount: Number(amount), // Redundancy for backend compatibility
+        description 
       }
-
-      toast.success('Claim submitted successfully')
-      setShowForm(false)
-      resetForm()
-      fetchData()
-    } catch (error) {
+      const initiateRes = await claimService.initiateClaim(claimData)
+      
+      if (initiateRes.success) {
+        const claimId = initiateRes.data.claimId || initiateRes.data.id
+        if (file && claimId) {
+          await claimService.uploadDocument(claimId, file)
+        }
+        toast.success('Claim submitted successfully')
+        setShowForm(false)
+        resetForm()
+        fetchData()
+      } else {
+        toast.error('Failed to submit claim')
+      }
+    } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to submit claim')
     } finally {
       setSubmitting(false)
@@ -215,7 +245,7 @@ export default function MyClaims() {
                             className="w-5 h-5 text-primary-600 focus:ring-primary-500 border-surface-300 dark:border-surface-600 dark:bg-surface-900" 
                           />
                           <div className="ml-4 flex-1">
-                             <span className="block font-bold text-surface-900 dark:text-white">{p.policyName}</span>
+                             <span className="block font-bold text-surface-900 dark:text-white">{p.policy?.name || p.policy?.policyName || 'Policy ' + p.id}</span>
                              <span className="block text-xs text-surface-500 font-mono mt-0.5">ID: {p.id} • Premium: ₹{p.premiumAmount}</span>
                           </div>
                         </label>
@@ -269,10 +299,11 @@ export default function MyClaims() {
                     <div 
                       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                       onDragLeave={() => setIsDragging(false)}
-                      onDrop={(e) => { e.preventDefault(); setIsDragging(false); setFile(e.dataTransfer.files[0]); }}
+                      // @ts-ignore
+                      onDrop={(e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); setFile(e.dataTransfer.files[0]); }}
                       className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-300 group ${isDragging ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-surface-300 dark:border-surface-700'}`}
                     >
-                      <input type="file" onChange={(e) => setFile(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                      <input type="file" onChange={(e: any) => setFile(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                       <div className="flex flex-col items-center justify-center text-center">
                         <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${file ? 'bg-primary-100 text-primary-600' : 'bg-surface-100 dark:bg-surface-800 text-surface-400'}`}>
                           {file ? <HiOutlineDocumentAdd className="text-2xl" /> : <HiOutlineUpload className="text-2xl" />}
@@ -306,11 +337,11 @@ export default function MyClaims() {
                 title="No claims filed yet"
                 description="Keep your claims organized and trace their progress here."
                 actionLabel="File a New Claim"
-                onClick={() => setShowForm(true)}
+                actionTo="#"
               />
             ) : (
               paginatedClaims.map(claim => (
-                <div key={claim.claimId} className="p-6 sm:p-8 hover:bg-surface-50 dark:hover:bg-surface-800/10 transition-colors group">
+                <div key={claim.id} className="p-6 sm:p-8 hover:bg-surface-50 dark:hover:bg-surface-800/10 transition-colors group">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="space-y-3 flex-1">
                       <div className="flex flex-wrap items-center gap-4">
@@ -318,7 +349,10 @@ export default function MyClaims() {
                           <HiOutlineDocumentText className="text-xl text-surface-500 group-hover:text-primary-500" />
                         </div>
                         <h3 className="font-black text-lg text-surface-900 dark:text-white tracking-tight">
-                          {allPolicies.find(p => p.id === claim.policyId)?.policyName || `Claim ${claim.claimId}`}
+                          {(() => {
+                            const p = allPolicies.find(p => p.id === claim.policyId);
+                            return p?.policy?.name || p?.policy?.policyName || `Claim ${claim.claimId || claim.id}`;
+                          })()}
                         </h3>
                         <StatusBadge status={claim.status} />
                       </div>
@@ -326,25 +360,25 @@ export default function MyClaims() {
                       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-surface-500">
                          <div className="flex items-center gap-1.5 font-medium">
                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                           <span>Claim Amount: <span className="text-emerald-600 dark:text-emerald-400 font-bold">₹{(claim.claimAmount||0).toLocaleString()}</span></span>
+                           <span>Claim Amount: <span className="text-emerald-600 dark:text-emerald-400 font-bold">₹{((claim.amount || claim.claimAmount) || 0).toLocaleString()}</span></span>
                          </div>
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 bg-surface-100/50 dark:bg-surface-900/40 p-4 rounded-xl text-xs sm:text-sm text-surface-600 dark:text-surface-300 leading-relaxed italic border border-surface-200 dark:border-surface-800/50">
-                          "{claim.description || claim.message}"
+                          "{claim.description}"
                         </div>
                         
                           <div className="flex items-center gap-2 lg:ml-4">
                             <button 
-                              onClick={() => handleView(claim.claimId)}
+                              onClick={() => handleView(claim.claimId || claim.id)}
                               title="View Document"
                               className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-500 hover:text-primary-500 hover:bg-primary-500/10 hover:border-primary-500/30 transition-all active:scale-95"
                             >
                                <HiOutlineEye className="text-xl" />
                             </button>
                             <button 
-                              onClick={() => handleDownload(claim.claimId)}
+                              onClick={() => handleDownload(claim.claimId || claim.id)}
                               title="Download Document"
                               className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-500 hover:text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all active:scale-95"
                             >

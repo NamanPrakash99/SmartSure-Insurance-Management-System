@@ -1,21 +1,28 @@
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { policyService } from '../../api/policyService'
 import { paymentService } from '../../api/paymentService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { EmptyState } from '../../components/common/EmptyState'
-import { HiOutlineShieldCheck, HiOutlineSearch, HiOutlineCreditCard, HiOutlineFilter } from 'react-icons/hi'
+import { HiOutlineShieldCheck, HiOutlineSearch, HiOutlineCreditCard } from 'react-icons/hi'
 import { toast } from 'react-toastify'
-
 import { Pagination } from '../../components/common/Pagination'
+import { Policy, UserPolicy } from '../../types'
+
+// Extend window object for Razorpay
+declare global {
+  interface Window {
+    Razorpay: any
+  }
+}
 
 export default function BrowsePolicies() {
   const { user } = useAuth()
   const navigate = useNavigate()
   
-  const [policies, setPolicies] = useState([])
-  const [userPolicies, setUserPolicies] = useState([])
+  const [policies, setPolicies] = useState<Policy[]>([])
+  const [userPolicies, setUserPolicies] = useState<UserPolicy[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -36,8 +43,12 @@ export default function BrowsePolicies() {
 
   const fetchPolicies = async () => {
     try {
-      const { data } = await policyService.getAllPolicies()
-      setPolicies(data)
+      const response = await policyService.getAllPolicies()
+      if (response.success) {
+        setPolicies(response.data)
+      } else {
+        toast.error('Failed to load policies')
+      }
     } catch (error) {
       toast.error('Failed to load policies')
     } finally {
@@ -46,29 +57,44 @@ export default function BrowsePolicies() {
   }
 
   const fetchUserPolicies = async () => {
+    if (!user) return
     try {
-      const { data } = await policyService.getUserPolicies(user.id)
-      setUserPolicies(data || [])
+      const response = await policyService.getUserPolicies(user.id)
+      if (response.success) {
+        setUserPolicies(response.data || [])
+      }
     } catch (error) {
       console.error("Failed to fetch user policies", error)
     }
   }
 
-  const handlePurchase = async (policy) => {
+  const handlePurchase = async (policy: Policy) => {
+    if (!user) {
+      toast.error('Please log in to purchase a policy')
+      navigate('/login')
+      return
+    }
+
     // 0. Check if user already owns this policy and it's ACTIVE
     const alreadyOwned = userPolicies.some(up => 
-      up.policyName === policy.policyName && up.status === 'ACTIVE'
+      up.policy?.name === policy.name && up.status === 'ACTIVE'
     )
 
     if (alreadyOwned) {
-      toast.warning(`You already have an active subscription for ${policy.policyName}`)
+      toast.warning(`You already have an active subscription for ${policy.name}`)
       return
     }
 
     setProcessing(true)
     try {
       // Step 1: Initialize the Saga on the backend (Creates PENDING_PAYMENT record)
-      const { data: userPolicy } = await policyService.purchasePolicy(policy.id)
+      const purchaseRes = await policyService.purchasePolicy(policy.id)
+      if (!purchaseRes.success) {
+        toast.error('Failed to initiate purchase')
+        setProcessing(false)
+        return
+      }
+      const userPolicy = purchaseRes.data
 
       // Step 2: Create the Razorpay Order linked to our userPolicyId
       const orderData = {
@@ -78,16 +104,22 @@ export default function BrowsePolicies() {
         userPolicyId: userPolicy.id // Link the payment to the pending policy record
       }
       
-      const { data: orderResponse } = await paymentService.createOrder(orderData)
+      const orderRes = await paymentService.createOrder(orderData)
+      if (!orderRes.success) {
+        toast.error('Failed to create payment order')
+        setProcessing(false)
+        return
+      }
+      const orderResponse = orderRes.data
 
       const options = {
         key: 'rzp_test_SUGz2hbfTwDAHc',
         amount: (policy.premiumAmount * 100).toString(),
         currency: 'INR',
         name: 'SmartSure Insurance',
-        description: `Premium for ${policy.policyName}`,
+        description: `Premium for ${policy.name}`,
         order_id: orderResponse.orderId,
-        handler: async function (response) {
+        handler: async function (response: any) {
           try {
             const verifyData = {
               razorpayOrderId: response.razorpay_order_id,
@@ -95,12 +127,16 @@ export default function BrowsePolicies() {
               razorpaySignature: response.razorpay_signature
             }
             // Step 3: Verify on backend
-            await paymentService.verifyPayment(verifyData)
-
-            toast.success('Payment verified! Policy activated.')
-            setTimeout(() => {
-              navigate('/my-policies')
-            }, 1500)
+            const verifyRes = await paymentService.verifyPayment(verifyData)
+            if (verifyRes.success) {
+              toast.success('Payment verified! Policy activated.')
+              setTimeout(() => {
+                navigate('/my-policies')
+              }, 1500)
+            } else {
+              toast.error('Payment verification failed')
+              setProcessing(false)
+            }
           } catch (err) {
             toast.error('Payment verification failed')
             console.error(err)
@@ -118,25 +154,24 @@ export default function BrowsePolicies() {
           ondismiss: function() {
             setProcessing(false)
             toast.info('Payment cancelled')
-            // The record remains in PENDING_PAYMENT state in your dashboard
           }
         }
       }
 
       const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', function (response){
+      rzp.on('payment.failed', function (response: any){
         toast.error(response.error.description || 'Payment Failed')
         setProcessing(false)
       })
       rzp.open()
 
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.response?.data || 'Failed to initiate purchase')
       setProcessing(false)
     }
   }
 
-  // Derive unique categories dynamically from policies to ensure they always match the database
+  // Derive unique categories dynamically from policies
   const categories = useMemo(() => {
     const cats = new Set(['ALL'])
     policies.forEach(p => {
@@ -144,7 +179,6 @@ export default function BrowsePolicies() {
         cats.add(p.category.toUpperCase())
       }
     })
-    // If no policies yet, default to the known backend categories
     if (cats.size === 1) {
        ['HEALTH', 'VEHICLE', 'LIFE'].forEach(c => cats.add(c))
     }
@@ -153,8 +187,9 @@ export default function BrowsePolicies() {
 
   const filteredPolicies = useMemo(() => {
     return policies.filter(p => {
-      const matchesSearch = p.policyName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            p.description.toLowerCase().includes(searchTerm.toLowerCase())
+      const nameMatch = p.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      const descMatch = p.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesSearch = nameMatch || descMatch
       
       const matchesFilter = activeFilter === 'ALL' || (p.category?.toUpperCase() === activeFilter.toUpperCase())
       
@@ -165,7 +200,7 @@ export default function BrowsePolicies() {
   const paginatedPolicies = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
     return filteredPolicies.slice(startIndex, startIndex + itemsPerPage)
-  }, [filteredPolicies, currentPage])
+  }, [filteredPolicies, currentPage, itemsPerPage])
 
   if (loading) return <LoadingSpinner />
 
@@ -217,6 +252,8 @@ export default function BrowsePolicies() {
            icon={HiOutlineSearch}
            title="No packages found"
            description="Try adjusting your search terms or selecting a different filter category."
+           actionLabel="Reset Filters"
+           actionTo="#" // Placeholder for reset logic if needed
          />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -239,7 +276,9 @@ export default function BrowsePolicies() {
                    </span>
                 </div>
                 
-                <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-2 line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{policy.policyName}</h3>
+                <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-2 line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                  {policy.name}
+                </h3>
                 <p className="text-surface-500 dark:text-surface-400 text-sm line-clamp-2 mb-8 flex-1 leading-relaxed">
                   {policy.description}
                 </p>

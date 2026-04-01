@@ -1,18 +1,25 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { adminService } from '../../api/adminService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { BarChart, DonutChart, GaugeChart } from '../../components/common/DashboardCharts'
 import {
    HiOutlinePresentationChartBar,
-   HiOutlineDocumentReport,
    HiOutlineArrowCircleUp,
    HiOutlineCurrencyRupee,
    HiOutlineShieldCheck
 } from 'react-icons/hi'
 import { toast } from 'react-toastify'
 
+interface AdminReportsData {
+  totalPolicies: number
+  totalClaims: number
+  approvedClaims: number
+  rejectedClaims: number
+  totalRevenue: number
+}
+
 export default function AdminReports() {
-   const [reports, setReports] = useState(null)
+   const [reports, setReports] = useState<AdminReportsData | null>(null)
    const [loading, setLoading] = useState(true)
 
    useEffect(() => {
@@ -21,8 +28,12 @@ export default function AdminReports() {
 
    const fetchReports = async () => {
       try {
-         const { data } = await adminService.getReports()
-         setReports(data)
+         const response = await adminService.getReports()
+         if (response.success) {
+            setReports(response.data)
+         } else {
+            toast.error('Failed to load system analytics')
+         }
       } catch (error) {
          toast.error('Failed to load system analytics')
       } finally {
@@ -43,8 +54,7 @@ export default function AdminReports() {
    ]
 
    const approvalRate = Math.round((reports.approvedClaims / (reports.totalClaims || 1)) * 100)
-   const rejectionRate = Math.round((reports.rejectedClaims / (reports.totalClaims || 1)) * 100)
-   const averageRevenue = reports.totalPolicies > 0 ? (reports.totalRevenue / reports.totalPolicies).toFixed(0) : 0
+   const averageRevenue = reports.totalPolicies > 0 ? (reports.totalRevenue / reports.totalPolicies).toFixed(0) : "0"
 
    return (
       <div className="space-y-8 pb-12">

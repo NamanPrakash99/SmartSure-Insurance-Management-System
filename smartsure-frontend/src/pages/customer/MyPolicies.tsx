@@ -5,36 +5,55 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { EmptyState } from '../../components/common/EmptyState'
 import { toast } from 'react-toastify'
-import { HiOutlineShieldCheck } from 'react-icons/hi'
 import { Link } from 'react-router-dom'
-
 import { Pagination } from '../../components/common/Pagination'
 import { paymentService } from '../../api/paymentService'
-import { HiOutlineCreditCard, HiOutlineTrash, HiOutlineCalendar, HiOutlineCurrencyRupee } from 'react-icons/hi'
+import { HiOutlineShieldCheck, HiOutlineCreditCard, HiOutlineTrash, HiOutlineCalendar, HiOutlineCurrencyRupee } from 'react-icons/hi'
 import { Modal } from '../../components/common/Modal'
+import { UserPolicy } from '../../types'
 
 export default function MyPolicies() {
   const { user } = useAuth()
-  const [policies, setPolicies] = useState([])
+  const [policies, setPolicies] = useState<UserPolicy[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
-  const [selectedPolicyForRenewal, setSelectedPolicyForRenewal] = useState(null)
+  const [selectedPolicyForRenewal, setSelectedPolicyForRenewal] = useState<UserPolicy | null>(null)
 
   const paginatedPolicies = policies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   useEffect(() => {
-    fetchPolicies()
-  }, [user.id])
+    if (user) {
+      fetchPolicies()
+    }
+  }, [user?.id])
 
   useEffect(() => {
     setCurrentPage(1)
   }, [itemsPerPage])
 
   const fetchPolicies = async () => {
+    if (!user) return
     try {
-      const { data } = await policyService.getUserPolicies(user.id)
-      setPolicies(data)
+      const [userPoliciesRes, allAvailablePoliciesRes] = await Promise.all([
+        policyService.getUserPolicies(user.id),
+        policyService.getAllPolicies()
+      ])
+
+      const allAvailablePolicies = allAvailablePoliciesRes.success ? allAvailablePoliciesRes.data : [];
+
+      if (userPoliciesRes.success) {
+        let data = userPoliciesRes.data || []
+        // Manually map policy details if missing
+        data = data.map(up => {
+          if (!up.policy && allAvailablePolicies.length > 0) {
+            const found = allAvailablePolicies.find(p => p.id === up.policyId);
+            if (found) return { ...up, policy: found };
+          }
+          return up;
+        });
+        setPolicies(data)
+      }
     } catch (error) {
       console.error("Failed to load user policies", error)
     } finally {
@@ -42,7 +61,8 @@ export default function MyPolicies() {
     }
   }
 
-  const handleCompletePayment = async (policy) => {
+  const handleCompletePayment = async (policy: UserPolicy) => {
+    if (!user) return
     try {
       const orderData = {
         userId: user.id,
@@ -51,29 +71,37 @@ export default function MyPolicies() {
         userPolicyId: policy.id
       }
       
-      const { data: orderResponse } = await paymentService.createOrder(orderData)
+      const orderRes = await paymentService.createOrder(orderData)
+      if (!orderRes.success) {
+        toast.error('Failed to create payment order')
+        return
+      }
+      const orderResponse = orderRes.data
 
       const options = {
         key: 'rzp_test_SUGz2hbfTwDAHc',
-        amount: (policy.premiumAmount * 100).toString(),
+        amount: ((policy.premiumAmount || 0) * 100).toString(),
         currency: 'INR',
         name: 'SmartSure Insurance',
-        description: `Premium for ${policy.policyName}`,
+        description: `Premium for ${policy.policy?.name || 'Policy'}`,
         order_id: orderResponse.orderId,
-        handler: async function (response) {
+        handler: async function (response: any) {
           try {
             const verifyData = {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature
             }
-            await paymentService.verifyPayment(verifyData)
-            toast.success('Payment verified! Your policy will be active shortly.')
-            setSelectedPolicyForRenewal(null)
-            // Delay fetch to allow RabbitMQ event processing on backend
-            setTimeout(() => {
-              fetchPolicies()
-            }, 2000)
+            const verifyRes = await paymentService.verifyPayment(verifyData)
+            if (verifyRes.success) {
+              toast.success('Payment verified! Your policy will be active shortly.')
+              setSelectedPolicyForRenewal(null)
+              setTimeout(() => {
+                fetchPolicies()
+              }, 2000)
+            } else {
+              toast.error('Payment verification failed')
+            }
           } catch (err) {
             toast.error('Payment verification failed')
             console.error(err)
@@ -89,7 +117,6 @@ export default function MyPolicies() {
         modal: {
           ondismiss: async function() {
             toast.info('Payment cancelled')
-            // Explicitly notify backend of failure to trigger Saga rollback
             try {
               await paymentService.verifyPayment({
                 razorpayOrderId: orderResponse.orderId,
@@ -103,9 +130,8 @@ export default function MyPolicies() {
       }
 
       const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', async function (response){
+      rzp.on('payment.failed', async function (response: any){
         toast.error(response.error.description || 'Payment Failed')
-        // Explicitly notify backend of failure to trigger Saga rollback
         try {
           await paymentService.verifyPayment({
             razorpayOrderId: response.error.metadata.order_id,
@@ -122,13 +148,17 @@ export default function MyPolicies() {
     }
   }
 
-  const handleDeletePolicy = async (id) => {
+  const handleDeletePolicy = async (id: string | number) => {
     if (!window.confirm('Are you sure you want to remove this policy record?')) return
     
     try {
-      await policyService.deleteUserPolicy(id)
-      toast.success('Policy removed')
-      fetchPolicies()
+      const response = await policyService.deleteUserPolicy(id)
+      if (response.success) {
+        toast.success('Policy removed')
+        fetchPolicies()
+      } else {
+        toast.error('Failed to delete policy')
+      }
     } catch (error) {
       toast.error('Failed to delete policy')
     }
@@ -160,7 +190,6 @@ export default function MyPolicies() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedPolicies.map((policy, idx) => {
-            // Calculate mock next due date (approx 1 month from start or next month if already past)
             const startDate = new Date(policy.startDate || Date.now())
             const nextDueDate = new Date(startDate)
             nextDueDate.setMonth(nextDueDate.getMonth() + 1)
@@ -179,7 +208,7 @@ export default function MyPolicies() {
                     <StatusBadge status={policy.status} />
                   </div>
                   
-                  <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2 line-clamp-1">{policy.policyName}</h3>
+                  <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2 line-clamp-1">{policy.policy?.name || policy.policy?.policyName || 'Policy ' + policy.id}</h3>
                   <div className="flex items-baseline gap-1 mb-6">
                     <span className="text-sm font-medium text-surface-400">Premium:</span>
                     <span className="text-lg font-bold text-primary-600 dark:text-primary-400">₹{(policy.premiumAmount || 0).toLocaleString()}</span>
@@ -203,7 +232,7 @@ export default function MyPolicies() {
                 <div className="px-6 sm:px-8 pb-6 pt-0 flex flex-col gap-3">
                   <Link 
                     to="/my-claims" 
-                    state={{ policyId: policy.id, policyName: policy.policyName }}
+                    state={{ policyId: policy.id, policyName: policy.policy?.name }}
                     className="w-full btn-ghost border border-surface-200 dark:border-surface-700 text-xs tracking-widest uppercase font-bold !py-3 block text-center hover:bg-surface-900 hover:text-white dark:hover:bg-white dark:hover:text-surface-900"
                   >
                     File a Claim
@@ -259,7 +288,7 @@ export default function MyPolicies() {
                    <HiOutlineCalendar className="text-2xl" />
                 </div>
                 <div>
-                   <h4 className="font-bold text-surface-900 dark:text-white">{selectedPolicyForRenewal.policyName}</h4>
+                   <h4 className="font-bold text-surface-900 dark:text-white">{selectedPolicyForRenewal.policy?.name || 'Policy'}</h4>
                    <p className="text-xs text-primary-600 dark:text-primary-400 font-bold uppercase tracking-wider">Premium Installment</p>
                 </div>
              </div>

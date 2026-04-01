@@ -1,4 +1,14 @@
-export function StatsCard({ title, value, icon: Icon, trend, color }) {
+import { IconType } from 'react-icons'
+
+interface StatsCardProps {
+  title: string
+  value: string | number
+  icon: IconType
+  trend?: string | number
+  color?: 'green' | 'red' | 'amber' | 'blue'
+}
+
+export function StatsCard({ title, value, icon: Icon, trend, color }: StatsCardProps) {
   // Determine accent color for the icon background
   const colorMap = {
     green: 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border-green-100 dark:border-green-500/20',
@@ -6,7 +16,10 @@ export function StatsCard({ title, value, icon: Icon, trend, color }) {
     amber: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20',
     blue: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20',
   }
-  const iconStyle = colorMap[color] || 'bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border-primary-100 dark:border-primary-500/20'
+  const iconStyle = color ? (colorMap[color as keyof typeof colorMap] || colorMap.blue) : 'bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border-primary-100 dark:border-primary-500/20'
+
+  const isPositive = typeof trend === 'string' ? trend.startsWith('+') : (trend ? trend > 0 : false)
+  const isNegative = typeof trend === 'string' ? trend.startsWith('-') : (trend ? trend < 0 : false)
 
   return (
     <div className="card p-5 h-[130px] relative overflow-hidden group flex flex-col justify-between hover:border-primary-500/30 transition-all duration-300">
@@ -22,11 +35,13 @@ export function StatsCard({ title, value, icon: Icon, trend, color }) {
             <h4 className="text-2xl font-extrabold text-surface-900 dark:text-white truncate animate-count-up">
                {value}
             </h4>
-            {trend && (
+            {trend !== undefined && (
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-                trend.startsWith('+') 
+                isPositive 
                   ? 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-500/10' 
-                  : 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-500/10'
+                  : isNegative
+                    ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-500/10'
+                    : 'text-surface-500 bg-surface-50 dark:bg-surface-500/10'
               }`}>
                 {trend}
               </span>

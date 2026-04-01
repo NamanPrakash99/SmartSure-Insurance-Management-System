@@ -10,7 +10,6 @@ import {
   HiOutlineShieldCheck,
   HiOutlineViewGrid,
   HiOutlineCollection,
-  HiOutlinePlusCircle,
   HiOutlineClipboardList,
   HiOutlinePresentationChartBar
 } from 'react-icons/hi'
@@ -18,8 +17,16 @@ import { FiSun, FiMoon, FiLogOut, FiUser } from 'react-icons/fi'
 import { RiShieldCheckLine } from 'react-icons/ri'
 import { useState, useMemo } from 'react'
 
+import { IconType } from 'react-icons'
+
+interface NavLinkItem {
+  to: string
+  label: string
+  icon?: IconType
+}
+
 // Navigation Constants
-const ADMIN_LINKS = [
+const ADMIN_LINKS: NavLinkItem[] = [
   { to: '/admin/dashboard', icon: HiOutlineChartBar, label: 'Dashboard' },
   { to: '/admin/policies', icon: HiOutlineCog, label: 'Policies' },
   { to: '/admin/claims', icon: HiOutlineDocumentText, label: 'Claims' },
@@ -27,14 +34,14 @@ const ADMIN_LINKS = [
   { to: '/admin/reports', icon: HiOutlinePresentationChartBar, label: 'Reports' },
 ]
 
-const CUSTOMER_LINKS = [
+const CUSTOMER_LINKS: NavLinkItem[] = [
   { to: '/dashboard', icon: HiOutlineViewGrid, label: 'Dashboard' },
   { to: '/policies', icon: HiOutlineShieldCheck, label: 'Browse' },
   { to: '/my-policies', icon: HiOutlineCollection, label: 'My Policies' },
   { to: '/my-claims', icon: HiOutlineClipboardList, label: 'Claims Hub' },
 ]
 
-const PUBLIC_LINKS = [
+const PUBLIC_LINKS: NavLinkItem[] = [
   { to: '/', label: 'Home' },
   { to: '/about', label: 'About Us' },
   { to: '/contact', label: 'Contact' },

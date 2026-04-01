@@ -62,6 +62,13 @@ const statusConfig = {
     border: 'border-surface-200/50 dark:border-surface-700/50',
     pulse: false,
   },
+  PENDING_PAYMENT: {
+    bg: 'bg-amber-50 dark:bg-amber-500/10',
+    text: 'text-amber-700 dark:text-amber-400',
+    dot: 'bg-amber-500',
+    border: 'border-amber-200/50 dark:border-amber-500/20',
+    pulse: true,
+  },
 }
 
 const defaultConfig = {

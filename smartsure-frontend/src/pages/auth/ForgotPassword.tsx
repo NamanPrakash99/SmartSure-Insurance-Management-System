@@ -1,36 +1,48 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { authService } from '../../api/authService'
+import { forgotPasswordSchema, ForgotPasswordInput } from '../../schemas/authSchema'
 import { toast } from 'react-toastify'
 import { HiOutlineMail, HiOutlineArrowLeft } from 'react-icons/hi'
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [isSent, setIsSent] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    formState: { errors },
+  } = useForm<ForgotPasswordInput>({
+    resolver: zodResolver(forgotPasswordSchema),
+  })
+
+  const onSubmit = async (data: ForgotPasswordInput) => {
     setLoading(true)
-    try {
-      await authService.forgotPassword(email)
+    const response = await authService.forgotPassword(data.email)
+    if (response.success) {
       setIsSent(true)
       toast.success('Recovery link sent successfully')
-    } catch (error) {
-      toast.error(error.response?.data || 'Failed to send recovery link')
-    } finally {
-      setLoading(false)
+    } else {
+      toast.error(response.message)
     }
+    setLoading(false)
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface-50 dark:bg-surface-950 p-6 relative overflow-hidden">
       {/* Decorative Elements */}
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.08),transparent_50%)]" />
-      
+
       <div className="w-full max-w-md relative z-10 animate-fade-in">
         <div className="card-glass p-8 md:p-10">
-          <Link to="/login" className="inline-flex items-center gap-2 text-surface-500 hover:text-primary-500 text-sm font-semibold mb-8 transition-colors">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 text-surface-500 hover:text-primary-500 text-sm font-semibold mb-8 transition-colors"
+          >
             <HiOutlineArrowLeft />
             Back to Login
           </Link>
@@ -38,26 +50,35 @@ export default function ForgotPassword() {
           {!isSent ? (
             <>
               <h1 className="text-3xl font-black mb-2 tracking-tight">Recover Account</h1>
-              <p className="text-surface-500 mb-8 font-medium">Enter your email and we'll send you a secure link to reset your password.</p>
+              <p className="text-surface-500 mb-8 font-medium">
+                Enter your email and we'll send you a secure link to reset your password.
+              </p>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-bold text-surface-700 dark:text-surface-300">Email Address</label>
+                  <label className="block text-sm font-bold text-surface-700 dark:text-surface-300">
+                    Email Address
+                  </label>
                   <div className="relative group">
                     <HiOutlineMail className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
-                    <input 
-                      type="email" 
-                      required 
-                      className="input-field !pl-11"
+                    <input
+                      type="email"
+                      {...register('email')}
+                      className={`input-field !pl-11 ${
+                        errors.email ? 'border-red-500 focus:ring-red-500/20' : ''
+                      }`}
                       placeholder="name@company.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
+                  {errors.email && (
+                    <p className="mt-1 ml-1 text-xs font-medium text-red-500 animate-fade-in">
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={loading}
                   className="w-full btn-primary !py-4 flex items-center justify-center gap-2 shadow-xl shadow-primary-500/20 active:scale-95 transition-transform"
                 >
@@ -72,12 +93,13 @@ export default function ForgotPassword() {
               </div>
               <h2 className="text-2xl font-bold mb-3">Check your Email</h2>
               <p className="text-surface-500 mb-8 leading-relaxed font-medium">
-                We've sent a simulated recovery link to <span className="text-surface-900 dark:text-white font-black">{email}</span>. Click the link in the email to securely reset your password.
+                We've sent a simulated recovery link to{' '}
+                <span className="text-surface-900 dark:text-white font-black">
+                  {getValues('email')}
+                </span>
+                . Click the link in the email to securely reset your password.
               </p>
-              <button 
-                onClick={() => setIsSent(false)}
-                className="btn-secondary w-full"
-              >
+              <button onClick={() => setIsSent(false)} className="btn-secondary w-full">
                 Resend Link
               </button>
             </div>

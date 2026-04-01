@@ -1,10 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { adminService } from '../../api/adminService'
 import { authService } from '../../api/authService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { Modal } from '../../components/common/Modal'
 import { toast } from 'react-toastify'
+import {
+  reviewSchema,
+  ReviewInput,
+  claimEditSchema,
+  ClaimEditInput,
+} from '../../schemas/reviewSchema'
 import {
   HiOutlineDownload,
   HiSearch,
@@ -17,7 +25,7 @@ import {
   HiOutlineBan,
   HiSortAscending,
   HiSortDescending,
-  HiOutlineSwitchVertical
+  HiOutlineSwitchVertical,
 } from 'react-icons/hi'
 import { Pagination } from '../../components/common/Pagination'
 import { Claim } from '../../types'
@@ -34,7 +42,7 @@ const getAvatarColor = (userId: number | string) => {
     'from-cyan-500 to-teal-600',
     'from-fuchsia-500 to-pink-600',
   ]
-  const id = typeof userId === 'number' ? userId : parseInt(userId) || 0
+  const id = typeof userId === 'number' ? userId : parseInt(userId.toString()) || 0
   return colors[id % colors.length]
 }
 
@@ -42,7 +50,6 @@ export default function ClaimsReview() {
   const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [totalElements, setTotalElements] = useState(0)
   const [filteredClaims, setFilteredClaims] = useState<Claim[]>([])
@@ -51,13 +58,33 @@ export default function ClaimsReview() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null)
 
-  const [reviewRemark, setReviewRemark] = useState('')
-  const [targetStatus, setTargetStatus] = useState('')
-  const [editingClaim, setEditingClaim] = useState({ amount: 0, description: '' })
   const [searchTerm, setSearchTerm] = useState('')
   const [statusTab, setStatusTab] = useState('ALL')
   const [userNames, setUserNames] = useState<Record<string | number, string>>({}) // cache: { userId: name }
-  const [sortBy, setSortBy] = useState<{ field: 'id' | 'name' | 'amount'; dir: 'asc' | 'desc' }>({ field: 'id', dir: 'desc' })
+  const [sortBy, setSortBy] = useState<{ field: 'id' | 'name' | 'amount'; dir: 'asc' | 'desc' }>({
+    field: 'id',
+    dir: 'desc',
+  })
+
+  // Review Form
+  const {
+    register: registerReview,
+    handleSubmit: handleSubmitReview,
+    reset: resetReview,
+    formState: { errors: reviewErrors, isSubmitting: isReviewing },
+  } = useForm<ReviewInput>({
+    resolver: zodResolver(reviewSchema),
+  })
+
+  // Edit Form
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors, isSubmitting: isEditing },
+  } = useForm<ClaimEditInput>({
+    resolver: zodResolver(claimEditSchema),
+  })
 
   useEffect(() => {
     if (searchTerm === '') {
@@ -67,41 +94,37 @@ export default function ClaimsReview() {
 
   const fetchAllClaims = async (pageNum: number) => {
     setLoading(true)
-    try {
-      const response = await adminService.getAllClaims(pageNum, pageSize)
-      if (response.success) {
-        // @ts-ignore - Assuming response.data has content, totalPages, totalElements
-        const data = response.data as any
-        const claimsList = data?.content || []
-        setClaims(claimsList)
-        setFilteredClaims(claimsList)
-        setTotalPages(data?.totalPages || 0)
-        setTotalElements(data?.totalElements || 0)
+    const response = await adminService.getAllClaims(pageNum, pageSize)
+    if (response.success) {
+      const data = response.data as any
+      const claimsList = data?.content || []
+      setClaims(claimsList)
+      setFilteredClaims(claimsList)
+      setTotalElements(data?.totalElements || 0)
 
-        // Fetch user names for all unique userIds
-        const uniqueUserIds = [...new Set(claimsList.map((c: Claim) => c.userId).filter(Boolean))] as (string | number)[]
-        const namesToFetch = uniqueUserIds.filter(uid => !userNames[uid])
-        if (namesToFetch.length > 0) {
-          const results = await Promise.allSettled(
-            namesToFetch.map(uid => authService.getUserById(uid))
-          )
-          const newNames = { ...userNames }
-          results.forEach((result, idx) => {
-            if (result.status === 'fulfilled' && result.value?.success) {
-              const uData = result.value.data
-              newNames[namesToFetch[idx]] = uData.name || uData.email || `User ${namesToFetch[idx]}`
-            }
-          })
-          setUserNames(newNames)
-        }
+      // Fetch user names for unique userIds
+      const uniqueUserIds = [
+        ...new Set(claimsList.map((c: Claim) => c.userId).filter(Boolean)),
+      ] as (string | number)[]
+      const namesToFetch = uniqueUserIds.filter((uid) => !userNames[uid])
+      if (namesToFetch.length > 0) {
+        const results = await Promise.allSettled(
+          namesToFetch.map((uid) => authService.getUserById(uid))
+        )
+        const newNames = { ...userNames }
+        results.forEach((result, idx) => {
+          if (result.status === 'fulfilled' && result.value?.success) {
+            const uData = result.value.data
+            newNames[namesToFetch[idx]] = uData.name || uData.email || `User ${namesToFetch[idx]}`
+          }
+        })
+        setUserNames(newNames)
       }
-    } catch (error) {
-      console.error('Fetch all claims failed:', error)
+    } else {
       toast.error('Failed to load system claims.')
       setClaims([])
-    } finally {
-      setLoading(false)
     }
+    setLoading(false)
   }
 
   const handleSearch = async (e?: React.FormEvent) => {
@@ -112,28 +135,23 @@ export default function ClaimsReview() {
       return
     }
     setLoading(true)
-    try {
-      const numericTerm = searchTerm.replace(/\D/g, '')
-      if (numericTerm) {
-        const response = await adminService.getClaimsByUser(numericTerm)
-        if (response.success) {
-          const data = response.data || []
-          setClaims(data)
-          setFilteredClaims(data)
-          setTotalPages(1)
-          setTotalElements(data.length)
-        }
+    const numericTerm = searchTerm.replace(/\D/g, '')
+    if (numericTerm) {
+      const response = await adminService.getClaimsByUser(numericTerm)
+      if (response.success) {
+        const data = (response.data as any) || []
+        setClaims(data)
+        setFilteredClaims(data)
+        setTotalElements(data.length)
       } else {
-        // If not numeric, just filter locally
-        setPage(0)
-        fetchAllClaims(0)
+        toast.error('No claims found.')
+        setClaims([])
       }
-    } catch (error) {
-      toast.error('No claims found.')
-      setClaims([])
-    } finally {
-      setLoading(false)
+    } else {
+      setPage(0)
+      fetchAllClaims(0)
     }
+    setLoading(false)
   }
 
   // Stats
@@ -141,49 +159,55 @@ export default function ClaimsReview() {
     const all = claims
     return {
       total: totalElements,
-      approved: all.filter(c => c.status === 'APPROVED').length,
-      review: all.filter(c => c.status === 'UNDER_REVIEW' || c.status === 'SUBMITTED').length,
-      rejected: all.filter(c => c.status === 'REJECTED').length,
+      approved: all.filter((c) => c.status === 'APPROVED').length,
+      review: all.filter((c) => c.status === 'UNDER_REVIEW' || c.status === 'SUBMITTED').length,
+      rejected: all.filter((c) => c.status === 'REJECTED').length,
     }
   }, [claims, totalElements])
 
   // Toggle sort
   const toggleSort = (field: 'id' | 'name' | 'amount') => {
-    setSortBy(prev => ({
+    setSortBy((prev) => ({
       field,
-      dir: prev.field === field && prev.dir === 'asc' ? 'desc' : 'asc'
+      dir: prev.field === field && prev.dir === 'asc' ? 'desc' : 'asc',
     }))
   }
 
   const SortBtn = ({ field }: { field: 'id' | 'name' | 'amount' }) => {
     const isActive = sortBy.field === field
-    const Icon = isActive ? (sortBy.dir === 'asc' ? HiSortAscending : HiSortDescending) : HiOutlineSwitchVertical
+    const Icon = isActive
+      ? sortBy.dir === 'asc'
+        ? HiSortAscending
+        : HiSortDescending
+      : HiOutlineSwitchVertical
     return (
-      <span className={`inline-flex items-center justify-center w-6 h-6 rounded-md transition-all duration-200 ${
-        isActive
-          ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/30'
-          : 'bg-surface-200 dark:bg-surface-700 text-surface-500 hover:bg-surface-300 dark:hover:bg-surface-600'
-      }`}>
+      <span
+        className={`inline-flex items-center justify-center w-6 h-6 rounded-md transition-all duration-200 ${
+          isActive
+            ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/30'
+            : 'bg-surface-200 dark:bg-surface-700 text-surface-500 hover:bg-surface-300 dark:hover:bg-surface-600'
+        }`}
+      >
         <Icon className="text-sm" />
       </span>
     )
   }
 
-  // Local filtering + sorting by status tab + search
+  // Local filtering + sorting
   useEffect(() => {
     let result = [...claims]
     if (statusTab !== 'ALL') {
       if (statusTab === 'PENDING') {
-        result = result.filter(c => c.status === 'UNDER_REVIEW' || c.status === 'SUBMITTED')
+        result = result.filter((c) => c.status === 'UNDER_REVIEW' || c.status === 'SUBMITTED')
       } else {
-        result = result.filter(c => c.status === statusTab)
+        result = result.filter((c) => c.status === statusTab)
       }
     }
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      result = result.filter(c => {
+      result = result.filter((c) => {
         const uid = (c.userId || '').toString()
-        const cid = (c.id || '').toString()
+        const cid = (c.id || c.claimId || '').toString()
         const name = (userNames[c.userId || ''] || '').toLowerCase()
         const desc = (c.description || '').toLowerCase()
         return uid.includes(term) || cid.includes(term) || name.includes(term) || desc.includes(term)
@@ -212,54 +236,57 @@ export default function ClaimsReview() {
 
   const handleOpenReview = (claim: Claim) => {
     setSelectedClaim(claim)
-    setReviewRemark('')
-    const validActions = ['UNDER_REVIEW', 'APPROVED', 'REJECTED', 'CLOSED']
-    setTargetStatus(validActions.includes(claim.status || '') ? claim.status! : 'UNDER_REVIEW')
+    
+    // Map initial unreviewed states to UNDER_REVIEW so the dropdown isn't blank
+    const validStatuses = ['UNDER_REVIEW', 'APPROVED', 'REJECTED', 'CLOSED']
+    const defaultStatus = validStatuses.includes(claim.status || '') 
+      ? claim.status 
+      : 'UNDER_REVIEW'
+
+    resetReview({
+      remarks: '',
+      status: defaultStatus as any,
+    })
     setIsReviewModalOpen(true)
   }
 
   const handleOpenEdit = (claim: Claim) => {
     setSelectedClaim(claim)
-    setEditingClaim({
-      amount: claim.amount || claim.claimAmount || 0,
-      description: claim.description || ''
+    resetEdit({
+      amount: String(claim.amount || claim.claimAmount || ''),
+      description: claim.description || '',
     })
     setIsEditModalOpen(true)
   }
 
-  const submitReview = async (newStatus: string) => {
+  const submitReview = async (data: ReviewInput) => {
     if (!selectedClaim) return
-    try {
-      const claimId = selectedClaim.claimId || selectedClaim.id
-      const response = await adminService.reviewClaim(claimId, {
-        status: newStatus,
-        remarks: reviewRemark
-      })
-      if (response.success) {
-        toast.success(`Claim status updated to ${newStatus.replace('_', ' ')}`)
-        setIsReviewModalOpen(false)
-        refreshList()
-      } else {
-        toast.error('Action failed. Check if claim state allows this transition.')
-      }
-    } catch (error) {
-      toast.error('Action failed. Check if claim state allows this transition.')
+    const claimId = selectedClaim.claimId || selectedClaim.id
+    const response = await adminService.reviewClaim(claimId, {
+      status: data.status,
+      remarks: data.remarks,
+    })
+    if (response.success) {
+      toast.success(`Claim status updated to ${data.status.replace('_', ' ')}`)
+      setIsReviewModalOpen(false)
+      refreshList()
+    } else {
+      toast.error(response.message || 'Action failed. Check state transitions.')
     }
   }
 
-  const submitEdit = async () => {
+  const submitEdit = async (data: ClaimEditInput) => {
     if (!selectedClaim) return
-    try {
-      const response = await adminService.updateClaim(selectedClaim.claimId || selectedClaim.id, editingClaim)
-      if (response.success) {
-        toast.success('Claim details updated!')
-        setIsEditModalOpen(false)
-        refreshList()
-      } else {
-        toast.error('Failed to update claim details.')
-      }
-    } catch (error) {
-      toast.error('Failed to update claim details.')
+    const response = await adminService.updateClaim(selectedClaim.claimId || selectedClaim.id, {
+      amount: Number(data.amount),
+      description: data.description,
+    })
+    if (response.success) {
+      toast.success('Claim details updated!')
+      setIsEditModalOpen(false)
+      refreshList()
+    } else {
+      toast.error(response.message || 'Failed to update claim details.')
     }
   }
 
@@ -272,12 +299,9 @@ export default function ClaimsReview() {
   }
 
   const handleDownload = async (claimId: string | number) => {
-    try {
-      const id = claimId
-      if (!id) throw new Error("Missing Claim ID")
-      const res = await adminService.downloadClaimDocument(id)
-      if (!res.success) throw new Error("Download failed")
-      
+    if (!claimId) return
+    const res = await adminService.downloadClaimDocument(claimId)
+    if (res.success) {
       const contentType = (res as any).headers?.['content-type'] || 'application/octet-stream'
       const extension = contentType?.includes('image') ? 'jpg' : 'pdf'
       const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }))
@@ -289,16 +313,16 @@ export default function ClaimsReview() {
       link.remove()
       window.URL.revokeObjectURL(url)
       toast.success('Document download started')
-    } catch (err) {
+    } else {
       toast.error('Document could not be retrieved.')
     }
   }
 
   const tabs = [
-    { key: 'ALL',      label: 'All Claims',    count: stats.total,    icon: null },
-    { key: 'APPROVED', label: 'Approved',       count: stats.approved, icon: HiOutlineShieldCheck },
-    { key: 'PENDING',  label: 'Pending',        count: stats.review,   icon: HiOutlineClock },
-    { key: 'REJECTED', label: 'Rejected',       count: stats.rejected, icon: HiOutlineBan },
+    { key: 'ALL', label: 'All Claims', count: stats.total, icon: null },
+    { key: 'APPROVED', label: 'Approved', count: stats.approved, icon: HiOutlineShieldCheck },
+    { key: 'PENDING', label: 'Pending', count: stats.review, icon: HiOutlineClock },
+    { key: 'REJECTED', label: 'Rejected', count: stats.rejected, icon: HiOutlineBan },
   ]
 
   return (
@@ -308,7 +332,9 @@ export default function ClaimsReview() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-60" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">Claims Console</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+              Claims Console
+            </h1>
             <p className="text-indigo-100 mt-2 font-medium text-sm md:text-base">
               Review, audit, and process policyholder claims across all products.
             </p>
@@ -321,10 +347,12 @@ export default function ClaimsReview() {
               { label: 'Approved', value: stats.approved, color: 'text-emerald-300' },
               { label: 'Pending', value: stats.review, color: 'text-amber-300' },
               { label: 'Rejected', value: stats.rejected, color: 'text-red-300' },
-            ].map(kpi => (
+            ].map((kpi) => (
               <div key={kpi.label} className="text-center">
                 <div className={`text-2xl md:text-3xl font-black ${kpi.color}`}>{kpi.value}</div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-200/80 mt-1">{kpi.label}</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-200/80 mt-1">
+                  {kpi.label}
+                </div>
               </div>
             ))}
           </div>
@@ -334,19 +362,26 @@ export default function ClaimsReview() {
       {/* Toolbar: Tabs + Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex gap-1 bg-surface-100 dark:bg-surface-800/60 p-1 rounded-xl overflow-x-auto no-scrollbar">
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setStatusTab(tab.key)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-200
-                ${statusTab === tab.key
-                  ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                  : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'}`
-              }
+                ${
+                  statusTab === tab.key
+                    ? 'bg-white dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                    : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'
+                }`}
             >
               {tab.icon && <tab.icon className="text-sm" />}
               {tab.label}
-              <span className={`ml-1 text-[10px] font-black px-1.5 py-0.5 rounded-md ${statusTab === tab.key ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'bg-surface-200 dark:bg-surface-700 text-surface-500'}`}>
+              <span
+                className={`ml-1 text-[10px] font-black px-1.5 py-0.5 rounded-md ${
+                  statusTab === tab.key
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                    : 'bg-surface-200 dark:bg-surface-700 text-surface-500'
+                }`}
+              >
                 {tab.count}
               </span>
             </button>
@@ -360,31 +395,54 @@ export default function ClaimsReview() {
             placeholder="Search name, ID, or description..."
             className="input-field pl-10 !py-2.5 w-full md:w-80 !rounded-xl"
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors text-xs font-bold">✕</button>
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors text-xs font-bold"
+            >
+              ✕
+            </button>
           )}
         </div>
       </div>
 
       {/* Claims Table */}
-      {loading ? <LoadingSpinner /> : (
+      {loading ? (
+        <LoadingSpinner />
+      ) : (
         <>
           <div className="card overflow-hidden border-0 shadow-xl shadow-surface-900/5 dark:shadow-black/20">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-surface-200 dark:border-surface-800">
-                    <th onClick={() => toggleSort('name')} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400 cursor-pointer select-none hover:text-primary-500 transition-colors">
-                      <span className="flex items-center gap-2">Filed By <SortBtn field="name" /></span>
+                    <th
+                      onClick={() => toggleSort('name')}
+                      className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400 cursor-pointer select-none hover:text-primary-500 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        Filed By <SortBtn field="name" />
+                      </span>
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400 hidden lg:table-cell">Description</th>
-                    <th onClick={() => toggleSort('amount')} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400 cursor-pointer select-none hover:text-primary-500 transition-colors">
-                      <span className="flex items-center gap-2">Amount <SortBtn field="amount" /></span>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400 hidden lg:table-cell">
+                      Description
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400 text-right">Actions</th>
+                    <th
+                      onClick={() => toggleSort('amount')}
+                      className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400 cursor-pointer select-none hover:text-primary-500 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        Amount <SortBtn field="amount" />
+                      </span>
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-surface-400 text-right">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -395,85 +453,106 @@ export default function ClaimsReview() {
                         <p className="text-surface-500 font-medium">No claims match your filters.</p>
                       </td>
                     </tr>
-                  ) : filteredClaims.map((claim, idx) => {
-                    const id = claim.claimId || claim.id
-                    const userId = claim.userId || ''
-                    const name = userNames[userId] || `User ${userId}`
-                    const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2)
-                    return (
-                      <tr
-                        key={id}
-                        className={`group transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/30 ${idx !== filteredClaims.length - 1 ? 'border-b border-surface-100 dark:border-surface-800/50' : ''}`}
-                      >
-                        {/* Claimant - Name + User ID */}
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(userId)} flex items-center justify-center text-white text-xs font-black shadow-md flex-shrink-0`}>
-                              {initials}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-bold text-sm text-surface-900 dark:text-white truncate max-w-[160px]">
-                                {name}
+                  ) : (
+                    filteredClaims.map((claim, idx) => {
+                      const id = claim.claimId || claim.id
+                      const userId = claim.userId || ''
+                      const name = userNames[userId] || `User ${userId}`
+                      const initials = name
+                        .split(' ')
+                        .map((w) => w[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2)
+                      return (
+                        <tr
+                          key={id}
+                          className={`group transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/30 ${
+                            idx !== filteredClaims.length - 1
+                              ? 'border-b border-surface-100 dark:border-surface-800/50'
+                              : ''
+                          }`}
+                        >
+                          {/* Claimant - Name + User ID */}
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-4">
+                              <div
+                                className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(
+                                  userId
+                                )} flex items-center justify-center text-white text-xs font-black shadow-md flex-shrink-0`}
+                              >
+                                {initials}
                               </div>
-                              <div className="text-[11px] text-surface-400 font-mono mt-0.5">
-                                ID {userId}
+                              <div className="min-w-0">
+                                <div className="font-bold text-sm text-surface-900 dark:text-white truncate max-w-[160px]">
+                                  {name}
+                                </div>
+                                <div className="text-[11px] text-surface-400 font-mono mt-0.5">
+                                  ID {userId}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        {/* Description */}
-                        <td className="px-6 py-5 hidden lg:table-cell">
-                          <p className="text-sm text-surface-500 dark:text-surface-400 truncate max-w-[280px] leading-relaxed" title={claim.description}>
-                            {claim.description || '—'}
-                          </p>
-                        </td>
-                        {/* Amount */}
-                        <td className="px-6 py-5">
-                          <span className="text-base font-black text-surface-900 dark:text-white tabular-nums">
-                            ₹{(claim.amount || claim.claimAmount || 0).toLocaleString('en-IN')}
-                          </span>
-                        </td>
-                        {/* Status */}
-                        <td className="px-6 py-5"><StatusBadge status={claim.status} /></td>
-                        {/* Actions */}
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                            <button
-                              onClick={() => handleOpenReview(claim)}
-                              className="p-2 rounded-lg text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
-                              title="Review & Decide"
+                          </td>
+                          {/* Description */}
+                          <td className="px-6 py-5 hidden lg:table-cell">
+                            <p
+                              className="text-sm text-surface-500 dark:text-surface-400 truncate max-w-[280px] leading-relaxed"
+                              title={claim.description}
                             >
-                              <HiOutlineCheckCircle className="text-[18px]" />
-                            </button>
-                            <button
-                              onClick={() => handleOpenEdit(claim)}
-                              className="p-2 rounded-lg text-surface-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-                              title="Edit Details"
-                            >
-                              <HiOutlinePencilAlt className="text-[18px]" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                 const idToDelete = claim.claimId || claim.id
-                                 if (window.confirm('Permanently delete this claim?')) {
-                                   adminService.deleteClaim(idToDelete).then((res) => {
+                              {claim.description || '—'}
+                            </p>
+                          </td>
+                          {/* Amount */}
+                          <td className="px-6 py-5">
+                            <span className="text-base font-black text-surface-900 dark:text-white tabular-nums">
+                              ₹{(claim.amount || claim.claimAmount || 0).toLocaleString('en-IN')}
+                            </span>
+                          </td>
+                          {/* Status */}
+                          <td className="px-6 py-5">
+                            <StatusBadge status={claim.status} />
+                          </td>
+                          {/* Actions */}
+                          <td className="px-6 py-5 text-right">
+                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                              <button
+                                onClick={() => handleOpenReview(claim)}
+                                className="p-2 rounded-lg text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                                title="Review & Decide"
+                              >
+                                <HiOutlineCheckCircle className="text-[18px]" />
+                              </button>
+                              <button
+                                onClick={() => handleOpenEdit(claim)}
+                                className="p-2 rounded-lg text-surface-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                title="Edit Details"
+                              >
+                                <HiOutlinePencilAlt className="text-[18px]" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const idToDelete = claim.claimId || claim.id
+                                  if (window.confirm('Permanently delete this claim?')) {
+                                    const res = await adminService.deleteClaim(idToDelete)
                                     if (res.success) {
                                       toast.success('Claim deleted')
                                       refreshList()
+                                    } else {
+                                      toast.error('Failed to delete')
                                     }
-                                  }).catch(() => toast.error('Failed to delete'))
-                                }
-                              }}
-                              className="p-2 rounded-lg text-surface-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                              title="Delete"
-                            >
-                              <HiOutlineXCircle className="text-[18px]" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                                  }
+                                }}
+                                className="p-2 rounded-lg text-surface-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                title="Delete"
+                              >
+                                <HiOutlineXCircle className="text-[18px]" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -494,16 +573,26 @@ export default function ClaimsReview() {
 
       {/* Review Modal */}
       {selectedClaim && (
-        <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title={`Review Case #${selectedClaim.claimId || selectedClaim.id}`}>
-          <div className="space-y-6">
+        <Modal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          title={`Review Case #${selectedClaim.claimId || selectedClaim.id}`}
+        >
+          <form onSubmit={handleSubmitReview(submitReview)} className="space-y-6">
             <div className="bg-surface-50 dark:bg-surface-800/50 p-5 rounded-xl space-y-3 border border-surface-200 dark:border-surface-700">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-semibold text-surface-500">Claimant</span>
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${getAvatarColor(selectedClaim.userId || '')} flex items-center justify-center text-white text-[8px] font-black`}>
+                  <div
+                    className={`w-6 h-6 rounded-full bg-gradient-to-br ${getAvatarColor(
+                      selectedClaim.userId || ''
+                    )} flex items-center justify-center text-white text-[8px] font-black`}
+                  >
                     {(userNames[selectedClaim.userId || ''] || 'U').charAt(0)}
                   </div>
-                  <span className="text-sm font-bold">{userNames[selectedClaim.userId || ''] || `User ${selectedClaim.userId}`}</span>
+                  <span className="text-sm font-bold">
+                    {userNames[selectedClaim.userId || ''] || `User ${selectedClaim.userId}`}
+                  </span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
@@ -512,11 +601,17 @@ export default function ClaimsReview() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-semibold text-surface-500">Requested Amount</span>
-                <span className="font-bold text-lg">₹{(selectedClaim.amount || selectedClaim.claimAmount || 0).toLocaleString()}</span>
+                <span className="font-bold text-lg">
+                  ₹{(selectedClaim.amount || selectedClaim.claimAmount || 0).toLocaleString()}
+                </span>
               </div>
               <div className="pt-2">
-                <span className="text-sm font-semibold text-surface-500 block mb-1.5">Description</span>
-                <p className="text-sm text-surface-700 dark:text-surface-300 bg-white dark:bg-surface-900 p-3 rounded-lg border border-surface-200 dark:border-surface-800 leading-relaxed">{selectedClaim.description || 'No description provided.'}</p>
+                <span className="text-sm font-semibold text-surface-500 block mb-1.5">
+                  Description
+                </span>
+                <p className="text-sm text-surface-700 dark:text-surface-300 bg-white dark:bg-surface-900 p-3 rounded-lg border border-surface-200 dark:border-surface-800 leading-relaxed">
+                  {selectedClaim.description || 'No description provided.'}
+                </p>
               </div>
             </div>
 
@@ -530,23 +625,31 @@ export default function ClaimsReview() {
 
             <div className="border-t border-surface-200 dark:border-surface-800 pt-6">
               <div className="mb-4">
-                <label className="block text-xs font-bold text-surface-400 uppercase tracking-widest mb-2">Internal Remarks *</label>
+                <label className="block text-xs font-bold text-surface-400 uppercase tracking-widest mb-2">
+                  Internal Remarks *
+                </label>
                 <textarea
-                  required
                   placeholder="Enter process notes or final decision comments..."
-                  className="input-field h-24 resize-none"
-                  value={reviewRemark}
-                  onChange={e => setReviewRemark(e.target.value)}
+                  className={`input-field h-24 resize-none ${
+                    reviewErrors.remarks ? 'border-red-500' : ''
+                  }`}
+                  {...registerReview('remarks')}
                 />
+                {reviewErrors.remarks && (
+                  <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">
+                    {reviewErrors.remarks.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-surface-400 tracking-widest mb-2">Set New Status</label>
+                <label className="block text-xs font-bold text-surface-400 tracking-widest mb-2">
+                  Set New Status
+                </label>
                 <div className="flex gap-3">
                   <select
-                    className="input-field flex-1"
-                    value={targetStatus}
-                    onChange={(e) => setTargetStatus(e.target.value)}
+                    className={`input-field flex-1 ${reviewErrors.status ? 'border-red-500' : ''}`}
+                    {...registerReview('status')}
                   >
                     <option value="UNDER_REVIEW">UNDER REVIEW</option>
                     <option value="APPROVED">APPROVED</option>
@@ -554,61 +657,93 @@ export default function ClaimsReview() {
                     <option value="CLOSED">CLOSED</option>
                   </select>
                   <button
-                    onClick={() => submitReview(targetStatus)}
-                    className="btn-primary py-3 px-8 shadow-lg shadow-primary-500/20"
+                    type="submit"
+                    disabled={isReviewing}
+                    className="btn-primary py-3 px-8 min-w-[160px] flex items-center justify-center shadow-lg shadow-primary-500/20"
                   >
-                    Update Status
+                    {isReviewing ? (
+                      <span className="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    ) : (
+                      'Update Status'
+                    )}
                   </button>
                 </div>
               </div>
             </div>
-          </div>
+          </form>
         </Modal>
       )}
 
       {/* Edit Modal */}
       {selectedClaim && (
-        <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={`Edit Case #${selectedClaim.claimId || selectedClaim.id}`}>
-          <div className="space-y-6">
-            <p className="text-sm text-surface-500">Correct the amount or description for this security audit.</p>
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          title={`Edit Case #${selectedClaim.claimId || selectedClaim.id}`}
+        >
+          <form onSubmit={handleSubmitEdit(submitEdit)} className="space-y-6">
+            <p className="text-sm text-surface-500">
+              Correct the amount or description for this security audit.
+            </p>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-surface-400 uppercase tracking-wider mb-2">Adjusted Amount (₹)</label>
+                <label className="block text-xs font-bold text-surface-400 uppercase tracking-wider mb-2">
+                  Adjusted Amount (₹)
+                </label>
                 <input
                   type="number"
-                  className="input-field"
-                  value={editingClaim.amount}
-                  onChange={(e) => setEditingClaim({ ...editingClaim, amount: parseFloat(e.target.value) || 0 })}
+                  className={`input-field ${editErrors.amount ? 'border-red-500' : ''}`}
+                  {...registerEdit('amount')}
                 />
+                {editErrors.amount && (
+                  <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">
+                    {editErrors.amount.message}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-surface-400 uppercase tracking-wider mb-2">Updated Description</label>
+                <label className="block text-xs font-bold text-surface-400 uppercase tracking-wider mb-2">
+                  Updated Description
+                </label>
                 <textarea
                   rows={4}
-                  className="input-field resize-none"
-                  value={editingClaim.description}
-                  onChange={(e) => setEditingClaim({ ...editingClaim, description: e.target.value })}
+                  className={`input-field resize-none ${
+                    editErrors.description ? 'border-red-500' : ''
+                  }`}
+                  {...registerEdit('description')}
                 ></textarea>
+                {editErrors.description && (
+                  <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">
+                    {editErrors.description.message}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="flex gap-3 mt-4 pt-4 border-t border-surface-200 dark:border-surface-800">
               <button
+                type="button"
                 onClick={() => setIsEditModalOpen(false)}
                 className="flex-1 btn-secondary py-3"
+                disabled={isEditing}
               >
                 Cancel
               </button>
               <button
-                onClick={submitEdit}
+                type="submit"
                 className="flex-[2] btn-primary py-3"
+                disabled={isEditing}
               >
-                Update Details
+                {isEditing ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  'Update Details'
+                )}
               </button>
             </div>
-          </div>
+          </form>
         </Modal>
       )}
     </div>

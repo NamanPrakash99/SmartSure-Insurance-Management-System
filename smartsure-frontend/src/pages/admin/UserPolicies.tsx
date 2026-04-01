@@ -338,7 +338,7 @@ export default function UserPolicies() {
                             <div className="flex-1 overflow-hidden">
                               <div className="font-bold text-sm truncate">{claim.description || 'Claim'}</div>
                               <div className="text-[10px] text-surface-500 flex items-center gap-2">
-                                <span>₹{claim.amount}</span>
+                                <span>₹{claim.amount || claim.claimAmount || 0}</span>
                                 <span>•</span>
                                 <span className="uppercase">{claim.status}</span>
                               </div>

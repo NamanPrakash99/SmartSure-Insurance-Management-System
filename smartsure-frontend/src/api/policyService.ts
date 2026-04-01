@@ -19,6 +19,11 @@ const policyCache: {
 };
 
 export const policyService = {
+  clearCache: () => {
+    policyCache.all = null;
+    policyCache.types = null;
+  },
+
   // ── Customer Endpoints ──────────────────────────────────────────────
 
   /**

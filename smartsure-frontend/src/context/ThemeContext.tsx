@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, ReactNode } from 'react'
+import { useAppDispatch, useAppSelector } from '../store/hooks'
+import { toggleTheme as toggleAction } from '../store/slices/themeSlice'
 
 interface ThemeContextType {
   isDark: boolean
@@ -8,23 +10,10 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('smartsure-theme')
-    if (saved) return saved === 'dark'
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
+  const isDark = useAppSelector(state => state.theme.isDark)
+  const dispatch = useAppDispatch()
 
-  useEffect(() => {
-    const root = document.documentElement
-    if (isDark) {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-    localStorage.setItem('smartsure-theme', isDark ? 'dark' : 'light')
-  }, [isDark])
-
-  const toggleTheme = () => setIsDark(prev => !prev)
+  const toggleTheme = () => dispatch(toggleAction())
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>

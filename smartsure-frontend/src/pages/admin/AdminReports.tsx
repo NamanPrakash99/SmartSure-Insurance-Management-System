@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { adminService } from '../../api/adminService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { BarChart, DonutChart, GaugeChart } from '../../components/common/DashboardCharts'
@@ -44,13 +44,13 @@ export default function AdminReports() {
    if (loading) return <LoadingSpinner />
    if (!reports) return null
 
-   const pendingClaims = Math.max(0, reports.totalClaims - (reports.approvedClaims + reports.rejectedClaims))
+   const closedClaims = Math.max(0, reports.totalClaims - (reports.approvedClaims + reports.rejectedClaims))
 
    const claimsVolumeData = [
       { label: 'Total', value: reports.totalClaims, color: '#6366f1' },
       { label: 'Approved', value: reports.approvedClaims, color: '#10b981' },
       { label: 'Rejected', value: reports.rejectedClaims, color: '#ef4444' },
-      { label: 'Pending', value: pendingClaims, color: '#f59e0b' }
+      { label: 'Closed', value: closedClaims, color: '#f59e0b' }
    ]
 
    const approvalRate = Math.round((reports.approvedClaims / (reports.totalClaims || 1)) * 100)
@@ -141,7 +141,7 @@ export default function AdminReports() {
                         </div>
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
                            <div className="w-3 h-3 rounded-full bg-surface-200" />
-                           <span className="text-surface-400">Others ({100 - approvalRate}%)</span>
+                           <span className="text-surface-400">Closed ({100 - approvalRate}%)</span>
                         </div>
                      </div>
                   </div>

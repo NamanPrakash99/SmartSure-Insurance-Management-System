@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User } from '../types'
+import { useAppDispatch, useAppSelector } from '../store/hooks'
+import { loginSuccess, logout as logoutAction } from '../store/slices/authSlice'
 
 interface AuthContextType {
   user: User | null;
@@ -16,43 +18,27 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
+  const { user, token, isAuthenticated, isAdmin, isCustomer } = useAppSelector(state => state.auth)
+  const dispatch = useAppDispatch()
+  const loading = false // Redux state is synchronous for initial load here
   const navigate = useNavigate()
 
-  // Load auth state from localStorage on mount
-  useEffect(() => {
-    const savedToken = localStorage.getItem('smartsure-token')
-    const savedUser = localStorage.getItem('smartsure-user')
-    if (savedToken && savedUser) {
-      try {
-        setToken(savedToken)
-        setUser(JSON.parse(savedUser))
-      } catch {
-        localStorage.removeItem('smartsure-token')
-        localStorage.removeItem('smartsure-user')
-        localStorage.removeItem('smartsure-refresh-token')
-      }
-    }
-    setLoading(false)
-  }, [])
+  // We can remove the local mount logic as Redux slice handles it in loadInitialState
+  // useEffect(() => { ... }, [])
 
   const login = (authResponse: any) => {
-    // authResponse = { token, role, id, name }
     const userData: User = {
       id: authResponse.id,
       role: authResponse.role,
       name: authResponse.name,
     }
-    setToken(authResponse.token)
-    setUser(userData)
+    
+    dispatch(loginSuccess({ 
+      user: userData, 
+      token: authResponse.token, 
+      refreshToken: authResponse.refreshToken 
+    }))
 
-    localStorage.setItem('smartsure-token', authResponse.token)
-    localStorage.setItem('smartsure-refresh-token', authResponse.refreshToken)
-    localStorage.setItem('smartsure-user', JSON.stringify(userData))
-
-    // Redirect based on role
     if (authResponse.role === 'ADMIN') {
       navigate('/admin/dashboard')
     } else {
@@ -61,17 +47,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem('smartsure-token')
-    localStorage.removeItem('smartsure-user')
-    localStorage.removeItem('smartsure-refresh-token')
+    dispatch(logoutAction())
     navigate('/login')
   }
 
-  const isAuthenticated = !!token
-  const isAdmin = user?.role === 'ADMIN'
-  const isCustomer = user?.role === 'CUSTOMER'
+  // These are now derived from Redux state
 
   return (
     <AuthContext.Provider value={{

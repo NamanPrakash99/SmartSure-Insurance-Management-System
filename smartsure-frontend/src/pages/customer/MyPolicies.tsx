@@ -8,9 +8,22 @@ import { toast } from 'react-toastify'
 import { Link } from 'react-router-dom'
 import { Pagination } from '../../components/common/Pagination'
 import { paymentService } from '../../api/paymentService'
-import { HiOutlineShieldCheck, HiOutlineCreditCard, HiOutlineTrash, HiOutlineCalendar, HiOutlineCurrencyRupee } from 'react-icons/hi'
+import {
+  HiOutlineShieldCheck,
+  HiOutlineCreditCard,
+  HiOutlineTrash,
+  HiOutlineCalendar,
+  HiOutlineCurrencyRupee,
+} from 'react-icons/hi'
 import { Modal } from '../../components/common/Modal'
 import { UserPolicy } from '../../types'
+
+// Extend window object for Razorpay
+declare global {
+  interface Window {
+    Razorpay: any
+  }
+}
 
 export default function MyPolicies() {
   const { user } = useAuth()
@@ -20,7 +33,10 @@ export default function MyPolicies() {
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [selectedPolicyForRenewal, setSelectedPolicyForRenewal] = useState<UserPolicy | null>(null)
 
-  const paginatedPolicies = policies.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const paginatedPolicies = policies.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   useEffect(() => {
     if (user) {
@@ -34,133 +50,110 @@ export default function MyPolicies() {
 
   const fetchPolicies = async () => {
     if (!user) return
-    try {
-      const [userPoliciesRes, allAvailablePoliciesRes] = await Promise.all([
-        policyService.getUserPolicies(user.id),
-        policyService.getAllPolicies()
-      ])
+    const [userPoliciesRes, allAvailablePoliciesRes] = await Promise.all([
+      policyService.getUserPolicies(user.id),
+      policyService.getAllPolicies(),
+    ])
 
-      const allAvailablePolicies = allAvailablePoliciesRes.success ? allAvailablePoliciesRes.data : [];
+    const allAvailablePolicies = allAvailablePoliciesRes.success ? allAvailablePoliciesRes.data : []
 
-      if (userPoliciesRes.success) {
-        let data = userPoliciesRes.data || []
-        // Manually map policy details if missing
-        data = data.map(up => {
-          if (!up.policy && allAvailablePolicies.length > 0) {
-            const found = allAvailablePolicies.find(p => p.id === up.policyId);
-            if (found) return { ...up, policy: found };
-          }
-          return up;
-        });
-        setPolicies(data)
-      }
-    } catch (error) {
-      console.error("Failed to load user policies", error)
-    } finally {
-      setLoading(false)
+    if (userPoliciesRes.success) {
+      let data = userPoliciesRes.data || []
+      // Manually map policy details if missing
+      data = data.map((up) => {
+        if (!up.policy && allAvailablePolicies.length > 0) {
+          const found = allAvailablePolicies.find((p) => p.id === up.policyId)
+          if (found) return { ...up, policy: found }
+        }
+        return up
+      })
+      setPolicies(data)
     }
+    setLoading(false)
   }
 
   const handleCompletePayment = async (policy: UserPolicy) => {
     if (!user) return
-    try {
-      const orderData = {
-        userId: user.id,
-        policyId: policy.policyId,
-        amount: policy.premiumAmount,
-        userPolicyId: policy.id
-      }
-      
-      const orderRes = await paymentService.createOrder(orderData)
-      if (!orderRes.success) {
-        toast.error('Failed to create payment order')
-        return
-      }
-      const orderResponse = orderRes.data
+    const orderData = {
+      userId: user.id,
+      policyId: policy.policyId,
+      amount: policy.premiumAmount,
+      userPolicyId: policy.id,
+    }
 
-      const options = {
-        key: 'rzp_test_SUGz2hbfTwDAHc',
-        amount: ((policy.premiumAmount || 0) * 100).toString(),
-        currency: 'INR',
-        name: 'SmartSure Insurance',
-        description: `Premium for ${policy.policy?.name || 'Policy'}`,
-        order_id: orderResponse.orderId,
-        handler: async function (response: any) {
-          try {
-            const verifyData = {
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature
-            }
-            const verifyRes = await paymentService.verifyPayment(verifyData)
-            if (verifyRes.success) {
-              toast.success('Payment verified! Your policy will be active shortly.')
-              setSelectedPolicyForRenewal(null)
-              setTimeout(() => {
-                fetchPolicies()
-              }, 2000)
-            } else {
-              toast.error('Payment verification failed')
-            }
-          } catch (err) {
-            toast.error('Payment verification failed')
-            console.error(err)
-          }
-        },
-        prefill: {
-          name: user.name || 'Customer',
-          email: user.email || 'customer@example.com'
-        },
-        theme: {
-          color: '#6366f1'
-        },
-        modal: {
-          ondismiss: async function() {
-            toast.info('Payment cancelled')
-            try {
-              await paymentService.verifyPayment({
-                razorpayOrderId: orderResponse.orderId,
-                razorpayPaymentId: 'CANCELLED',
-                razorpaySignature: 'INVALID'
-              })
-              fetchPolicies()
-            } catch (e) { console.error(e) }
-          }
+    const orderRes = await paymentService.createOrder(orderData)
+    if (!orderRes.success) {
+      toast.error(orderRes.message || 'Failed to create payment order')
+      return
+    }
+    const orderResponse = orderRes.data
+
+    const options = {
+      key: 'rzp_test_SUGz2hbfTwDAHc',
+      amount: ((policy.premiumAmount || 0) * 100).toString(),
+      currency: 'INR',
+      name: 'SmartSure Insurance',
+      description: `Premium for ${policy.policy?.name || 'Policy'}`,
+      order_id: orderResponse.orderId,
+      handler: async function (response: any) {
+        const verifyData = {
+          razorpayOrderId: response.razorpay_order_id,
+          razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
         }
-      }
-
-      const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', async function (response: any){
-        toast.error(response.error.description || 'Payment Failed')
-        try {
+        const verifyRes = await paymentService.verifyPayment(verifyData)
+        if (verifyRes.success) {
+          toast.success('Payment verified! Your policy will be active shortly.')
+          setSelectedPolicyForRenewal(null)
+          setTimeout(() => {
+            fetchPolicies()
+          }, 2000)
+        } else {
+          toast.error(verifyRes.message || 'Payment verification failed')
+        }
+      },
+      prefill: {
+        name: user.name || 'Customer',
+        email: user.email || 'customer@example.com',
+      },
+      theme: {
+        color: '#6366f1',
+      },
+      modal: {
+        ondismiss: async function () {
+          toast.info('Payment cancelled')
           await paymentService.verifyPayment({
-            razorpayOrderId: response.error.metadata.order_id,
-            razorpayPaymentId: response.error.metadata.payment_id,
-            razorpaySignature: 'FAILED'
+            razorpayOrderId: orderResponse.orderId,
+            razorpayPaymentId: 'CANCELLED',
+            razorpaySignature: 'INVALID',
           })
           fetchPolicies()
-        } catch (e) { console.error(e) }
-      })
-      rzp.open()
-
-    } catch (error) {
-      toast.error('Failed to initiate payment')
+        },
+      },
     }
+
+    const rzp = new window.Razorpay(options)
+    rzp.on('payment.failed', async function (response: any) {
+      toast.error(response.error.description || 'Payment Failed')
+      await paymentService.verifyPayment({
+        razorpayOrderId: response.error.metadata.order_id,
+        razorpayPaymentId: response.error.metadata.payment_id,
+        razorpaySignature: 'FAILED',
+      })
+      fetchPolicies()
+    })
+    rzp.open()
   }
 
   const handleDeletePolicy = async (id: string | number) => {
     if (!window.confirm('Are you sure you want to remove this policy record?')) return
-    
-    try {
-      const response = await policyService.deleteUserPolicy(id)
-      if (response.success) {
-        toast.success('Policy removed')
-        fetchPolicies()
-      } else {
-        toast.error('Failed to delete policy')
-      }
-    } catch (error) {
-      toast.error('Failed to delete policy')
+
+    const response = await policyService.deleteUserPolicy(id)
+    if (response.success) {
+      toast.success('Policy removed')
+      fetchPolicies()
+    } else {
+      toast.error(response.message || 'Failed to delete policy')
     }
   }
 
@@ -171,9 +164,14 @@ export default function MyPolicies() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-fade-in">
         <div>
           <h1 className="section-title text-3xl sm:text-4xl mb-2">My Policies</h1>
-          <p className="text-surface-500 font-medium">Manage all your active and expired insurance protection plans in one place.</p>
+          <p className="text-surface-500 font-medium">
+            Manage all your active and expired insurance protection plans in one place.
+          </p>
         </div>
-        <Link to="/policies" className="btn-primary text-sm px-6 py-3 shadow-primary-500/20 flex items-center gap-2 shrink-0">
+        <Link
+          to="/policies"
+          className="btn-primary text-sm px-6 py-3 shadow-primary-500/20 flex items-center gap-2 shrink-0"
+        >
           <HiOutlineShieldCheck className="text-lg" />
           Secure New Policy
         </Link>
@@ -193,10 +191,10 @@ export default function MyPolicies() {
             const startDate = new Date(policy.startDate || Date.now())
             const nextDueDate = new Date(startDate)
             nextDueDate.setMonth(nextDueDate.getMonth() + 1)
-            
+
             return (
-              <div 
-                key={policy.id} 
+              <div
+                key={policy.id}
                 className="card group hover:scale-[1.02] transition-all duration-500 animate-fade-in"
                 style={{ animationDelay: `${(idx % 6) * 100}ms` }}
               >
@@ -207,60 +205,78 @@ export default function MyPolicies() {
                     </div>
                     <StatusBadge status={policy.status} />
                   </div>
-                  
-                  <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2 line-clamp-1">{policy.policy?.name || policy.policy?.policyName || 'Policy ' + policy.id}</h3>
+
+                  <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2 line-clamp-1">
+                    {policy.policy?.name || policy.policy?.policyName || 'Policy ' + policy.id}
+                  </h3>
                   <div className="flex items-baseline gap-1 mb-6">
                     <span className="text-sm font-medium text-surface-400">Premium:</span>
-                    <span className="text-lg font-bold text-primary-600 dark:text-primary-400">₹{(policy.premiumAmount || 0).toLocaleString()}</span>
+                    <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                      ₹{(policy.premiumAmount || 0).toLocaleString()}
+                    </span>
                     <span className="text-[10px] uppercase font-bold text-surface-400">/mo</span>
                   </div>
 
                   <div className="space-y-4 pt-4 border-t border-dashed border-surface-200 dark:border-surface-700">
                     <div className="flex justify-between items-center text-xs">
-                       <span className="text-surface-500 font-medium">Next Due Date:</span>
-                       <span className="text-surface-900 dark:text-white font-bold">{nextDueDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                      <span className="text-surface-500 font-medium">Next Due Date:</span>
+                      <span className="text-surface-900 dark:text-white font-bold">
+                        {nextDueDate.toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                       <span className="text-surface-500 font-medium">Completion Date:</span>
-                       <span className="text-surface-900 dark:text-white font-bold">
-                         {policy.endDate ? new Date(policy.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Ongoing'}
-                       </span>
+                      <span className="text-surface-500 font-medium">Completion Date:</span>
+                      <span className="text-surface-900 dark:text-white font-bold">
+                        {policy.endDate
+                          ? new Date(policy.endDate).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : 'Ongoing'}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="px-6 sm:px-8 pb-6 pt-0 flex flex-col gap-3">
-                  <Link 
-                    to="/my-claims" 
+                  <Link
+                    to="/my-claims"
                     state={{ policyId: policy.id, policyName: policy.policy?.name }}
                     className="w-full btn-ghost border border-surface-200 dark:border-surface-700 text-xs tracking-widest uppercase font-bold !py-3 block text-center hover:bg-surface-900 hover:text-white dark:hover:bg-white dark:hover:text-surface-900"
                   >
                     File a Claim
                   </Link>
                   {policy.status === 'PENDING_PAYMENT' ? (
-                    <button 
+                    <button
                       onClick={() => handleCompletePayment(policy)}
                       className="w-full btn-primary !bg-amber-500 !hover:bg-amber-600 text-xs tracking-widest uppercase font-bold !py-3 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
                     >
                       <HiOutlineCreditCard className="text-lg" />
                       Complete Payment
                     </button>
-                  ) : policy.status !== 'CANCELLED' && (
-                    <button 
-                      onClick={() => setSelectedPolicyForRenewal(policy)}
-                      className="w-full btn-primary text-xs tracking-widest uppercase font-bold !py-3 block text-center shadow-lg shadow-primary-500/20"
-                    >
-                      Renew Policy
-                    </button>
+                  ) : (
+                    policy.status !== 'CANCELLED' && (
+                      <button
+                        onClick={() => setSelectedPolicyForRenewal(policy)}
+                        className="w-full btn-primary text-xs tracking-widest uppercase font-bold !py-3 block text-center shadow-lg shadow-primary-500/20"
+                      >
+                        Renew Policy
+                      </button>
+                    )
                   )}
 
-                    <button 
-                      onClick={() => handleDeletePolicy(policy.id)}
-                      className="w-full btn-ghost border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 text-xs tracking-widest uppercase font-bold !py-3 flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
-                    >
-                      <HiOutlineTrash className="text-lg" />
-                      Remove Record
-                    </button>
+                  <button
+                    onClick={() => handleDeletePolicy(policy.id)}
+                    className="w-full btn-ghost border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 text-xs tracking-widest uppercase font-bold !py-3 flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                  >
+                    <HiOutlineTrash className="text-lg" />
+                    Remove Record
+                  </button>
                 </div>
               </div>
             )
@@ -268,7 +284,7 @@ export default function MyPolicies() {
         </div>
       )}
 
-      <Pagination 
+      <Pagination
         currentPage={currentPage}
         totalItems={policies.length}
         itemsPerPage={itemsPerPage}
@@ -283,52 +299,57 @@ export default function MyPolicies() {
       >
         {selectedPolicyForRenewal && (
           <div className="space-y-8 animate-fade-in">
-             <div className="flex items-center gap-4 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-2xl border border-primary-100 dark:border-primary-500/20">
-                <div className="w-12 h-12 bg-primary-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
-                   <HiOutlineCalendar className="text-2xl" />
-                </div>
-                <div>
-                   <h4 className="font-bold text-surface-900 dark:text-white">{selectedPolicyForRenewal.policy?.name || 'Policy'}</h4>
-                   <p className="text-xs text-primary-600 dark:text-primary-400 font-bold uppercase tracking-wider">Premium Installment</p>
-                </div>
-             </div>
+            <div className="flex items-center gap-4 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-2xl border border-primary-100 dark:border-primary-500/20">
+              <div className="w-12 h-12 bg-primary-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                <HiOutlineCalendar className="text-2xl" />
+              </div>
+              <div>
+                <h4 className="font-bold text-surface-900 dark:text-white">
+                  {selectedPolicyForRenewal.policy?.name || 'Policy'}
+                </h4>
+                <p className="text-xs text-primary-600 dark:text-primary-400 font-bold uppercase tracking-wider">
+                  Premium Installment
+                </p>
+              </div>
+            </div>
 
-             <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-surface-100 dark:border-surface-800">
-                   <span className="text-sm text-surface-500 font-medium">Monthly Installment:</span>
-                   <div className="flex items-center gap-1 text-surface-900 dark:text-white font-black">
-                      <HiOutlineCurrencyRupee className="text-lg text-primary-500" />
-                      <span>{(selectedPolicyForRenewal.premiumAmount || 0).toLocaleString()}</span>
-                   </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-3 border-b border-surface-100 dark:border-surface-800">
+                <span className="text-sm text-surface-500 font-medium">Monthly Installment:</span>
+                <div className="flex items-center gap-1 text-surface-900 dark:text-white font-black">
+                  <HiOutlineCurrencyRupee className="text-lg text-primary-500" />
+                  <span>{(selectedPolicyForRenewal.premiumAmount || 0).toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-surface-100 dark:border-surface-800 font-black">
-                   <span className="text-sm text-surface-500">Total Due Now:</span>
-                   <div className="flex items-center gap-1 text-primary-600 dark:text-primary-400 text-xl">
-                      <HiOutlineCurrencyRupee className="text-xl" />
-                      <span>{(selectedPolicyForRenewal.premiumAmount || 0).toLocaleString()}</span>
-                   </div>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-surface-100 dark:border-surface-800 font-black">
+                <span className="text-sm text-surface-500">Total Due Now:</span>
+                <div className="flex items-center gap-1 text-primary-600 dark:text-primary-400 text-xl">
+                  <HiOutlineCurrencyRupee className="text-xl" />
+                  <span>{(selectedPolicyForRenewal.premiumAmount || 0).toLocaleString()}</span>
                 </div>
-             </div>
+              </div>
+            </div>
 
-             <div className="bg-surface-50 dark:bg-surface-800/50 p-4 rounded-xl text-xs text-surface-500 leading-relaxed italic border border-surface-200 dark:border-surface-700/50">
-                "Renewing your policy ensures uninterrupted protection. The payment will be processed securely via Razorpay."
-             </div>
+            <div className="bg-surface-50 dark:bg-surface-800/50 p-4 rounded-xl text-xs text-surface-500 leading-relaxed italic border border-surface-200 dark:border-surface-700/50">
+              "Renewing your policy ensures uninterrupted protection. The payment will be processed
+              securely via Razorpay."
+            </div>
 
-             <div className="flex flex-col gap-3 pt-4">
-                <button 
-                  onClick={() => handleCompletePayment(selectedPolicyForRenewal)}
-                  className="w-full btn-primary py-4 flex justify-center items-center gap-2 group text-sm tracking-widest uppercase font-black"
-                >
-                   <HiOutlineCreditCard className="text-xl" />
-                   Proceed to Payment
-                </button>
-                <button 
-                  onClick={() => setSelectedPolicyForRenewal(null)}
-                  className="w-full btn-ghost py-3 text-xs tracking-widest uppercase font-bold text-surface-500 hover:text-surface-900 dark:hover:text-white"
-                >
-                   Cancel
-                </button>
-             </div>
+            <div className="flex flex-col gap-3 pt-4">
+              <button
+                onClick={() => handleCompletePayment(selectedPolicyForRenewal)}
+                className="w-full btn-primary py-4 flex justify-center items-center gap-2 group text-sm tracking-widest uppercase font-black"
+              >
+                <HiOutlineCreditCard className="text-xl" />
+                Proceed to Payment
+              </button>
+              <button
+                onClick={() => setSelectedPolicyForRenewal(null)}
+                className="w-full btn-ghost py-3 text-xs tracking-widest uppercase font-bold text-surface-500 hover:text-surface-900 dark:hover:text-white"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
       </Modal>

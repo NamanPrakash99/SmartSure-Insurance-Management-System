@@ -1,6 +1,7 @@
 import API from './axios'
 import { handleRequest } from './apiErrorHandler'
 import { Claim, Policy, UserPolicy, User, ApiResponse } from '../types'
+import { policyService } from './policyService'
 
 const ADMIN_BASE = '/admin-service/api/admin'
 
@@ -8,7 +9,7 @@ export const adminService = {
   // ── Claims Management ───────────────────────────────────────────────
 
   reviewClaim: (id: string | number, data: { status: string; remarks: string }): Promise<ApiResponse<Claim>> =>
-    handleRequest<Claim>(API.put(`${ADMIN_BASE}/claims/${id}/review`, data)),
+    handleRequest<Claim>(API.put(`${ADMIN_BASE}/claims/${id}/review`, { status: data.status, remark: data.remarks })),
 
   getClaimStatus: (id: string | number): Promise<ApiResponse<{ status: string }>> =>
     handleRequest<{ status: string }>(API.get(`${ADMIN_BASE}/claims/status/${id}`)),
@@ -32,14 +33,20 @@ export const adminService = {
 
   // ── Policies Oversight ──────────────────────────────────────────────
 
-  createPolicy: (data: Partial<Policy>): Promise<ApiResponse<Policy>> =>
-    handleRequest<Policy>(API.post(`${ADMIN_BASE}/policies`, data)),
+  createPolicy: async (data: Partial<Policy>): Promise<ApiResponse<Policy>> => {
+    policyService.clearCache()
+    return handleRequest<Policy>(API.post(`${ADMIN_BASE}/policies`, data))
+  },
 
-  updatePolicy: (id: string | number, data: Partial<Policy>): Promise<ApiResponse<Policy>> =>
-    handleRequest<Policy>(API.put(`${ADMIN_BASE}/policies/${id}`, data)),
+  updatePolicy: async (id: string | number, data: Partial<Policy>): Promise<ApiResponse<Policy>> => {
+    policyService.clearCache()
+    return handleRequest<Policy>(API.put(`${ADMIN_BASE}/policies/${id}`, data))
+  },
 
-  deletePolicy: (id: string | number): Promise<ApiResponse<void>> =>
-    handleRequest<void>(API.delete(`${ADMIN_BASE}/policies/${id}`)),
+  deletePolicy: async (id: string | number): Promise<ApiResponse<void>> => {
+    policyService.clearCache()
+    return handleRequest<void>(API.delete(`${ADMIN_BASE}/policies/${id}`))
+  },
 
   getUserPolicies: (userId: string | number): Promise<ApiResponse<UserPolicy[]>> =>
     handleRequest<UserPolicy[]>(API.get(`${ADMIN_BASE}/user-policies/${userId}`)),

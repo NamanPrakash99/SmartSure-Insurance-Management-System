@@ -18,6 +18,7 @@ import com.group2.claims_service.repository.ClaimRepository;
 import com.group2.claims_service.repository.UserRepository;
 import com.group2.claims_service.service.ClaimService;
 import com.group2.claims_service.service.EmailService;
+import com.group2.claims_service.dto.ClaimStatusUpdateDTO;
 
 @Service
 public class ClaimServiceImpl implements ClaimService {
@@ -156,6 +157,7 @@ public class ClaimServiceImpl implements ClaimService {
 		ClaimResponseDTO response=new ClaimResponseDTO();
 		response.setClaimId(claim.getId());
 		response.setStatus(claim.getClaimStatus().name());
+		response.setRemark(claim.getRemark());
 		response.setMessage("Claim Status fetched Successfully");
 		
 		return response;
@@ -178,16 +180,18 @@ public class ClaimServiceImpl implements ClaimService {
 	    response.setUserId(claim.getUserId());
 	    response.setClaimAmount(claim.getClaimAmount());
 	    response.setDescription(claim.getDescription());
+	    response.setRemark(claim.getRemark());
 
 	    return response;
 	}
 	
 	// Update claim status (called by Admin Service via Feign)
-	public void updateClaimStatus(Long claimId, String newStatus) {
+	public void updateClaimStatus(Long claimId, ClaimStatusUpdateDTO dto) {
 
 		Claim claim = claimRepository.findById(claimId)
 				.orElseThrow(() -> new ClaimNotFoundException("Claim not found with id: " + claimId));
 
+		String newStatus = dto.getStatus();
 		ClaimStatus targetStatus;
 		try {
 			targetStatus = ClaimStatus.valueOf(newStatus.toUpperCase());
@@ -210,6 +214,10 @@ public class ClaimServiceImpl implements ClaimService {
 		}
 
 		claim.setClaimStatus(targetStatus);
+		if (dto.getRemark() != null) {
+			claim.setRemark(dto.getRemark());
+		}
+		
 		Claim savedClaim = claimRepository.save(claim);
 
 		// Send Claim Status Update Email
@@ -218,7 +226,8 @@ public class ClaimServiceImpl implements ClaimService {
 				String subject = "Claim Status Updated - SmartSure";
 				String body = "Hi " + user.getName() + ",\n\n" +
 						"The status of your Claim (ID: " + savedClaim.getId() + ") has been updated.\n" +
-						"New Status: " + savedClaim.getClaimStatus() + "\n\n" +
+						"New Status: " + savedClaim.getClaimStatus() + "\n" +
+						(savedClaim.getRemark() != null ? "Admin Remark: " + savedClaim.getRemark() + "\n\n" : "\n") +
 						"You can check the details on your dashboard.\n" +
 						"Best regards,\nSmartSure Team";
 				emailService.sendEmail(user.getEmail(), subject, body);
@@ -241,6 +250,7 @@ public class ClaimServiceImpl implements ClaimService {
 					dto.setClaimAmount(claim.getClaimAmount());
 					dto.setDescription(claim.getDescription());
 					dto.setStatus(claim.getClaimStatus().name());
+					dto.setRemark(claim.getRemark());
 					dto.setMessage("Claim fetched successfully");
 					return dto;
 				})
@@ -274,6 +284,7 @@ public class ClaimServiceImpl implements ClaimService {
 					dto.setClaimAmount(claim.getClaimAmount());
 					dto.setDescription(claim.getDescription());
 					dto.setStatus(claim.getClaimStatus().name());
+					dto.setRemark(claim.getRemark());
 					dto.setMessage("Claim fetched successfully");
 					return dto;
 				});

@@ -18,6 +18,8 @@ public class RouteValidator {
             "/swagger-ui",
             "/swagger-ui.html",
             "/webjars",
+            "/swagger-resources",
+            "/aggregate",
             "/actuator",
             "/eureka",
             "/error"

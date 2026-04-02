@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { adminService } from '../../api/adminService'
 import { authService } from '../../api/authService'
+import { useDebounce } from '../../hooks/useDebounce'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { Modal } from '../../components/common/Modal'
@@ -13,6 +14,10 @@ import {
   claimEditSchema,
   ClaimEditInput,
 } from '../../schemas/reviewSchema'
+import { FormInput } from '../../components/common/FormInput'
+import { FormTextarea } from '../../components/common/FormTextarea'
+import { FormSelect } from '../../components/common/FormSelect'
+import { Button } from '../../components/common/Button'
 import {
   HiOutlineDownload,
   HiSearch,
@@ -59,6 +64,7 @@ export default function ClaimsReview() {
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null)
 
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const [statusTab, setStatusTab] = useState('ALL')
   const [userNames, setUserNames] = useState<Record<string | number, string>>({}) // cache: { userId: name }
   const [sortBy, setSortBy] = useState<{ field: 'id' | 'name' | 'amount'; dir: 'asc' | 'desc' }>({
@@ -87,10 +93,10 @@ export default function ClaimsReview() {
   })
 
   useEffect(() => {
-    if (searchTerm === '') {
+    if (debouncedSearchTerm === '') {
       fetchAllClaims(page)
     }
-  }, [page, searchTerm, pageSize])
+  }, [page, debouncedSearchTerm, pageSize])
 
   const fetchAllClaims = async (pageNum: number) => {
     setLoading(true)
@@ -203,8 +209,8 @@ export default function ClaimsReview() {
         result = result.filter((c) => c.status === statusTab)
       }
     }
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase()
       result = result.filter((c) => {
         const uid = (c.userId || '').toString()
         const cid = (c.id || c.claimId || '').toString()
@@ -232,7 +238,7 @@ export default function ClaimsReview() {
       return (idA - idB) * dir
     })
     setFilteredClaims(result)
-  }, [searchTerm, claims, statusTab, userNames, sortBy])
+  }, [debouncedSearchTerm, claims, statusTab, userNames, sortBy])
 
   const handleOpenReview = (claim: Claim) => {
     setSelectedClaim(claim)
@@ -388,24 +394,15 @@ export default function ClaimsReview() {
           ))}
         </div>
 
-        <div className="relative group flex-shrink-0">
-          <HiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
-          <input
+          <FormInput
             type="text"
             placeholder="Search name, ID, or description..."
-            className="input-field pl-10 !py-2.5 w-full md:w-80 !rounded-xl"
+            leftIcon={<HiSearch />}
+            containerClassName="w-full md:w-80"
+            className="!rounded-xl"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 transition-colors text-xs font-bold"
-            >
-              ✕
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Claims Table */}
@@ -515,21 +512,25 @@ export default function ClaimsReview() {
                           {/* Actions */}
                           <td className="px-6 py-5 text-right">
                             <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleOpenReview(claim)}
-                                className="p-2 rounded-lg text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                                className="!p-2 text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
                                 title="Review & Decide"
-                              >
-                                <HiOutlineCheckCircle className="text-[18px]" />
-                              </button>
-                              <button
+                                leftIcon={<HiOutlineCheckCircle className="text-[18px]" />}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleOpenEdit(claim)}
-                                className="p-2 rounded-lg text-surface-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                className="!p-2 text-surface-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10"
                                 title="Edit Details"
-                              >
-                                <HiOutlinePencilAlt className="text-[18px]" />
-                              </button>
-                              <button
+                                leftIcon={<HiOutlinePencilAlt className="text-[18px]" />}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={async () => {
                                   const idToDelete = claim.claimId || claim.id
                                   if (window.confirm('Permanently delete this claim?')) {
@@ -542,11 +543,10 @@ export default function ClaimsReview() {
                                     }
                                   }
                                 }}
-                                className="p-2 rounded-lg text-surface-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                className="!p-2 text-surface-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
                                 title="Delete"
-                              >
-                                <HiOutlineXCircle className="text-[18px]" />
-                              </button>
+                                leftIcon={<HiOutlineXCircle className="text-[18px]" />}
+                              />
                             </div>
                           </td>
                         </tr>
@@ -615,59 +615,48 @@ export default function ClaimsReview() {
               </div>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => handleDownload(selectedClaim.claimId || selectedClaim.id)}
-              className="w-full btn-secondary py-3 flex items-center justify-center gap-2 border-primary-500/30 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-500/10"
+              fullWidth
+              size="lg"
+              className="text-primary-600 dark:text-primary-400"
+              leftIcon={<HiOutlineDownload className="text-lg" />}
             >
-              <HiOutlineDownload className="text-lg" /> Download Attached Document
-            </button>
+              Download Attached Document
+            </Button>
 
             <div className="border-t border-surface-200 dark:border-surface-800 pt-6">
-              <div className="mb-4">
-                <label className="block text-xs font-bold text-surface-400 uppercase tracking-widest mb-2">
-                  Internal Remarks *
-                </label>
-                <textarea
-                  placeholder="Enter process notes or final decision comments..."
-                  className={`input-field h-24 resize-none ${
-                    reviewErrors.remarks ? 'border-red-500' : ''
-                  }`}
-                  {...registerReview('remarks')}
-                />
-                {reviewErrors.remarks && (
-                  <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">
-                    {reviewErrors.remarks.message}
-                  </p>
-                )}
-              </div>
+              <FormTextarea
+                label="Internal Remarks"
+                placeholder="Enter process notes or final decision comments..."
+                rows={3}
+                error={reviewErrors.remarks?.message}
+                {...registerReview('remarks')}
+              />
 
-              <div>
-                <label className="block text-xs font-bold text-surface-400 tracking-widest mb-2">
-                  Set New Status
-                </label>
-                <div className="flex gap-3">
-                  <select
-                    className={`input-field flex-1 ${reviewErrors.status ? 'border-red-500' : ''}`}
-                    {...registerReview('status')}
-                  >
-                    <option value="UNDER_REVIEW">UNDER REVIEW</option>
-                    <option value="APPROVED">APPROVED</option>
-                    <option value="REJECTED">REJECTED</option>
-                    <option value="CLOSED">CLOSED</option>
-                  </select>
-                  <button
-                    type="submit"
-                    disabled={isReviewing}
-                    className="btn-primary py-3 px-8 min-w-[160px] flex items-center justify-center shadow-lg shadow-primary-500/20"
-                  >
-                    {isReviewing ? (
-                      <span className="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    ) : (
-                      'Update Status'
-                    )}
-                  </button>
-                </div>
+              <div className="mt-6 flex flex-col md:flex-row gap-6">
+                <FormSelect
+                  label="Set New Status"
+                  containerClassName="flex-1"
+                  error={reviewErrors.status?.message}
+                  options={[
+                    { value: 'UNDER_REVIEW', label: 'UNDER REVIEW' },
+                    { value: 'APPROVED', label: 'APPROVED' },
+                    { value: 'REJECTED', label: 'REJECTED' },
+                    { value: 'CLOSED', label: 'CLOSED' },
+                  ]}
+                  {...registerReview('status')}
+                />
+                <Button
+                  type="submit"
+                  isLoading={isReviewing}
+                  size="lg"
+                  className="min-w-[160px] self-end md:mb-[2px]"
+                >
+                  Update Status
+                </Button>
               </div>
             </div>
           </form>
@@ -686,62 +675,41 @@ export default function ClaimsReview() {
               Correct the amount or description for this security audit.
             </p>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-surface-400 uppercase tracking-wider mb-2">
-                  Adjusted Amount (₹)
-                </label>
-                <input
-                  type="number"
-                  className={`input-field ${editErrors.amount ? 'border-red-500' : ''}`}
-                  {...registerEdit('amount')}
-                />
-                {editErrors.amount && (
-                  <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">
-                    {editErrors.amount.message}
-                  </p>
-                )}
-              </div>
+            <div className="space-y-6">
+              <FormInput
+                type="number"
+                label="Adjusted Amount (₹)"
+                error={editErrors.amount?.message}
+                {...registerEdit('amount')}
+              />
 
-              <div>
-                <label className="block text-xs font-bold text-surface-400 uppercase tracking-wider mb-2">
-                  Updated Description
-                </label>
-                <textarea
-                  rows={4}
-                  className={`input-field resize-none ${
-                    editErrors.description ? 'border-red-500' : ''
-                  }`}
-                  {...registerEdit('description')}
-                ></textarea>
-                {editErrors.description && (
-                  <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">
-                    {editErrors.description.message}
-                  </p>
-                )}
-              </div>
+              <FormTextarea
+                label="Updated Description"
+                rows={4}
+                error={editErrors.description?.message}
+                {...registerEdit('description')}
+              />
             </div>
 
             <div className="flex gap-3 mt-4 pt-4 border-t border-surface-200 dark:border-surface-800">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => setIsEditModalOpen(false)}
-                className="flex-1 btn-secondary py-3"
+                className="flex-1"
+                size="lg"
                 disabled={isEditing}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="flex-[2] btn-primary py-3"
-                disabled={isEditing}
+                className="flex-[2]"
+                size="lg"
+                isLoading={isEditing}
               >
-                {isEditing ? (
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                ) : (
-                  'Update Details'
-                )}
-              </button>
+                Update Details
+              </Button>
             </div>
           </form>
         </Modal>

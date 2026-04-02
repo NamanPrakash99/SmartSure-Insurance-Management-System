@@ -16,6 +16,7 @@ import {
 import { FiSun, FiMoon, FiLogOut, FiUser } from 'react-icons/fi'
 import { RiShieldCheckLine } from 'react-icons/ri'
 import { useState, useMemo } from 'react'
+import { Button } from '../../components/common/Button'
 
 import { IconType } from 'react-icons'
 
@@ -116,14 +117,14 @@ export default function Navbar() {
           {/* Desktop nav right-side (Theme + Auth) */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
             {/* Theme toggle */}
-            <button
+            <Button
+              variant="secondary"
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 text-surface-600 dark:text-surface-400 transition-all duration-200"
+              className="w-10 h-10 !p-0"
               aria-label="Toggle theme"
               id="theme-toggle"
-            >
-              {isDark ? <FiSun className="text-lg" /> : <FiMoon className="text-lg" />}
-            </button>
+              leftIcon={isDark ? <FiSun className="text-lg" /> : <FiMoon className="text-lg" />}
+            />
 
             {isPublicPage ? (
               <div className="flex items-center gap-3">
@@ -137,21 +138,24 @@ export default function Navbar() {
             ) : (
               isAuthenticated && (
                 <div className="relative">
-                  <button 
+                  <Button 
+                    variant="secondary"
                     onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border border-surface-200 dark:border-surface-800 transition-all duration-200 ${
+                    className={`gap-2 !px-3 !py-1.5 ${
                       showUserDropdown 
-                        ? 'bg-primary-50 dark:bg-primary-500/10 border-primary-500/30 ring-2 ring-primary-500/10' 
-                        : 'bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700'
+                        ? 'ring-2 ring-primary-500/10 border-primary-500/30' 
+                        : ''
                     }`}
+                    leftIcon={
+                      <div className="w-6 h-6 rounded-lg bg-primary-500/20 flex items-center justify-center">
+                        <FiUser className="text-primary-600 dark:text-primary-400 text-xs" />
+                      </div>
+                    }
                   >
-                    <div className="w-6 h-6 rounded-lg bg-primary-500/20 flex items-center justify-center">
-                      <FiUser className="text-primary-600 dark:text-primary-400 text-xs" />
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-surface-700 dark:text-surface-300">
+                    <span className="text-[10px] font-bold uppercase tracking-wider">
                       {user?.name || user?.role}
                     </span>
-                  </button>
+                  </Button>
 
                   {/* Dropdown Menu */}
                   {showUserDropdown && (
@@ -171,13 +175,14 @@ export default function Navbar() {
                            <span>My Profile</span>
                          </Link>
                        )}
-                         <button 
+                         <Button 
+                           variant="ghost"
                            onClick={() => { logout(); setShowUserDropdown(false); }} 
-                           className="w-full mt-1 flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all duration-200 border-t border-surface-100 dark:border-surface-800 pt-2"
+                           className="w-full mt-1 !justify-start gap-3 !px-3 !py-2.5 text-red-500 border-t border-surface-100 dark:border-surface-800 !rounded-xl"
+                           leftIcon={<FiLogOut className="text-lg" />}
                          >
-                           <FiLogOut className="text-lg" />
-                           <span>Log Out</span>
-                         </button>
+                           <span className="text-sm font-semibold">Log Out</span>
+                         </Button>
                       </div>
                     </>
                   )}
@@ -188,13 +193,13 @@ export default function Navbar() {
 
 
           {/* Mobile hamburger */}
-          <button
+          <Button
+            variant="secondary"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
+            className="lg:hidden w-10 h-10 !p-0"
             id="mobile-menu-toggle"
-          >
-            {mobileOpen ? <HiOutlineX className="text-xl" /> : <HiOutlineMenu className="text-xl" />}
-          </button>
+            leftIcon={mobileOpen ? <HiOutlineX className="text-xl" /> : <HiOutlineMenu className="text-xl" />}
+          />
         </div>
 
         {/* Mobile menu */}
@@ -220,17 +225,23 @@ export default function Navbar() {
                 ))}
 
               <div className="border-t border-surface-100 dark:border-surface-800 my-2 pt-2">
-                <button
+                <Button
+                  variant="secondary"
                   onClick={toggleTheme}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
+                  className="w-full !justify-start gap-3 !px-4 !py-3"
+                  leftIcon={isDark ? <FiSun /> : <FiMoon />}
                 >
-                  {isDark ? <FiSun /> : <FiMoon />}
                   {isDark ? 'Light Mode' : 'Dark Mode'}
-                </button>
+                </Button>
                 {isAuthenticated ? (
-                  <button onClick={() => { logout(); setMobileOpen(false); }} className="w-full mt-2 btn-secondary flex items-center justify-center gap-2 text-sm text-red-500">
-                    <FiLogOut /> Logout
-                  </button>
+                  <Button 
+                    variant="secondary"
+                    onClick={() => { logout(); setMobileOpen(false); }} 
+                    className="w-full mt-2 gap-2 text-red-500 !justify-center"
+                    leftIcon={<FiLogOut />}
+                  >
+                    Logout
+                  </Button>
                 ) : (
                   <div className="flex flex-col gap-2 mt-2">
                     <Link to="/login" className="btn-secondary text-sm text-center" onClick={() => setMobileOpen(false)}>Log In</Link>

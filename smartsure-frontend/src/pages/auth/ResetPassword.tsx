@@ -5,7 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { authService } from '../../api/authService'
 import { resetPasswordSchema, ResetPasswordInput } from '../../schemas/authSchema'
 import { toast } from 'react-toastify'
-import { HiOutlineLockClosed, HiOutlineArrowLeft, HiOutlineCheckCircle } from 'react-icons/hi'
+import { HiOutlineArrowLeft, HiOutlineCheckCircle } from 'react-icons/hi'
+import { RiLockPasswordLine } from 'react-icons/ri'
+import { FormInput } from '../../components/common/FormInput'
+import { Button } from '../../components/common/Button'
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams()
@@ -58,57 +61,33 @@ export default function ResetPassword() {
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-surface-700 dark:text-surface-300">
-                    New Password
-                  </label>
-                  <div className="relative group">
-                    <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
-                    <input
-                      type="password"
-                      {...register('password')}
-                      className={`input-field !pl-11 ${
-                        errors.password ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
-                      placeholder="••••••••"
-                    />
-                  </div>
-                  {errors.password && (
-                    <p className="mt-1 ml-1 text-xs font-medium text-red-500 animate-fade-in">
-                      {errors.password.message}
-                    </p>
-                  )}
-                </div>
+                <FormInput
+                  type="password"
+                  label="New Password"
+                  leftIcon={<RiLockPasswordLine />}
+                  placeholder="••••••••"
+                  error={errors.password?.message}
+                  {...register('password')}
+                />
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-surface-700 dark:text-surface-300">
-                    Confirm New Password
-                  </label>
-                  <div className="relative group">
-                    <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
-                    <input
-                      type="password"
-                      {...register('confirmPassword')}
-                      className={`input-field !pl-11 ${
-                        errors.confirmPassword ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
-                      placeholder="••••••••"
-                    />
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="mt-1 ml-1 text-xs font-medium text-red-500 animate-fade-in">
-                      {errors.confirmPassword.message}
-                    </p>
-                  )}
-                </div>
+                <FormInput
+                  type="password"
+                  label="Confirm New Password"
+                  leftIcon={<RiLockPasswordLine />}
+                  placeholder="••••••••"
+                  error={errors.confirmPassword?.message}
+                  {...register('confirmPassword')}
+                />
 
-                <button
+                <Button
                   type="submit"
-                  disabled={loading}
-                  className="w-full btn-primary !py-4 flex items-center justify-center gap-2 shadow-xl shadow-primary-500/20 active:scale-95 transition-transform"
+                  isLoading={loading}
+                  fullWidth
+                  size="lg"
+                  className="mt-2"
                 >
-                  {loading ? 'Updating...' : 'Update Password'}
-                </button>
+                  Update Password
+                </Button>
               </form>
             </>
           ) : (
@@ -121,12 +100,10 @@ export default function ResetPassword() {
                 Your security has been updated successfully. You can now use your new password to
                 access SmartSure.
               </p>
-              <Link
-                to="/login"
-                className="btn-primary w-full shadow-lg flex items-center justify-center gap-2"
-              >
-                <HiOutlineArrowLeft />
-                Log in securely
+              <Link to="/login" className="w-full">
+                <Button fullWidth size="lg" leftIcon={<HiOutlineArrowLeft />}>
+                  Log in securely
+                </Button>
               </Link>
             </div>
           )}

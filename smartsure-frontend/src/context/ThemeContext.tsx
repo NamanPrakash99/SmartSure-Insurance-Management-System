@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import { toggleTheme as toggleAction } from '../store/slices/themeSlice'
 
@@ -12,8 +12,17 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const isDark = useAppSelector(state => state.theme.isDark)
   const dispatch = useAppDispatch()
-
   const toggleTheme = () => dispatch(toggleAction())
+
+  // Ensure DOM is in sync with Redux state on boot and changes
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (isDark) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [isDark]);
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>

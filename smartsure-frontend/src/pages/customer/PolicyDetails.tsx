@@ -6,21 +6,49 @@ import { paymentService } from '../../api/paymentService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { toast } from 'react-toastify'
 import { HiArrowLeft, HiOutlineShieldCheck, HiOutlineCheck } from 'react-icons/hi'
+import { Button } from '../../components/common/Button'
+import { Policy } from '../../types'
+
+interface RazorpayOptions {
+  key: string
+  amount: string
+  currency: string
+  name: string
+  description: string
+  order_id: string
+  handler: (response: any) => Promise<void>
+  prefill: {
+    name: string
+    email: string
+  }
+  theme: {
+    color: string
+  }
+  modal: {
+    ondismiss: () => void
+  }
+}
 
 export default function PolicyDetails() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
   
-  const [policy, setPolicy] = useState(null)
+  const [policy, setPolicy] = useState<Policy | null>(null)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
 
   useEffect(() => {
     const fetchPolicy = async () => {
+      if (!id) return
       try {
-        const { data } = await policyService.getPolicy(id)
-        setPolicy(data)
+        const res = await policyService.getPolicy(id)
+        if (res.success) {
+          setPolicy(res.data)
+        } else {
+          toast.error(res.message || 'Policy not found')
+          navigate('/policies')
+        }
       } catch (error) {
         toast.error('Policy not found')
         navigate('/policies')
@@ -32,27 +60,33 @@ export default function PolicyDetails() {
   }, [id, navigate])
 
   const handlePurchase = async () => {
+    if (!id || !user || !policy) return
+
     setProcessing(true)
     try {
-      // 1. Create Razorpay order via backend
       const orderData = {
         userId: user.id,
         policyId: parseInt(id),
-        amount: policy.premiumAmount
+        amount: policy.premiumAmount || 0
       }
       
-      const { data: orderResponse } = await paymentService.createOrder(orderData)
+      const res = await paymentService.createOrder(orderData)
+      if (!res.success) {
+        toast.error(res.message || 'Failed to create payment order')
+        setProcessing(false)
+        return
+      }
+      const orderResponse = res.data
 
-      // 2. Open Razorpay Checkout modal
-      const options = {
-        key: 'rzp_test_SUGz2hbfTwDAHc', // Test Key, could be fetched from backend or env
-        amount: (policy.premiumAmount * 100).toString(),
+      const options: RazorpayOptions = {
+        key: 'rzp_test_SUGz2hbfTwDAHc',
+        amount: ((policy.premiumAmount || 0) * 100).toString(),
 
         currency: 'INR',
         name: 'SmartSure Insurance',
-        description: `Premium for ${policy.policyName}`,
+        description: `Premium for ${policy.policyName || policy.name || 'Insurance'}`,
         order_id: orderResponse.orderId,
-        handler: async function (response) {
+        handler: async function (response: any) {
           try {
             // 3. Verify Payment
             const verifyData = {
@@ -62,8 +96,6 @@ export default function PolicyDetails() {
             }
             await paymentService.verifyPayment(verifyData)
             
-            // 4. Actually purchase/attach policy to user 
-            // Note: In premium setup, this might be redundant if the verifyPayment event triggers it.
             await policyService.purchasePolicy(policy.id)
 
             toast.success('Payment verified! Policy purchased.')
@@ -90,13 +122,13 @@ export default function PolicyDetails() {
       }
 
       const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', function (response){
+      rzp.on('payment.failed', function (response: any){
         toast.error(response.error.description)
         setProcessing(false)
       })
       rzp.open()
 
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.response?.data || 'Failed to initiate payment')
       setProcessing(false)
     }
@@ -107,9 +139,14 @@ export default function PolicyDetails() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors group px-2 py-1">
-        <HiArrowLeft className="group-hover:-translate-x-1 transition-transform" /> Back
-      </button>
+      <Button
+        variant="ghost"
+        onClick={() => navigate(-1)}
+        className="text-surface-500 hover:text-surface-900 group"
+        leftIcon={<HiArrowLeft className="group-hover:-translate-x-1 transition-transform" />}
+      >
+        Back
+      </Button>
 
       <div className="card overflow-hidden">
         {/* Banner header */}
@@ -128,17 +165,14 @@ export default function PolicyDetails() {
               <p className="text-surface-600 dark:text-surface-400 max-w-2xl leading-relaxed">{policy.description}</p>
             </div>
             
-            <button 
+            <Button
               onClick={handlePurchase}
-              disabled={processing}
-              className="btn-primary w-full md:w-auto px-8 py-4 text-lg whitespace-nowrap shadow-primary-500/40 animate-pulse-soft flex items-center justify-center gap-2 min-w-[200px]"
+              isLoading={processing}
+              size="lg"
+              className="w-full md:w-auto px-8 py-4 shadow-primary-500/40 animate-pulse-soft flex items-center justify-center gap-2 min-w-[200px]"
             >
-              {processing ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              ) : (
-                'Buy Now Securely'
-              )}
-            </button>
+              Buy Now Securely
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">

@@ -195,7 +195,9 @@ public class ClaimServiceTest {
         claim.setClaimStatus(ClaimStatus.SUBMITTED);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        claimService.updateClaimStatus(1L, "UNDER_REVIEW");
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("UNDER_REVIEW");
+        claimService.updateClaimStatus(1L, dto);
         assertEquals(ClaimStatus.UNDER_REVIEW, claim.getClaimStatus());
     }
 
@@ -205,7 +207,9 @@ public class ClaimServiceTest {
         claim.setClaimStatus(ClaimStatus.UNDER_REVIEW);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        claimService.updateClaimStatus(1L, "APPROVED");
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("APPROVED");
+        claimService.updateClaimStatus(1L, dto);
         assertEquals(ClaimStatus.APPROVED, claim.getClaimStatus());
     }
 
@@ -215,7 +219,9 @@ public class ClaimServiceTest {
         claim.setClaimStatus(ClaimStatus.UNDER_REVIEW);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        claimService.updateClaimStatus(1L, "REJECTED");
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("REJECTED");
+        claimService.updateClaimStatus(1L, dto);
         assertEquals(ClaimStatus.REJECTED, claim.getClaimStatus());
     }
 
@@ -225,7 +231,9 @@ public class ClaimServiceTest {
         claim.setClaimStatus(ClaimStatus.SUBMITTED);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, "APPROVED"));
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("APPROVED");
+        assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, dto));
     }
 
     @Test
@@ -234,7 +242,9 @@ public class ClaimServiceTest {
         claim.setClaimStatus(ClaimStatus.SUBMITTED);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, "INVALID"));
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("INVALID");
+        assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, dto));
     }
 
     @Test
@@ -243,7 +253,9 @@ public class ClaimServiceTest {
         claim.setClaimStatus(ClaimStatus.APPROVED);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
-        claimService.updateClaimStatus(1L, "CLOSED");
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("CLOSED");
+        claimService.updateClaimStatus(1L, dto);
         assertEquals(ClaimStatus.CLOSED, claim.getClaimStatus());
     }
 

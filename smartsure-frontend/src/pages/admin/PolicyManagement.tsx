@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { adminService } from '../../api/adminService'
@@ -6,7 +6,12 @@ import { policyService } from '../../api/policyService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { Modal } from '../../components/common/Modal'
 import { toast } from 'react-toastify'
+import { useDebounce } from '../../hooks/useDebounce'
 import { policySchema, PolicyInput } from '../../schemas/policySchema'
+import { Button } from '../../components/common/Button'
+import { FormInput } from '../../components/common/FormInput'
+import { FormSelect } from '../../components/common/FormSelect'
+import { FormTextarea } from '../../components/common/FormTextarea'
 import {
   HiOutlinePencilAlt,
   HiOutlineTrash,
@@ -33,6 +38,7 @@ export default function PolicyManagement() {
 
   const [categoryFilter, setCategoryFilter] = useState('ALL')
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -52,17 +58,21 @@ export default function PolicyManagement() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [categoryFilter, searchTerm])
+  }, [debouncedSearchTerm, categoryFilter])
 
-  const filteredPolicies = policies.filter((p) => {
-    const category = p.category || policyTypes.find((t) => t.id === p.policyTypeId)?.category
-    const matchesCategory =
-      categoryFilter === 'ALL' || category?.toUpperCase() === categoryFilter.toUpperCase()
-    const searchLower = searchTerm.toLowerCase()
-    const nameMatch = p.name?.toLowerCase().includes(searchLower)
-    const idMatch = p.id?.toString() === searchTerm
-    return matchesCategory && (searchTerm === '' || nameMatch || idMatch)
-  })
+  const filteredPolicies = useMemo(() => {
+    return policies.filter((p) => {
+      const category = p.category || policyTypes.find((t) => t.id === p.policyTypeId)?.category
+      const matchesCategory =
+        categoryFilter === 'ALL' || category?.toUpperCase() === categoryFilter.toUpperCase()
+      
+      const searchLower = debouncedSearchTerm.toLowerCase()
+      const nameMatch = p.name?.toLowerCase().includes(searchLower)
+      const idMatch = p.id?.toString() === debouncedSearchTerm
+      
+      return matchesCategory && (debouncedSearchTerm === '' || nameMatch || idMatch)
+    })
+  }, [policies, policyTypes, debouncedSearchTerm, categoryFilter])
 
   const totalItems = filteredPolicies.length
   const startIndex = (currentPage - 1) * pageSize
@@ -163,16 +173,14 @@ export default function PolicyManagement() {
 
         <div className="ai-gradient-border shadow-2xl overflow-visible max-w-5xl mx-auto">
           <div className="ai-content flex flex-col lg:flex-row items-center gap-4 bg-white dark:bg-surface-900 p-2 rounded-full">
-            <div className="relative group flex-1 w-full">
-              <HiOutlineSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors text-lg" />
-              <input
-                type="text"
-                placeholder="Type to search policies..."
-                className="w-full bg-white dark:bg-surface-800 py-3.5 pl-14 pr-6 rounded-full border-none focus:ring-2 focus:ring-primary-500/20 text-sm font-medium placeholder-surface-400"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+            <FormInput
+              placeholder="Search policies by name or ID..."
+              leftIcon={<HiOutlineSearch />}
+              containerClassName="flex-1 w-full"
+              className="!rounded-full !py-3.5 !pl-14 !pr-6 !border-none !focus:ring-2 !focus:ring-primary-500/20"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
 
             <div className="flex items-center gap-1 bg-surface-100 dark:bg-surface-950/50 p-1 rounded-full">
               {['ALL', 'HEALTH', 'LIFE', 'VEHICLE'].map((cat) => (
@@ -191,13 +199,14 @@ export default function PolicyManagement() {
             </div>
 
             <div className="hidden lg:flex items-center pl-4 pr-1">
-              <button
+              <Button
                 onClick={handleOpenCreate}
-                className="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-full text-[10px] font-black tracking-widest uppercase flex items-center gap-2"
+                size="sm"
+                leftIcon={<HiOutlinePlus />}
+                className="rounded-full !px-6"
               >
-                <HiOutlinePlus className="text-sm" />
-                <span>Create New</span>
-              </button>
+                Create New
+              </Button>
             </div>
           </div>
         </div>
@@ -257,20 +266,25 @@ export default function PolicyManagement() {
               </div>
 
               <div className="px-6 md:px-8 pb-6 pt-0 flex gap-3 z-10">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
                   onClick={() => handleOpenEdit(policy)}
-                  className="flex-1 btn-ghost border border-primary-200 dark:border-primary-900/30 text-primary-600 dark:text-primary-400 text-xs tracking-widest uppercase font-black !py-3 flex items-center justify-center gap-2 hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-all active:scale-95 shadow-sm"
+                  leftIcon={<HiOutlinePencilAlt />}
                 >
-                  <HiOutlinePencilAlt className="text-lg" />
                   Edit
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  fullWidth
+                  className="!text-red-500 !border-red-500/50 hover:!bg-red-500/10"
                   onClick={() => handleDelete(policy.id)}
-                  className="flex-1 btn-ghost border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 text-xs tracking-widest uppercase font-black !py-3 flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all active:scale-95 shadow-sm"
+                  leftIcon={<HiOutlineTrash />}
                 >
-                  <HiOutlineTrash className="text-lg" />
                   Delete
-                </button>
+                </Button>
               </div>
             </div>
           ))}
@@ -290,87 +304,74 @@ export default function PolicyManagement() {
         onClose={() => setIsModalOpen(false)}
         title={editingPolicy ? 'Edit Policy' : 'Create New Policy'}
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-1">
-            <input
-              type="text"
-              placeholder="Policy Name"
-              className={`input-field ${errors.name ? 'border-red-500' : ''}`}
-              {...register('name')}
-            />
-            {errors.name && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.name.message}</p>}
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <FormInput
+            label="Policy Name"
+            placeholder="Enter policy name..."
+            error={errors.name?.message}
+            {...register('name')}
+          />
 
-          <div className="space-y-1">
-            <textarea
-              placeholder="Description"
-              className={`input-field h-24 ${errors.description ? 'border-red-500' : ''}`}
-              {...register('description')}
+          <FormTextarea
+            label="Description"
+            placeholder="Enter policy description..."
+            error={errors.description?.message}
+            rows={4}
+            {...register('description')}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormSelect
+              label="Policy Category"
+              error={errors.policyTypeId?.message}
+              options={[
+                { value: '', label: 'Select Type' },
+                ...policyTypes.map(t => ({ value: t.id, label: t.category }))
+              ]}
+              {...register('policyTypeId')}
             />
-            {errors.description && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.description.message}</p>}
+            <FormInput
+              label="Duration"
+              type="number"
+              placeholder="Months"
+              error={errors.durationInMonths?.message}
+              {...register('durationInMonths')}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <select
-                className={`input-field ${errors.policyTypeId ? 'border-red-500' : ''}`}
-                {...register('policyTypeId')}
-              >
-                <option value="">Select Type</option>
-                {policyTypes.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.category}
-                  </option>
-                ))}
-              </select>
-              {errors.policyTypeId && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.policyTypeId.message}</p>}
-            </div>
-            <div className="space-y-1">
-              <input
-                type="number"
-                placeholder="Duration (Months)"
-                className={`input-field ${errors.durationInMonths ? 'border-red-500' : ''}`}
-                {...register('durationInMonths')}
-              />
-              {errors.durationInMonths && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.durationInMonths.message}</p>}
-            </div>
+            <FormInput
+              label="Premium (₹)"
+              type="number"
+              placeholder="0.00"
+              error={errors.premiumAmount?.message}
+              {...register('premiumAmount')}
+            />
+            <FormInput
+              label="Coverage (₹)"
+              type="number"
+              placeholder="0.00"
+              error={errors.coverageAmount?.message}
+              {...register('coverageAmount')}
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <input
-                type="number"
-                placeholder="Premium Amount (₹)"
-                className={`input-field ${errors.premiumAmount ? 'border-red-500' : ''}`}
-                {...register('premiumAmount')}
-              />
-              {errors.premiumAmount && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.premiumAmount.message}</p>}
-            </div>
-            <div className="space-y-1">
-              <input
-                type="number"
-                placeholder="Coverage Amount (₹)"
-                className={`input-field ${errors.coverageAmount ? 'border-red-500' : ''}`}
-                {...register('coverageAmount')}
-              />
-              {errors.coverageAmount && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.coverageAmount.message}</p>}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <button
+          <div className="flex justify-end gap-3 pt-4 border-t border-surface-100 dark:border-surface-800">
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setIsModalOpen(false)}
-              className="btn-secondary"
               disabled={isSubmitting}
             >
               Cancel
-            </button>
-            <button type="submit" className="btn-primary min-w-[120px]" disabled={isSubmitting}>
-              {isSubmitting ? (
-                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              ) : 'Confirm'}
-            </button>
+            </Button>
+            <Button 
+              type="submit" 
+              isLoading={isSubmitting}
+              className="min-w-[140px]"
+            >
+              {editingPolicy ? 'Update Policy' : 'Create Policy'}
+            </Button>
           </div>
         </form>
       </Modal>

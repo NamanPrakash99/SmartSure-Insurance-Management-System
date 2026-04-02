@@ -1,7 +1,9 @@
 import { z } from 'zod'
 
 export const policySchema = z.object({
-  name: z.string().min(3, 'Policy name must be at least 3 characters'),
+  name: z.string()
+    .min(3, 'Policy name must be at least 3 characters')
+    .regex(/^[A-Za-z\s]+$/, 'Policy name must contain only alphabets'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   policyTypeId: z.string().min(1, 'Please select a policy type'),
   premiumAmount: z.string()

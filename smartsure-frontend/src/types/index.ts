@@ -58,6 +58,7 @@ export interface Claim {
   claimDate: string;
   documentUrl?: string;
   remarks?: string;
+  remark?: string;
 }
 
 export interface UserPolicy {

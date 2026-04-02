@@ -17,6 +17,7 @@ import {
 } from 'react-icons/hi'
 import { Modal } from '../../components/common/Modal'
 import { UserPolicy } from '../../types'
+import { Button } from '../../components/common/Button'
 
 // Extend window object for Razorpay
 declare global {
@@ -170,10 +171,14 @@ export default function MyPolicies() {
         </div>
         <Link
           to="/policies"
-          className="btn-primary text-sm px-6 py-3 shadow-primary-500/20 flex items-center gap-2 shrink-0"
+          className="shrink-0"
         >
-          <HiOutlineShieldCheck className="text-lg" />
-          Secure New Policy
+          <Button
+            size="lg"
+            leftIcon={<HiOutlineShieldCheck className="text-lg" />}
+          >
+            Secure New Policy
+          </Button>
         </Link>
       </div>
 
@@ -247,36 +252,46 @@ export default function MyPolicies() {
                   <Link
                     to="/my-claims"
                     state={{ policyId: policy.id, policyName: policy.policy?.name }}
-                    className="w-full btn-ghost border border-surface-200 dark:border-surface-700 text-xs tracking-widest uppercase font-bold !py-3 block text-center hover:bg-surface-900 hover:text-white dark:hover:bg-white dark:hover:text-surface-900"
+                    className="w-full"
                   >
-                    File a Claim
+                    <Button
+                      variant="ghost"
+                      fullWidth
+                      className="border border-surface-200 dark:border-surface-700 font-bold"
+                    >
+                      File a Claim
+                    </Button>
                   </Link>
                   {policy.status === 'PENDING_PAYMENT' ? (
-                    <button
+                    <Button
                       onClick={() => handleCompletePayment(policy)}
-                      className="w-full btn-primary !bg-amber-500 !hover:bg-amber-600 text-xs tracking-widest uppercase font-bold !py-3 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+                      fullWidth
+                      className="!bg-amber-500 !hover:bg-amber-600 shadow-lg shadow-amber-500/20"
+                      leftIcon={<HiOutlineCreditCard className="text-lg" />}
                     >
-                      <HiOutlineCreditCard className="text-lg" />
                       Complete Payment
-                    </button>
+                    </Button>
                   ) : (
                     policy.status !== 'CANCELLED' && (
-                      <button
+                      <Button
                         onClick={() => setSelectedPolicyForRenewal(policy)}
-                        className="w-full btn-primary text-xs tracking-widest uppercase font-bold !py-3 block text-center shadow-lg shadow-primary-500/20"
+                        fullWidth
+                        className="shadow-lg shadow-primary-500/20"
                       >
                         Renew Policy
-                      </button>
+                      </Button>
                     )
                   )}
 
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => handleDeletePolicy(policy.id)}
-                    className="w-full btn-ghost border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 text-xs tracking-widest uppercase font-bold !py-3 flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                    fullWidth
+                    className="border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 font-bold hover:bg-red-50 dark:hover:bg-red-900/10"
+                    leftIcon={<HiOutlineTrash className="text-lg" />}
                   >
-                    <HiOutlineTrash className="text-lg" />
                     Remove Record
-                  </button>
+                  </Button>
                 </div>
               </div>
             )
@@ -336,19 +351,22 @@ export default function MyPolicies() {
             </div>
 
             <div className="flex flex-col gap-3 pt-4">
-              <button
+              <Button
                 onClick={() => handleCompletePayment(selectedPolicyForRenewal)}
-                className="w-full btn-primary py-4 flex justify-center items-center gap-2 group text-sm tracking-widest uppercase font-black"
+                fullWidth
+                size="lg"
+                leftIcon={<HiOutlineCreditCard className="text-xl" />}
               >
-                <HiOutlineCreditCard className="text-xl" />
                 Proceed to Payment
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={() => setSelectedPolicyForRenewal(null)}
-                className="w-full btn-ghost py-3 text-xs tracking-widest uppercase font-bold text-surface-500 hover:text-surface-900 dark:hover:text-white"
+                fullWidth
+                className="text-surface-500"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}

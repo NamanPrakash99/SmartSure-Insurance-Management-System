@@ -20,25 +20,10 @@ const themeSlice = createSlice({
   reducers: {
     toggleTheme: (state) => {
       state.isDark = !state.isDark;
-      
-      // Update DOM and LocalStorage within the slice
-      const root = document.documentElement;
-      if (state.isDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
       localStorage.setItem('smartsure-theme', state.isDark ? 'dark' : 'light');
     },
-    // Useful if we need to explicitly set it
     setTheme: (state, action: PayloadAction<boolean>) => {
       state.isDark = action.payload;
-      const root = document.documentElement;
-      if (state.isDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
       localStorage.setItem('smartsure-theme', state.isDark ? 'dark' : 'light');
     }
   },

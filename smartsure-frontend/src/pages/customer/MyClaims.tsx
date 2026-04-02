@@ -17,11 +17,15 @@ import {
   HiOutlineDocumentAdd,
   HiArrowRight,
   HiOutlineEye,
+  HiOutlineClipboardList,
 } from 'react-icons/hi'
 import { toast } from 'react-toastify'
 import { Pagination } from '../../components/common/Pagination'
 import { claimSchema, ClaimInput } from '../../schemas/claimSchema'
 import { Claim, UserPolicy } from '../../types'
+import { FormInput } from '../../components/common/FormInput'
+import { FormTextarea } from '../../components/common/FormTextarea'
+import { Button } from '../../components/common/Button'
 
 export default function MyClaims() {
   const { user } = useAuth()
@@ -100,7 +104,7 @@ export default function MyClaims() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [showForm, itemsPerPage])
+  }, [claims.length, showForm, itemsPerPage])
 
   const handleDownload = async (claimId: string | number) => {
     const res = await claimService.downloadDocument(claimId)
@@ -187,24 +191,25 @@ export default function MyClaims() {
         </div>
 
         {!showForm ? (
-          <button
+          <Button
             onClick={() => setShowForm(true)}
-            className="btn-primary flex-shrink-0 text-sm px-6 py-3 shadow-primary-500/20 flex items-center gap-2"
+            size="lg"
+            leftIcon={<HiOutlinePlus className="text-lg" />}
           >
-            <HiOutlinePlus className="text-lg" />
             File New Claim
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
+            variant="secondary"
             onClick={() => {
               setShowForm(false)
               resetForm()
             }}
-            className="btn-secondary flex-shrink-0 text-sm px-6 py-3 flex items-center gap-2"
+            size="lg"
+            leftIcon={<HiOutlineArrowLeft className="text-lg" />}
           >
-            <HiOutlineArrowLeft className="text-lg" />
             Back to Claims History
-          </button>
+          </Button>
         )}
       </div>
 
@@ -301,58 +306,35 @@ export default function MyClaims() {
                   )}
                 </div>
 
-                <button
+                <Button
                   onClick={() => setStep(2)}
                   disabled={!watchedPolicyId}
-                  className="w-full btn-primary py-4 mt-8 flex justify-center items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                  fullWidth
+                  size="lg"
+                  className="mt-8 group"
+                  rightIcon={<HiArrowRight className="text-lg" />}
                 >
                   Continue to Incident Details
-                  <HiArrowRight className="text-lg group-hover:translate-x-1 transition-transform" />
-                </button>
+                </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 animate-fade-in">
                 <div className="space-y-6">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-widest text-surface-400 mb-2">
-                      Claim Request Amount (₹)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-surface-400">
-                        ₹
-                      </span>
-                      <input
-                        type="number"
-                        className={`input-field !pl-10 text-lg font-bold ${
-                          errors.amount ? 'border-red-500' : ''
-                        }`}
-                        {...register('amount')}
-                      />
-                      {errors.amount && (
-                        <p className="text-[10px] text-red-500 font-bold mt-1">
-                          {errors.amount.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  <FormInput
+                    type="number"
+                    label="Claim Request Amount (₹)"
+                    leftIcon={<span className="font-bold text-surface-400">₹</span>}
+                    error={errors.amount?.message}
+                    {...register('amount')}
+                  />
 
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-widest text-surface-400 mb-2">
-                      Incident Description
-                    </label>
-                    <textarea
-                      placeholder="Describe what happened..."
-                      className={`input-field h-40 resize-none leading-relaxed ${
-                        errors.description ? 'border-red-500' : ''
-                      }`}
-                      {...register('description')}
-                    />
-                    {errors.description && (
-                      <p className="text-[10px] text-red-500 font-bold mt-1">
-                        {errors.description.message}
-                      </p>
-                    )}
-                  </div>
+                  <FormTextarea
+                    label="Incident Description"
+                    placeholder="Describe what happened..."
+                    rows={4}
+                    error={errors.description?.message}
+                    {...register('description')}
+                  />
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-widest text-surface-400 mb-2 flex justify-between">
@@ -409,24 +391,23 @@ export default function MyClaims() {
                 </div>
 
                 <div className="pt-6 border-t border-surface-200 dark:border-surface-800 flex gap-4">
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={() => setStep(1)}
-                    className="btn-secondary py-4 w-1/3 text-xs tracking-widest uppercase font-black"
+                    className="w-1/3"
+                    size="lg"
                   >
                     Back
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="btn-primary py-4 w-2/3 flex justify-center items-center gap-2 text-xs tracking-widest uppercase font-black"
+                    isLoading={isSubmitting}
+                    className="w-2/3"
+                    size="lg"
                   >
-                    {isSubmitting ? (
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    ) : (
-                      'Submit Claim Request'
-                    )}
-                  </button>
+                    Submit Claim Request
+                  </Button>
                 </div>
               </form>
             )}
@@ -441,7 +422,7 @@ export default function MyClaims() {
                 title="No claims filed yet"
                 description="Keep your claims organized and trace their progress here."
                 actionLabel="File a New Claim"
-                actionTo="#"
+                onClick={() => setShowForm(true)}
               />
             ) : (
               paginatedClaims.map((claim) => (
@@ -479,26 +460,39 @@ export default function MyClaims() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 bg-surface-100/50 dark:bg-surface-900/40 p-4 rounded-xl text-xs sm:text-sm text-surface-600 dark:text-surface-300 leading-relaxed italic border border-surface-200 dark:border-surface-800/50">
-                          "{claim.description}"
+                      <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                        <div className="flex-1 space-y-3">
+                          <div className="bg-surface-100/50 dark:bg-surface-900/40 p-4 rounded-xl text-xs sm:text-sm text-surface-600 dark:text-surface-300 leading-relaxed italic border border-surface-200 dark:border-surface-800/50">
+                            <span className="block text-[10px] font-bold uppercase tracking-tighter text-surface-400 mb-1 non-italic">My Description</span>
+                            "{claim.description}"
+                          </div>
+                          
+                          {(claim.remark || claim.remarks) && (
+                            <div className="bg-primary-500/5 dark:bg-primary-500/10 p-4 rounded-xl text-xs sm:text-sm text-primary-900 dark:text-primary-100 leading-relaxed border border-primary-500/20 shadow-sm animate-fade-in">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <HiOutlineClipboardList className="text-primary-500" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary-600 dark:text-primary-400">Admin Remarks</span>
+                              </div>
+                              <p className="font-semibold">{claim.remark || claim.remarks}</p>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2 lg:ml-4">
-                          <button
+                          <Button
+                            variant="secondary"
                             onClick={() => handleView(claim.claimId || claim.id)}
                             title="View Document"
-                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-500 hover:text-primary-500 hover:bg-primary-500/10 hover:border-primary-500/30 transition-all active:scale-95"
-                          >
-                            <HiOutlineEye className="text-xl" />
-                          </button>
-                          <button
+                            className="w-10 h-10 !p-0"
+                            leftIcon={<HiOutlineEye className="text-xl" />}
+                          />
+                          <Button
+                            variant="secondary"
                             onClick={() => handleDownload(claim.claimId || claim.id)}
                             title="Download Document"
-                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-surface-500 hover:text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all active:scale-95"
-                          >
-                            <HiOutlineDownload className="text-xl" />
-                          </button>
+                            className="w-10 h-10 !p-0"
+                            leftIcon={<HiOutlineDownload className="text-xl" />}
+                          />
                         </div>
                       </div>
                     </div>

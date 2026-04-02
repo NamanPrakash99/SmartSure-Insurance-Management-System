@@ -9,6 +9,7 @@ public class ClaimResponseDTO {
 	private String message;
 	private Double claimAmount;
 	private String description;
+	private String remark;
 
 	public Long getClaimId() {
 		return claimId;
@@ -64,6 +65,14 @@ public class ClaimResponseDTO {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+	
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
 	}
 	
 

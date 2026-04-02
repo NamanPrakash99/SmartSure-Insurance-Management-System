@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { HiOutlineMail, HiOutlinePhone, HiOutlineLocationMarker, HiOutlinePaperAirplane } from 'react-icons/hi'
 import { toast } from 'react-toastify'
+import { FormInput } from '../../components/common/FormInput'
+import { FormTextarea } from '../../components/common/FormTextarea'
+import { Button } from '../../components/common/Button'
 
 export default function ContactUs() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' })
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     toast.success("Thank you! Your message has been received. We'll be in touch shortly.")
     setFormData({ name: '', email: '', message: '' })
@@ -48,43 +51,36 @@ export default function ContactUs() {
         <div className="card p-8 md:p-10 relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -mr-16 -mt-16 blur-3xl opacity-50" />
           <form onSubmit={handleSubmit} className="relative z-10 space-y-6">
-            <div className="space-y-4">
-              <label className="block text-sm font-bold text-surface-700 dark:text-surface-300">Name</label>
-              <input 
-                type="text" 
-                required
-                className="input-field !py-3 w-full"
-                placeholder="Full Name"
-                value={formData.name}
-                onChange={e => setFormData({...formData, name: e.target.value})}
-              />
-            </div>
-            <div className="space-y-4">
-              <label className="block text-sm font-bold text-surface-700 dark:text-surface-300">Email Address</label>
-              <input 
-                type="email" 
-                required
-                className="input-field !py-3 w-full"
-                placeholder="email@example.com"
-                value={formData.email}
-                onChange={e => setFormData({...formData, email: e.target.value})}
-              />
-            </div>
-            <div className="space-y-4">
-              <label className="block text-sm font-bold text-surface-700 dark:text-surface-300">Message</label>
-              <textarea 
-                required
-                rows="4"
-                className="input-field !py-3 w-full"
-                placeholder="How can we help?"
-                value={formData.message}
-                onChange={e => setFormData({...formData, message: e.target.value})}
-              />
-            </div>
-            <button type="submit" className="btn-primary w-full !py-4 flex items-center justify-center gap-2 group">
+            <FormInput
+              label="Name"
+              required
+              placeholder="Full Name"
+              value={formData.name}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, name: e.target.value})}
+            />
+            <FormInput
+              type="email" 
+              label="Email Address"
+              required
+              placeholder="email@example.com"
+              value={formData.email}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})}
+            />
+            <FormTextarea 
+              label="Message"
+              required
+              rows={4}
+              placeholder="How can we help?"
+              value={formData.message}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({...formData, message: e.target.value})}
+            />
+            <Button 
+              type="submit" 
+              className="w-full !py-4 group"
+              rightIcon={<HiOutlinePaperAirplane className="text-lg group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
+            >
               Send Message
-              <HiOutlinePaperAirplane className="text-lg group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-            </button>
+            </Button>
           </form>
         </div>
       </div>

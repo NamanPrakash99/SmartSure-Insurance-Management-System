@@ -4,6 +4,7 @@ public class ClaimReviewEvent {
 
     private Long claimId;
     private String status;
+    private String remark;
 
     public ClaimReviewEvent() {
         // Default constructor for deserialization
@@ -23,5 +24,13 @@ public class ClaimReviewEvent {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
     }
 }

@@ -27,6 +27,7 @@ public class Claim {
 	private ClaimStatus claimStatus;
 	
 	private LocalDateTime createdAt;
+	private String remark;
 
 	
 	public Long getId() {
@@ -85,11 +86,19 @@ public class Claim {
 		this.createdAt = createdAt;
 	}
 	
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
 
 	@Override
 	public String toString() {
 		return "Claim [id=" + id + ", policyId=" + policyId + ", userId=" + userId + ", claimAmount=" + claimAmount
-				+ ", description=" + description + ", claimStatus=" + claimStatus + ", createdAt=" + createdAt + "]";
+				+ ", description=" + description + ", claimStatus=" + claimStatus + ", createdAt=" + createdAt 
+				+ ", remark=" + remark + "]";
 	}
 	
 	

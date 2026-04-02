@@ -12,7 +12,10 @@ import {
   RegisterStep3Input,
 } from '../../schemas/authSchema'
 import { toast } from 'react-toastify'
-import { RiShieldCheckFill } from 'react-icons/ri'
+import { RiShieldCheckFill, RiMailLine, RiShieldKeyholeLine, RiUserLine, RiSmartphoneLine, RiLockPasswordLine } from 'react-icons/ri'
+import { FormInput } from '../../components/common/FormInput'
+import { FormTextarea } from '../../components/common/FormTextarea'
+import { Button } from '../../components/common/Button'
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1) // 1: Email, 2: OTP, 3: Details
@@ -105,41 +108,28 @@ export default function RegisterPage() {
         </div>
 
         {step === 1 && (
-          <form onSubmit={step1.handleSubmit(handleSendOtp)} className="space-y-4 animate-slide-up">
-            <div>
-              <label className="block text-sm font-medium mb-1.5 ml-1 text-surface-900 dark:text-surface-100">
-                Step 1: Enter your email
-              </label>
-              <input
-                type="email"
-                {...step1.register('email')}
-                className={`input-field ${
-                  step1.formState.errors.email ? 'border-red-500 focus:ring-red-500/20' : ''
-                }`}
-                placeholder="name@example.com"
-              />
-              {step1.formState.errors.email && (
-                <p className="mt-1 ml-1 text-xs text-red-500">
-                  {step1.formState.errors.email.message}
-                </p>
-              )}
-            </div>
-            <button
+          <form onSubmit={step1.handleSubmit(handleSendOtp)} className="space-y-6 animate-slide-up">
+            <FormInput
+              type="email"
+              label="Step 1: Enter your email"
+              leftIcon={<RiMailLine />}
+              placeholder="name@example.com"
+              error={step1.formState.errors.email?.message}
+              {...step1.register('email')}
+            />
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full btn-primary py-3 flex justify-center items-center"
+              isLoading={loading}
+              fullWidth
+              size="lg"
             >
-              {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              ) : (
-                'Send Verification OTP'
-              )}
-            </button>
+              Send Verification OTP
+            </Button>
           </form>
         )}
 
         {step === 2 && (
-          <form onSubmit={step2.handleSubmit(handleVerifyOtp)} className="space-y-4 animate-slide-up">
+          <form onSubmit={step2.handleSubmit(handleVerifyOtp)} className="space-y-6 animate-slide-up">
             <div className="text-center mb-4">
               <p className="text-sm text-surface-600 dark:text-surface-400">
                 OTP sent to:{' '}
@@ -150,132 +140,86 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="text-xs text-primary-600 hover:underline mt-1"
+                className="text-xs text-primary-600 hover:underline mt-1 font-bold uppercase tracking-widest"
               >
                 Change email
               </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5 ml-1 text-surface-900 dark:text-surface-100">
-                Step 2: Enter OTP
-              </label>
-              <input
-                type="text"
-                {...step2.register('otp')}
-                className={`input-field text-center tracking-widest text-lg font-mono font-bold ${
-                  step2.formState.errors.otp ? 'border-red-500 focus:ring-red-500/20' : ''
-                }`}
-                placeholder="------"
-                maxLength={6}
-              />
-              {step2.formState.errors.otp && (
-                <p className="mt-1 ml-1 text-xs text-red-500 text-center">
-                  {step2.formState.errors.otp.message}
-                </p>
-              )}
-            </div>
-            <button
+            <FormInput
+              type="text"
+              label="Step 2: Enter OTP"
+              leftIcon={<RiShieldKeyholeLine />}
+              className="text-center tracking-[1em] text-lg font-mono font-bold pl-4 pr-4"
+              placeholder="000000"
+              maxLength={6}
+              error={step2.formState.errors.otp?.message}
+              {...step2.register('otp')}
+            />
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full btn-primary py-3 flex justify-center items-center"
+              isLoading={loading}
+              fullWidth
+              size="lg"
             >
-              {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              ) : (
-                'Verify OTP'
-              )}
-            </button>
+              Verify OTP
+            </Button>
           </form>
         )}
 
         {step === 3 && (
-          <form onSubmit={step3.handleSubmit(handleRegister)} className="space-y-4 animate-slide-up">
-            <p className="text-sm font-medium mb-4 text-center text-green-600 dark:text-green-400 flex items-center justify-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-500/20 flex items-center justify-center">
+          <form onSubmit={step3.handleSubmit(handleRegister)} className="space-y-5 animate-slide-up">
+            <div className="bg-emerald-50 dark:bg-emerald-500/10 p-3 rounded-2xl flex items-center justify-center gap-3 border border-emerald-100 dark:border-emerald-500/20">
+              <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">
                 ✓
               </span>{' '}
-              Email verified
-            </p>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-surface-900 dark:text-surface-100">
-                Full Name
-              </label>
-              <input
-                type="text"
-                {...step3.register('name')}
-                className={`input-field !py-2.5 ${
-                  step3.formState.errors.name ? 'border-red-500 focus:ring-red-500/20' : ''
-                }`}
-                placeholder="John Doe"
-              />
-              {step3.formState.errors.name && (
-                <p className="mt-1 ml-1 text-xs text-red-500">{step3.formState.errors.name.message}</p>
-              )}
+              <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                Email verified successfully
+              </p>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-surface-900 dark:text-surface-100">
-                Password
-              </label>
-              <input
-                type="password"
-                {...step3.register('password')}
-                className={`input-field !py-2.5 ${
-                  step3.formState.errors.password ? 'border-red-500 focus:ring-red-500/20' : ''
-                }`}
-                placeholder="••••••••"
-              />
-              {step3.formState.errors.password && (
-                <p className="mt-1 ml-1 text-xs text-red-500">
-                  {step3.formState.errors.password.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-surface-900 dark:text-surface-100">
-                Phone
-              </label>
-              <input
-                type="tel"
-                {...step3.register('phone')}
-                className={`input-field !py-2.5 ${
-                  step3.formState.errors.phone ? 'border-red-500 focus:ring-red-500/20' : ''
-                }`}
-                placeholder="+1234567890"
-              />
-              {step3.formState.errors.phone && (
-                <p className="mt-1 ml-1 text-xs text-red-500">
-                  {step3.formState.errors.phone.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-surface-900 dark:text-surface-100">
-                Address
-              </label>
-              <textarea
-                {...step3.register('address')}
-                className={`input-field !py-2.5 resize-none h-20 ${
-                  step3.formState.errors.address ? 'border-red-500 focus:ring-red-500/20' : ''
-                }`}
-                placeholder="Your residential address"
-              ></textarea>
-              {step3.formState.errors.address && (
-                <p className="mt-1 ml-1 text-xs text-red-500">
-                  {step3.formState.errors.address.message}
-                </p>
-              )}
-            </div>
-            <button
+
+            <FormInput
+              label="Full Name"
+              leftIcon={<RiUserLine />}
+              placeholder="John Doe"
+              error={step3.formState.errors.name?.message}
+              {...step3.register('name')}
+            />
+
+            <FormInput
+              type="password"
+              label="Create Password"
+              leftIcon={<RiLockPasswordLine />}
+              placeholder="••••••••"
+              error={step3.formState.errors.password?.message}
+              {...step3.register('password')}
+            />
+
+            <FormInput
+              type="tel"
+              label="Phone Number"
+              leftIcon={<RiSmartphoneLine />}
+              placeholder="+1 234 567 890"
+              error={step3.formState.errors.phone?.message}
+              {...step3.register('phone')}
+            />
+
+            <FormTextarea
+              label="Residential Address"
+              placeholder="Enter your complete address..."
+              error={step3.formState.errors.address?.message}
+              rows={3}
+              {...step3.register('address')}
+            />
+
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full btn-primary py-3 mt-2 flex justify-center items-center"
+              isLoading={loading}
+              fullWidth
+              size="lg"
+              className="mt-4"
             >
-              {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              ) : (
-                'Complete Registration'
-              )}
-            </button>
+              Complete Registration
+            </Button>
           </form>
         )}
 

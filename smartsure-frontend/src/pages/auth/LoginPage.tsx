@@ -6,7 +6,10 @@ import { authService } from '../../api/authService'
 import { loginSchema, LoginInput } from '../../schemas/authSchema'
 import { useAuth } from '../../context/AuthContext'
 import { toast } from 'react-toastify'
-import { RiShieldCheckFill } from 'react-icons/ri'
+import { RiShieldCheckFill, RiMailLine, RiLockPasswordLine } from 'react-icons/ri'
+import { FormInput } from '../../components/common/FormInput'
+import { FormCheckbox } from '../../components/common/FormCheckbox'
+import { Button } from '../../components/common/Button'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -54,46 +57,30 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1.5 ml-1">Email</label>
-            <input
-              type="email"
-              {...register('email')}
-              className={`input-field ${errors.email ? 'border-red-500 focus:ring-red-500/20' : ''}`}
-              placeholder="Enter your email"
-            />
-            {errors.email && (
-              <p className="mt-1 ml-1 text-xs font-medium text-red-500 animate-fade-in">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5 ml-1">Password</label>
-            <input
-              type="password"
-              {...register('password')}
-              className={`input-field ${
-                errors.password ? 'border-red-500 focus:ring-red-500/20' : ''
-              }`}
-              placeholder="••••••••"
-            />
-            {errors.password && (
-              <p className="mt-1 ml-1 text-xs font-medium text-red-500 animate-fade-in">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <FormInput
+            type="email"
+            label="Email Address"
+            leftIcon={<RiMailLine />}
+            placeholder="name@company.com"
+            error={errors.email?.message}
+            {...register('email')}
+          />
+
+          <FormInput
+            type="password"
+            label="Password"
+            leftIcon={<RiLockPasswordLine />}
+            placeholder="••••••••"
+            error={errors.password?.message}
+            {...register('password')}
+          />
 
           <div className="flex items-center justify-between px-1">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                className="w-4 h-4 rounded text-primary-600 bg-surface-100 border-surface-300 dark:bg-surface-800 dark:border-surface-600 focus:ring-primary-500/50"
-              />
-              <span className="text-sm">Remember me</span>
-            </label>
+            <FormCheckbox
+              label="Remember me"
+              containerClassName="cursor-pointer"
+            />
             <Link
               to="/forgot-password"
               data-testid="forgot-password-link"
@@ -103,17 +90,15 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full btn-primary py-3 !text-base mt-2 flex justify-center items-center gap-2"
+            isLoading={loading}
+            fullWidth
+            size="lg"
+            className="mt-4"
           >
-            {loading ? (
-              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            ) : (
-              'Sign In'
-            )}
-          </button>
+            Sign In
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-surface-600 dark:text-surface-400">

@@ -5,7 +5,7 @@ interface StatsCardProps {
   value: string | number
   icon: IconType
   trend?: string | number
-  color?: 'green' | 'red' | 'amber' | 'blue'
+  color?: 'green' | 'red' | 'amber' | 'blue' | 'indigo'
 }
 
 export function StatsCard({ title, value, icon: Icon, trend, color }: StatsCardProps) {
@@ -15,6 +15,7 @@ export function StatsCard({ title, value, icon: Icon, trend, color }: StatsCardP
     red: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-100 dark:border-red-500/20',
     amber: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20',
     blue: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20',
+    indigo: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-500/20',
   }
   const iconStyle = color ? (colorMap[color as keyof typeof colorMap] || colorMap.blue) : 'bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border-primary-100 dark:border-primary-500/20'
 

@@ -5,7 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { authService } from '../../api/authService'
 import { forgotPasswordSchema, ForgotPasswordInput } from '../../schemas/authSchema'
 import { toast } from 'react-toastify'
-import { HiOutlineMail, HiOutlineArrowLeft } from 'react-icons/hi'
+import { HiOutlineArrowLeft } from 'react-icons/hi'
+import { RiMailLine } from 'react-icons/ri'
+import { FormInput } from '../../components/common/FormInput'
+import { Button } from '../../components/common/Button'
 
 export default function ForgotPassword() {
   const [loading, setLoading] = useState(false)
@@ -55,41 +58,30 @@ export default function ForgotPassword() {
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-surface-700 dark:text-surface-300">
-                    Email Address
-                  </label>
-                  <div className="relative group">
-                    <HiOutlineMail className="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
-                    <input
-                      type="email"
-                      {...register('email')}
-                      className={`input-field !pl-11 ${
-                        errors.email ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
-                      placeholder="name@company.com"
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="mt-1 ml-1 text-xs font-medium text-red-500 animate-fade-in">
-                      {errors.email.message}
-                    </p>
-                  )}
-                </div>
+                <FormInput
+                  type="email"
+                  label="Email Address"
+                  leftIcon={<RiMailLine />}
+                  placeholder="name@company.com"
+                  error={errors.email?.message}
+                  {...register('email')}
+                />
 
-                <button
+                <Button
                   type="submit"
-                  disabled={loading}
-                  className="w-full btn-primary !py-4 flex items-center justify-center gap-2 shadow-xl shadow-primary-500/20 active:scale-95 transition-transform"
+                  isLoading={loading}
+                  fullWidth
+                  size="lg"
+                  className="mt-2 shadow-xl shadow-primary-500/20"
                 >
-                  {loading ? 'Sending...' : 'Send Recovery Link'}
-                </button>
+                  Send Recovery Link
+                </Button>
               </form>
             </>
           ) : (
             <div className="text-center py-4">
               <div className="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
-                <HiOutlineMail />
+                <RiMailLine />
               </div>
               <h2 className="text-2xl font-bold mb-3">Check your Email</h2>
               <p className="text-surface-500 mb-8 leading-relaxed font-medium">
@@ -99,9 +91,14 @@ export default function ForgotPassword() {
                 </span>
                 . Click the link in the email to securely reset your password.
               </p>
-              <button onClick={() => setIsSent(false)} className="btn-secondary w-full">
+              <Button 
+                variant="secondary" 
+                onClick={() => setIsSent(false)} 
+                fullWidth
+                size="lg"
+              >
                 Resend Link
-              </button>
+              </Button>
             </div>
           )}
         </div>

@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import Chatbot from '../components/common/Chatbot'
+import { Button } from '../components/common/Button'
 import {
   RiShieldCheckFill,
   RiArrowRightLine,
-  RiUser3Line,
   RiCustomerService2Line,
   RiSecurePaymentLine,
   RiLineChartLine
@@ -13,8 +12,6 @@ import {
 import { HiOutlineLightBulb, HiOutlineGlobe, HiOutlineSparkles } from 'react-icons/hi'
 
 export default function LandingPage() {
-  const { isAuthenticated, isAdmin } = useAuth()
-
   return (
     <>
     <DashboardLayout>
@@ -38,11 +35,21 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-              <Link to="/register" className="btn-primary flex items-center gap-2 !px-8 !py-4 text-lg w-full sm:w-auto justify-center">
-                Get Protected Now <RiArrowRightLine />
+              <Link to="/register" className="w-full sm:w-auto">
+                <Button 
+                  className="!px-8 !py-4 text-lg w-full"
+                  rightIcon={<RiArrowRightLine />}
+                >
+                  Get Protected Now
+                </Button>
               </Link>
-              <Link to="/about" className="btn-secondary !px-8 !py-4 text-lg w-full sm:w-auto text-center">
-                Learn More
+              <Link to="/about" className="w-full sm:w-auto">
+                <Button 
+                  variant="secondary"
+                  className="!px-8 !py-4 text-lg w-full"
+                >
+                  Learn More
+                </Button>
               </Link>
             </div>
           </div>
@@ -147,8 +154,10 @@ export default function LandingPage() {
            <h2 className="text-4xl font-black text-surface-900 dark:text-white">Ready for Peace of Mind?</h2>
            <p className="text-surface-500 font-medium">Join SmartSure today and experience insurance that actually works for you.</p>
            <div className="flex justify-center">
-              <Link to="/register" className="btn-primary !px-12 !py-4 text-xl">
-                 Create Free Account
+              <Link to="/register">
+                <Button className="!px-12 !py-4 text-xl">
+                  Create Free Account
+                </Button>
               </Link>
            </div>
         </section>

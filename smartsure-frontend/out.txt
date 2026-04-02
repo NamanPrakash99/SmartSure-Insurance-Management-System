@@ -1,0 +1,61 @@
+npm verbose cli C:\Program Files\nodejs\node.exe C:\Users\Naman Prakash\AppData\Roaming\npm\node_modules\npm\bin\npm-cli.js
+npm info using npm@10.8.2
+npm info using node@v22.18.0
+npm verbose title npm exec tsc --noEmit --project tsconfig.app.json
+npm verbose argv "exec" "--" "tsc" "--noEmit" "--project" "tsconfig.app.json"
+npm verbose logfile logs-max:10 dir:C:\Users\Naman Prakash\AppData\Local\npm-cache\_logs\2026-04-02T03_48_41_353Z-
+npm verbose logfile C:\Users\Naman Prakash\AppData\Local\npm-cache\_logs\2026-04-02T03_48_41_353Z-debug-0.log
+src/components/common/Chatbot.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/common/Chatbot.tsx(51,20): error TS2339: Property 'success' does not exist on type 'string'.
+src/components/common/Chatbot.tsx(51,40): error TS2339: Property 'data' does not exist on type 'string'.
+src/components/common/Chatbot.tsx(52,28): error TS2339: Property 'data' does not exist on type 'string'.
+src/components/common/EmptyState.tsx(8,3): error TS7031: Binding element 'actionLabel' implicitly has an 'any' type.
+src/components/common/EmptyState.tsx(9,3): error TS7031: Binding element 'actionTo' implicitly has an 'any' type.
+src/components/common/Modal.tsx(4,25): error TS7031: Binding element 'isOpen' implicitly has an 'any' type.
+src/components/common/Modal.tsx(4,33): error TS7031: Binding element 'onClose' implicitly has an 'any' type.
+src/components/common/Modal.tsx(4,42): error TS7031: Binding element 'title' implicitly has an 'any' type.
+src/components/common/Modal.tsx(4,49): error TS7031: Binding element 'children' implicitly has an 'any' type.
+src/components/common/Pagination.tsx(3,30): error TS7031: Binding element 'currentPage' implicitly has an 'any' type.
+src/components/common/Pagination.tsx(3,43): error TS7031: Binding element 'totalItems' implicitly has an 'any' type.
+src/components/common/Pagination.tsx(3,55): error TS7031: Binding element 'itemsPerPage' implicitly has an 'any' type.
+src/components/common/Pagination.tsx(3,69): error TS7031: Binding element 'onPageChange' implicitly has an 'any' type.
+src/components/common/Pagination.tsx(3,83): error TS7031: Binding element 'onItemsPerPageChange' implicitly has an 'any' type.
+src/components/layout/DashboardLayout.tsx(4,43): error TS7031: Binding element 'children' implicitly has an 'any' type.
+src/pages/admin/Dashboard.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/Dashboard.tsx(105,14): error TS2322: Type '{ title: string; value: number; icon: IconType; color: "blue"; } | { title: string; value: number; icon: IconType; color: "indigo"; } | { title: string; value: number; icon: IconType; color: "green"; } | { ...; } | { ...; }' is not assignable to type 'IntrinsicAttributes & StatsCardProps'.
+  Type '{ title: string; value: number; icon: IconType; color: "indigo"; }' is not assignable to type 'StatsCardProps'.
+    Types of property 'color' are incompatible.
+      Type '"indigo"' is not assignable to type '"green" | "red" | "amber" | "blue" | undefined'.
+src/pages/admin/UserPolicies.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/auth/LoginPage.tsx(14,9): error TS6133: 'navigate' is declared but its value is never read.
+src/pages/customer/PolicyDetails.tsx(22,17): error TS2339: Property 'data' does not exist on type 'ApiResponse<Policy>'.
+src/pages/customer/PolicyDetails.tsx(22,56): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+  Type 'undefined' is not assignable to type 'string | number'.
+src/pages/customer/PolicyDetails.tsx(39,17): error TS18047: 'user' is possibly 'null'.
+src/pages/customer/PolicyDetails.tsx(40,28): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/customer/PolicyDetails.tsx(41,17): error TS18047: 'policy' is possibly 'null'.
+src/pages/customer/PolicyDetails.tsx(44,15): error TS2339: Property 'data' does not exist on type 'ApiResponse<any>'.
+src/pages/customer/PolicyDetails.tsx(49,18): error TS18047: 'policy' is possibly 'null'.
+src/pages/customer/PolicyDetails.tsx(53,37): error TS18047: 'policy' is possibly 'null'.
+src/pages/customer/PolicyDetails.tsx(55,34): error TS7006: Parameter 'response' implicitly has an 'any' type.
+src/pages/customer/PolicyDetails.tsx(67,48): error TS18047: 'policy' is possibly 'null'.
+src/pages/customer/PolicyDetails.tsx(78,17): error TS18047: 'user' is possibly 'null'.
+src/pages/customer/PolicyDetails.tsx(79,18): error TS18047: 'user' is possibly 'null'.
+src/pages/customer/PolicyDetails.tsx(93,42): error TS7006: Parameter 'response' implicitly has an 'any' type.
+src/pages/customer/PolicyDetails.tsx(100,19): error TS18046: 'error' is of type 'unknown'.
+src/pages/customer/PolicyDetails.tsx(127,96): error TS2339: Property 'policyName' does not exist on type 'never'.
+src/pages/customer/PolicyDetails.tsx(128,103): error TS2339: Property 'description' does not exist on type 'never'.
+src/pages/customer/PolicyDetails.tsx(148,29): error TS2339: Property 'premiumAmount' does not exist on type 'never'.
+src/pages/customer/PolicyDetails.tsx(154,30): error TS2339: Property 'coverageAmount' does not exist on type 'never'.
+src/pages/customer/PolicyDetails.tsx(160,27): error TS2339: Property 'durationInMonths' does not exist on type 'never'.
+src/pages/LandingPage.tsx(8,3): error TS6133: 'RiUser3Line' is declared but its value is never read.
+src/pages/LandingPage.tsx(16,9): error TS6198: All destructured elements are unused.
+src/pages/public/ContactUs.tsx(8,25): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/public/ContactUs.tsx(77,17): error TS2322: Type 'string' is not assignable to type 'number'.
+npm verbose cwd C:\Users\Naman Prakash\OneDrive\Downloads\SmartSure-Insurance-Management-System-Demo\smartsure-frontend
+npm verbose os Windows_NT 10.0.26200
+npm verbose node v22.18.0
+npm verbose npm  v10.8.2
+npm verbose exit 1
+npm verbose code 1

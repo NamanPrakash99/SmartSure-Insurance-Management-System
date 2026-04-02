@@ -15,6 +15,9 @@ import {
   HiOutlineBadgeCheck,
   HiOutlineShieldCheck,
 } from 'react-icons/hi'
+import { FormInput } from '../../components/common/FormInput'
+import { FormTextarea } from '../../components/common/FormTextarea'
+import { Button } from '../../components/common/Button'
 
 export default function Profile() {
   const { user: authUser } = useAuth()
@@ -154,81 +157,41 @@ export default function Profile() {
 
             <form onSubmit={handleSubmit(handleUpdate)} className="relative z-10 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-surface-700 dark:text-surface-300 ml-1">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <HiOutlineUser className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-                    <input
-                      type="text"
-                      {...register('name')}
-                      className={`input-field pl-10 !py-3 w-full ${
-                        errors.name ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
-                      placeholder="John Doe"
-                    />
-                  </div>
-                  {errors.name && (
-                    <p className="mt-1 ml-1 text-xs text-red-500">{errors.name.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-surface-700 dark:text-surface-300 ml-1">
-                    Phone Number
-                  </label>
-                  <div className="relative">
-                    <HiOutlinePhone className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400" />
-                    <input
-                      type="text"
-                      {...register('phone')}
-                      className={`input-field pl-10 !py-3 w-full ${
-                        errors.phone ? 'border-red-500 focus:ring-red-500/20' : ''
-                      }`}
-                      placeholder="+91 00000 00000"
-                    />
-                  </div>
-                  {errors.phone && (
-                    <p className="mt-1 ml-1 text-xs text-red-500">{errors.phone.message}</p>
-                  )}
-                </div>
+                <FormInput
+                  label="Full Name"
+                  leftIcon={<HiOutlineUser />}
+                  error={errors.name?.message}
+                  placeholder="John Doe"
+                  {...register('name')}
+                />
+                <FormInput
+                  label="Phone Number"
+                  leftIcon={<HiOutlinePhone />}
+                  error={errors.phone?.message}
+                  placeholder="+91 00000 00000"
+                  {...register('phone')}
+                />
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-surface-700 dark:text-surface-300 ml-1">
-                  Residential Address
-                </label>
-                <div className="relative">
-                  <HiOutlineLocationMarker className="absolute left-3 top-4 text-surface-400" />
-                  <textarea
-                    {...register('address')}
-                    rows={3}
-                    className={`input-field pl-10 !py-3 w-full ${
-                      errors.address ? 'border-red-500 focus:ring-red-500/20' : ''
-                    }`}
-                    placeholder="Street, City, State, Zip"
-                  />
-                </div>
-                {errors.address && (
-                  <p className="mt-1 ml-1 text-xs text-red-500">{errors.address.message}</p>
-                )}
-              </div>
+              <FormTextarea
+                label="Residential Address"
+                leftIcon={<HiOutlineLocationMarker />}
+                error={errors.address?.message}
+                placeholder="Street, City, State, Zip"
+                rows={3}
+                {...register('address')}
+              />
 
               <div className="pt-4 border-t border-surface-100 dark:border-surface-800 flex justify-end">
-                <button
+                <Button
                   type="submit"
-                  disabled={saving}
-                  className="btn-primary !px-10 !py-3 flex items-center justify-center gap-2 group min-w-[160px]"
+                  isLoading={saving}
+                  size="lg"
+                  className="min-w-[160px]"
+                  rightIcon={<HiOutlineBadgeCheck className="text-xl group-hover:scale-110 transition-transform" />}
                 >
-                  {saving ? (
-                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  ) : (
-                    <>
-                      Save Changes
-                      <HiOutlineBadgeCheck className="text-xl group-hover:scale-110 transition-transform" />
-                    </>
-                  )}
-                </button>
+                  Save Changes
+                </Button>
               </div>
             </form>
           </div>

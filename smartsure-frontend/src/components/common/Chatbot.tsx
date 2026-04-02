@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { RiCloseLine, RiSendPlane2Line, RiUser3Line, RiSparklingLine, RiShieldUserLine, RiChat3Line } from 'react-icons/ri'
 import { fetchAIResponse } from '../../api/aiService'
+import { Button } from './Button'
+import { FormInput } from './FormInput'
 
 interface Message {
   id: number
@@ -48,8 +50,8 @@ export default function Chatbot() {
 
     try {
       const response = await fetchAIResponse(userMsgText)
-      if (response.success && response.data) {
-        addBotMsg(response.data)
+      if (response) {
+        addBotMsg(response)
       } else {
         addBotMsg("I'm sorry, I specialize exclusively in providing information about SmartSure's digital insurance services (Health, Life, and Vehicle). How can I assist you with those today?")
       }
@@ -102,13 +104,13 @@ export default function Chatbot() {
                   </div>
                 </div>
               </div>
-              <button 
+              <Button 
+                variant="ghost"
                 onClick={() => setIsOpen(false)}
-                className="p-2.5 hover:bg-white/10 rounded-xl transition-all hover:scale-110 active:scale-95"
+                className="w-10 h-10 !p-0 !text-white hover:bg-white/10"
                 aria-label="Close"
-              >
-                <RiCloseLine className="text-2xl" />
-              </button>
+                leftIcon={<RiCloseLine className="text-2xl" />}
+              />
             </div>
 
             {/* MESSAGE FLOW: Ultra-Modern Bubbles */}
@@ -150,23 +152,22 @@ export default function Chatbot() {
 
             {/* INPUT SECTION: Clean Minimal Design */}
             <div className="p-5 sm:p-6 bg-white dark:bg-surface-950 border-t border-surface-100 dark:border-surface-800 flex-shrink-0">
-              <div className="relative group">
-                <input
-                  type="text"
+              <div className="flex gap-2">
+                <FormInput
                   placeholder="Ask about Health, Life, or Vehicle..."
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  className="w-full pl-5 sm:pl-6 pr-14 sm:pr-16 py-4 bg-surface-50 dark:bg-surface-900 border-2 border-transparent rounded-[22px] text-[13px] sm:text-[14px] focus:ring-4 focus:ring-primary-500/5 focus:border-primary-500/40 transition-all outline-none placeholder-surface-400 font-semibold"
+                  containerClassName="flex-1"
+                  className="!py-3"
                 />
-                <button 
+                <Button 
                   onClick={handleSend}
                   disabled={!inputValue.trim()}
-                  className="absolute right-2 top-2 p-2 bg-primary-600 hover:bg-primary-500 text-white rounded-[18px] transition-all disabled:opacity-20 active:scale-90 shadow-lg shadow-primary-500/30 group-focus-within:rotate-[-5deg]"
+                  className="w-12 h-12 !p-0 shrink-0"
+                  leftIcon={<RiSendPlane2Line className="text-xl" />}
                   aria-label="Send"
-                >
-                  <RiSendPlane2Line className="text-xl" />
-                </button>
+                />
               </div>
               <p className="text-[9px] text-center mt-4 sm:mt-5 text-surface-400 dark:text-surface-600 font-black uppercase tracking-[0.35em] opacity-80">SmartSure Intelligence System</p>
             </div>
@@ -174,26 +175,25 @@ export default function Chatbot() {
         )}
 
         {/* ELITE INDUSTRY-LEVEL TOGGLE BUTTON */}
-        <button
+        <Button
           onClick={() => setIsOpen(!isOpen)}
-          className={`relative group w-14 h-14 sm:w-[56px] sm:h-[56px] flex items-center justify-center transition-all duration-500 hover:scale-110 active:scale-95 transform-gpu z-50 mt-4
-            ${isOpen 
-              ? 'bg-surface-950 text-white rotate-[135deg] rounded-full shadow-[0_15px_30px_-5px_rgba(0,0,0,0.5)]' 
-              : 'bg-gradient-to-tr from-primary-600 via-indigo-600 to-primary-500 text-white rounded-[20px] shadow-[0_15px_30px_-8px_rgba(79,70,229,0.5)] border-t border-white/20 hover:shadow-[0_20px_40px_-10px_rgba(79,70,229,0.6)] hover:rotate-[-5deg]'}`}
+          className={`w-14 h-14 !p-0 transition-all duration-500 z-50 mt-4 !rounded-[20px] ${
+            isOpen 
+              ? '!bg-surface-950 rotate-[135deg]' 
+              : 'bg-gradient-to-tr from-primary-600 via-indigo-600 to-primary-500 shadow-[0_15px_30px_-8px_rgba(79,70,229,0.5)] border-t border-white/20 hover:rotate-[-5deg]'
+          }`}
           aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
-        >
-          {isOpen ? (
-            <RiCloseLine className="text-[28px]" />
-          ) : (
-            <div className="relative flex items-center justify-center w-full h-full">
-              {/* Main Professional Chat Bubble */}
-              <RiChat3Line className="text-[28px] drop-shadow-md group-hover:scale-110 transition-transform duration-300 ease-out" />
-              {/* AI Sparkle Overlays */}
-              <RiSparklingLine className="absolute top-[20%] right-[20%] text-sm text-yellow-300 animate-[spin_4s_linear_infinite]" />
-            </div>
-          )}
-          
-        </button>
+          leftIcon={
+            isOpen ? (
+              <RiCloseLine className="text-[28px]" />
+            ) : (
+              <div className="relative flex items-center justify-center w-full h-full">
+                <RiChat3Line className="text-[28px]" />
+                <RiSparklingLine className="absolute top-[20%] right-[20%] text-sm text-yellow-300 animate-[spin_4s_linear_infinite]" />
+              </div>
+            )
+          }
+        />
       </div>
     </div>
   )

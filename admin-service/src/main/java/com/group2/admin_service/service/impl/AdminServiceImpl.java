@@ -43,11 +43,19 @@ public class AdminServiceImpl implements AdminService {
 	    // 1. Create Status Update DTO
 	    ClaimStatusUpdateDTO statusDto = new ClaimStatusUpdateDTO();
 	    statusDto.setStatus(request.getStatus());
+	    statusDto.setRemark(request.getRemark());
 	
 	    // 2. Synchronous call to Claims service (ensures immediate DB update before UI refreshes)
 	    claimsFeignClient.updateClaimStatus(claimId, statusDto);
 	
-	    // 3. Optional: Logging
+	    // 3. Publish Event for Asynchronous processing (notifications, etc)
+	    ClaimReviewEvent event = new ClaimReviewEvent();
+	    event.setClaimId(claimId);
+	    event.setStatus(request.getStatus());
+	    event.setRemark(request.getRemark());
+	    rabbitTemplate.convertAndSend("claim.exchange", "claim.review", event);
+	
+	    // 4. Optional: Logging
 	    logger.info("✅ Claim status updated to {} for claimId: {}", request.getStatus(), claimId);
 	}
 
@@ -126,6 +134,7 @@ public class AdminServiceImpl implements AdminService {
     private java.util.List<ClaimDTO> mapContentList(java.util.List<?> rawList) {
         java.util.List<ClaimDTO> dtoList = new java.util.ArrayList<>();
         com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         for (Object item : rawList) {
             try {
                 dtoList.add(mapper.convertValue(item, ClaimDTO.class));

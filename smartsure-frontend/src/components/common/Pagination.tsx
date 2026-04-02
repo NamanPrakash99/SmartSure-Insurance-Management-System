@@ -1,6 +1,20 @@
 import { HiOutlineChevronDown, HiChevronLeft, HiChevronRight } from 'react-icons/hi'
 
-export const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange, onItemsPerPageChange }) => {
+interface PaginationProps {
+  currentPage: number;
+  totalItems: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange?: (size: number) => void;
+}
+
+export const Pagination = ({ 
+  currentPage = 1, 
+  totalItems = 0, 
+  itemsPerPage = 10, 
+  onPageChange, 
+  onItemsPerPageChange 
+}: PaginationProps) => {
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage))
 
   return (

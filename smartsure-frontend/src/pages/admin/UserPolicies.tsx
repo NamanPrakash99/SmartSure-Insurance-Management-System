@@ -3,6 +3,7 @@ import { adminService } from '../../api/adminService'
 import { LoadingSpinner } from '../../components/common/LoadingSpinner'
 import { StatusBadge } from '../../components/common/StatusBadge'
 import { toast } from 'react-toastify'
+import { useDebounce } from '../../hooks/useDebounce'
 import {
   HiSearch,
   HiOutlineUser,
@@ -18,6 +19,8 @@ import {
   HiOutlineRefresh,
   HiOutlineExclamationCircle
 } from 'react-icons/hi'
+import { FormInput } from '../../components/common/FormInput'
+import { Button } from '../../components/common/Button'
 import { User, UserPolicy, Claim } from '../../types'
 
 const getAvatarColor = (userId: string | number) => {
@@ -40,6 +43,7 @@ export default function UserPolicies() {
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const [totalActivePolicies, setTotalActivePolicies] = useState(0)
 
   useEffect(() => {
@@ -110,10 +114,10 @@ export default function UserPolicies() {
 
   const filteredCustomers = useMemo(() => {
     return customers.filter(c => 
-      c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      c.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      c.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     )
-  }, [customers, searchTerm])
+  }, [customers, debouncedSearchTerm])
 
   if (loading) return <div className="h-[60vh] flex items-center justify-center"><LoadingSpinner /></div>
 
@@ -157,16 +161,14 @@ export default function UserPolicies() {
         {/* Sidebar: Customer List */}
         <div className="lg:col-span-4 space-y-4">
           <div className="card p-4">
-            <div className="relative group">
-              <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search by name or email..."
-                className="input-field pl-10 !py-2 !text-sm w-full"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
+            <FormInput
+              type="text" 
+              placeholder="Search by name or email..."
+              leftIcon={<HiSearch />}
+              className="!text-sm !py-2"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
           </div>
 
           <div className="card p-2 space-y-1 max-h-[600px] overflow-y-auto custom-scrollbar">
@@ -237,12 +239,13 @@ export default function UserPolicies() {
                           {userClaims.filter(c => c.status === 'PENDING').length}
                         </div>
                       </div>
-                      <button 
+                      <Button
+                        variant="secondary"
                         onClick={() => handleUserClick(selectedUser)}
-                        className="ml-auto w-10 h-10 flex items-center justify-center rounded-xl bg-surface-100 dark:bg-surface-800 text-surface-500 hover:text-primary-500 transition-all active:rotate-180"
-                      >
-                        <HiOutlineRefresh />
-                      </button>
+                        className="ml-auto w-10 h-10 !p-0"
+                        leftIcon={<HiOutlineRefresh />}
+                        title="Refresh Portfolio"
+                      />
                     </div>
                   </div>
                 </div>
@@ -298,12 +301,14 @@ export default function UserPolicies() {
                             </td>
                             <td className="px-6 py-4 text-right">
                               {p.status === 'ACTIVE' && (
-                                <button 
+                                <Button 
+                                  variant="ghost"
                                   onClick={() => handleCancelPolicy(p.id)}
-                                  className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-400 p-2"
+                                  className="text-red-500 hover:text-red-400 !p-2"
+                                  size="sm"
                                 >
                                   Cancel
-                                </button>
+                                </Button>
                               )}
                             </td>
                           </tr>

@@ -22,8 +22,8 @@ export const adminService = {
       API.get(`${ADMIN_BASE}/claims/${id}/document`, { responseType: 'blob' })
     ),
 
-  getAllClaims: (page: number = 0, size: number = 10): Promise<ApiResponse<Claim[]>> =>
-    handleRequest<Claim[]>(API.get(`${ADMIN_BASE}/claims`, { params: { page, size } })),
+  getAllClaims: (page: number = 0, size: number = 10): Promise<ApiResponse<any>> =>
+    handleRequest<any>(API.get(`${ADMIN_BASE}/claims`, { params: { page, size } })),
 
   updateClaim: (id: string | number, data: Partial<Claim>): Promise<ApiResponse<Claim>> =>
     handleRequest<Claim>(API.put(`${ADMIN_BASE}/claims/${id}`, data)),

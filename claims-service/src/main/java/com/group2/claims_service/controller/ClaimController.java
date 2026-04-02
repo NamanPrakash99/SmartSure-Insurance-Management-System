@@ -92,7 +92,7 @@ public class ClaimController {
 			@PathVariable("claimId") Long claimId,
 			@RequestBody ClaimStatusUpdateDTO dto) {
 		
-		claimService.updateClaimStatus(claimId, dto.getStatus());
+		claimService.updateClaimStatus(claimId, dto);
 		return ResponseEntity.ok("Claim status updated successfully");
 	}
 	

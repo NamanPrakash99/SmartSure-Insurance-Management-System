@@ -9,6 +9,7 @@ import { EmptyState } from '../../components/common/EmptyState'
 import { HiOutlineDocumentText, HiOutlineShieldCheck, HiOutlineCurrencyRupee } from 'react-icons/hi'
 import { Link } from 'react-router-dom'
 import { UserPolicy, Claim } from '../../types'
+import { Button } from '../../components/common/Button'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -78,9 +79,13 @@ export default function Dashboard() {
             Here's a quick overview of your insurance portfolio.
           </p>
         </div>
-        <Link to="/policies" className="btn-primary text-sm hidden sm:inline-flex items-center gap-2 shrink-0">
-          <HiOutlineShieldCheck className="text-lg" />
-          Explore New Policies
+        <Link to="/policies" className="hidden sm:inline-flex shrink-0">
+          <Button
+            size="md"
+            leftIcon={<HiOutlineShieldCheck className="text-lg" />}
+          >
+            Explore New Policies
+          </Button>
         </Link>
       </div>
 

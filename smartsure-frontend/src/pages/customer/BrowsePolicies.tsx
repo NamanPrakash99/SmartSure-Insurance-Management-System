@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
+import { FormInput } from '../../components/common/FormInput'
+import { Button } from '../../components/common/Button'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { policyService } from '../../api/policyService'
@@ -9,6 +11,7 @@ import { HiOutlineShieldCheck, HiOutlineSearch, HiOutlineCreditCard } from 'reac
 import { toast } from 'react-toastify'
 import { Pagination } from '../../components/common/Pagination'
 import { Policy, UserPolicy } from '../../types'
+import { useDebounce } from '../../hooks/useDebounce'
 
 // Extend window object for Razorpay
 declare global {
@@ -24,8 +27,9 @@ export default function BrowsePolicies() {
   const [policies, setPolicies] = useState<Policy[]>([])
   const [userPolicies, setUserPolicies] = useState<UserPolicy[]>([])
   const [loading, setLoading] = useState(true)
-  const [processing, setProcessing] = useState(false)
+  const [processingId, setProcessingId] = useState<string | number | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const [activeFilter, setActiveFilter] = useState('ALL')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -39,7 +43,7 @@ export default function BrowsePolicies() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, activeFilter, itemsPerPage])
+  }, [debouncedSearchTerm, activeFilter, itemsPerPage])
 
   const fetchPolicies = async () => {
     const response = await policyService.getAllPolicies()
@@ -77,13 +81,13 @@ export default function BrowsePolicies() {
       return
     }
 
-    setProcessing(true)
+    setProcessingId(policy.id)
 
     // Step 1: Initialize the Saga on the backend (Creates PENDING_PAYMENT record)
     const purchaseRes = await policyService.purchasePolicy(policy.id)
     if (!purchaseRes.success) {
       toast.error(purchaseRes.message || 'Failed to initiate purchase')
-      setProcessing(false)
+      setProcessingId(null)
       return
     }
     const userPolicy = purchaseRes.data
@@ -99,7 +103,7 @@ export default function BrowsePolicies() {
     const orderRes = await paymentService.createOrder(orderData)
     if (!orderRes.success) {
       toast.error(orderRes.message || 'Failed to create payment order')
-      setProcessing(false)
+      setProcessingId(null)
       return
     }
     const orderResponse = orderRes.data
@@ -126,7 +130,7 @@ export default function BrowsePolicies() {
           }, 1500)
         } else {
           toast.error(verifyRes.message || 'Payment verification failed')
-          setProcessing(false)
+          setProcessingId(null)
         }
       },
       prefill: {
@@ -138,7 +142,7 @@ export default function BrowsePolicies() {
       },
       modal: {
         ondismiss: function () {
-          setProcessing(false)
+          setProcessingId(null)
           toast.info('Payment cancelled')
         },
       },
@@ -147,7 +151,7 @@ export default function BrowsePolicies() {
     const rzp = new window.Razorpay(options)
     rzp.on('payment.failed', function (response: any) {
       toast.error(response.error.description || 'Payment Failed')
-      setProcessing(false)
+      setProcessingId(null)
     })
     rzp.open()
   }
@@ -168,16 +172,17 @@ export default function BrowsePolicies() {
 
   const filteredPolicies = useMemo(() => {
     return policies.filter((p) => {
-      const nameMatch = p.name?.toLowerCase().includes(searchTerm.toLowerCase())
-      const descMatch = p.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesSearch = nameMatch || descMatch
+      const searchLower = debouncedSearchTerm.toLowerCase()
+      const nameMatch = p.name?.toLowerCase().includes(searchLower)
+      const descMatch = p.description?.toLowerCase().includes(searchLower)
+      const matchesSearch = searchLower === '' || nameMatch || descMatch
 
       const matchesFilter =
         activeFilter === 'ALL' || p.category?.toUpperCase() === activeFilter.toUpperCase()
 
       return matchesSearch && matchesFilter
     })
-  }, [policies, searchTerm, activeFilter])
+  }, [policies, debouncedSearchTerm, activeFilter])
 
   const paginatedPolicies = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -201,16 +206,15 @@ export default function BrowsePolicies() {
       <div className="ai-gradient-border shadow-2xl overflow-visible w-full">
         <div className="ai-content flex flex-col lg:flex-row items-center gap-6 bg-white dark:bg-surface-900 p-2 rounded-full justify-between px-4">
           {/* Search Pill */}
-          <div className="relative group flex-1 w-full">
-            <HiOutlineSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-surface-400 group-focus-within:text-primary-500 transition-colors text-lg" />
-            <input
-              type="text"
-              placeholder="Search plans (e.g. Life, Vehicle, Health)..."
-              className="w-full bg-white dark:bg-surface-800 py-3.5 pl-14 pr-6 rounded-full border-none focus:ring-2 focus:ring-primary-500/20 text-sm font-medium placeholder-surface-400 transition-all dark:shadow-inner"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <FormInput
+            type="text"
+            placeholder="Search plans (e.g. Life, Vehicle, Health)..."
+            leftIcon={<HiOutlineSearch />}
+            containerClassName="flex-1 w-full"
+            className="!rounded-full border-none focus:ring-2 focus:ring-primary-500/20 text-sm font-medium placeholder-surface-400 transition-all dark:shadow-inner"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
 
           {/* Category Pill */}
           <div className="flex items-center gap-1 bg-surface-100 dark:bg-surface-950/50 p-1 rounded-full border border-surface-200/50 dark:border-surface-800">
@@ -237,7 +241,10 @@ export default function BrowsePolicies() {
           title="No packages found"
           description="Try adjusting your search terms or selecting a different filter category."
           actionLabel="Reset Filters"
-          actionTo="#" // Placeholder for reset logic if needed
+          onClick={() => {
+            setSearchTerm('')
+            setActiveFilter('ALL')
+          }}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -292,18 +299,22 @@ export default function BrowsePolicies() {
               <div className="px-6 md:px-8 pb-6 pt-0 flex gap-3 z-10">
                 <Link
                   to={`/policies/${policy.id}`}
-                  className="flex-1 btn-ghost border border-surface-200 dark:border-surface-700 text-sm !py-3 text-center transition-all duration-300"
+                  className="flex-1"
                 >
-                  View Terms
+                  <Button variant="ghost" fullWidth className="border border-surface-200 dark:border-surface-700">
+                    View Terms
+                  </Button>
                 </Link>
-                <button
+                <Button
                   onClick={() => handlePurchase(policy)}
-                  disabled={processing}
-                  className="flex-1 btn-primary text-sm !py-3 flex items-center justify-center gap-2 group/btn"
+                  isLoading={processingId === policy.id}
+                  disabled={processingId !== null}
+                  fullWidth
+                  className="flex-1 group/btn"
+                  leftIcon={<HiOutlineCreditCard className="text-lg group-hover/btn:scale-110 transition-transform" />}
                 >
-                  <HiOutlineCreditCard className="text-lg group-hover/btn:scale-110 transition-transform" />
-                  <span>Purchase</span>
-                </button>
+                  Purchase
+                </Button>
               </div>
             </div>
           ))}

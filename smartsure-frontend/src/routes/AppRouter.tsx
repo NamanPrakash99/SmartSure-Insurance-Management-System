@@ -6,30 +6,30 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner'
 // Layout & Common
 import DashboardLayout from '../components/layout/DashboardLayout'
 
-// Auth Pages - Lazy
-const LoginPage = lazy(() => import('../pages/auth/LoginPage'))
-const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'))
-const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'))
-const ResetPassword = lazy(() => import('../pages/auth/ResetPassword'))
+// Auth Pages
+import LoginPage from '../pages/auth/LoginPage'
+import RegisterPage from '../pages/auth/RegisterPage'
+import ForgotPassword from '../pages/auth/ForgotPassword'
+import ResetPassword from '../pages/auth/ResetPassword'
 
-// Customer Pages - Lazy
-const CustomerDashboard = lazy(() => import('../pages/customer/Dashboard'))
-const BrowsePolicies = lazy(() => import('../pages/customer/BrowsePolicies'))
+// Customer Pages
+import CustomerDashboard from '../pages/customer/Dashboard'
+import BrowsePolicies from '../pages/customer/BrowsePolicies'
 const PolicyDetails = lazy(() => import('../pages/customer/PolicyDetails'))
 const MyPolicies = lazy(() => import('../pages/customer/MyPolicies'))
 const MyClaims = lazy(() => import('../pages/customer/MyClaims'))
 const FileClaim = lazy(() => import('../pages/customer/FileClaim'))
 
-// Admin Pages - Lazy
-const AdminDashboard = lazy(() => import('../pages/admin/Dashboard'))
-const PolicyManagement = lazy(() => import('../pages/admin/PolicyManagement'))
+// Admin Pages
+import AdminDashboard from '../pages/admin/Dashboard'
+import PolicyManagement from '../pages/admin/PolicyManagement'
 const ClaimsReview = lazy(() => import('../pages/admin/ClaimsReview'))
 const UserPolicies = lazy(() => import('../pages/admin/UserPolicies'))
 const AdminReports = lazy(() => import('../pages/admin/AdminReports'))
 
-// Other Pages - Lazy
-const LandingPage = lazy(() => import('../pages/LandingPage'))
-const Profile = lazy(() => import('../pages/common/Profile'))
+// Other Pages
+import LandingPage from '../pages/LandingPage'
+import Profile from '../pages/common/Profile'
 const AboutUs = lazy(() => import('../pages/public/AboutUs'))
 const ContactUs = lazy(() => import('../pages/public/ContactUs'))
 const Terms = lazy(() => import('../pages/public/Terms'))

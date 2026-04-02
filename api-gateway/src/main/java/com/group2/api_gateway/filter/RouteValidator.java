@@ -14,6 +14,7 @@ public class RouteValidator {
             "/api/auth/login",
             "/api/auth/send-otp",
             "/api/auth/verify-otp",
+            "/api/auth/refresh-token",
             "/v3/api-docs",
             "/swagger-ui",
             "/swagger-ui.html",

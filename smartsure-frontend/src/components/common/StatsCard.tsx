@@ -36,7 +36,7 @@ export function StatsCard({ title, value, icon: Icon, trend, color }: StatsCardP
             <h4 className="text-2xl font-extrabold text-surface-900 dark:text-white truncate animate-count-up">
                {value}
             </h4>
-            {trend !== undefined && (
+            {trend !== undefined && trend !== 0 && trend !== '0' && (
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                 isPositive 
                   ? 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-500/10' 

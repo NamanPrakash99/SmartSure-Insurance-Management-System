@@ -291,7 +291,7 @@ SmartSure implements a **multi-layered security model** across both frontend and
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    SECURITY LAYERS                        │
+│                    SECURITY LAYERS                       │
 ├──────────────────────────────────────────────────────────┤
 │                                                          │
 │  Layer 1: Frontend Route Guards                          │
@@ -341,8 +341,8 @@ The payment integration follows a secure **three-phase cryptographic handshake**
 
 ```
 ┌─────────┐         ┌──────────────┐         ┌──────────┐
-│  React  │         │Payment Service│         │ Razorpay │
-│Frontend │         │  (Spring Boot)│         │  Server  │
+│  React  │         │Payment Service│        │ Razorpay │
+│Frontend │         │  (Spring Boot)│        │  Server  │
 └────┬────┘         └──────┬───────┘         └────┬─────┘
      │                      │                      │
      │ 1. Click "Buy Now"   │                      │

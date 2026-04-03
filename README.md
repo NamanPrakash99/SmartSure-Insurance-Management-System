@@ -348,7 +348,7 @@ The payment integration follows a secure **three-phase cryptographic handshake**
      │ 1. Click "Buy Now"   │                      │
      │─────────────────────>│                      │
      │   {userId, policyId, │                      │
-     │    amount}            │ 2. Create Order      │
+     │    amount}           │ 2. Create Order      │
      │                      │─────────────────────>│
      │                      │                      │
      │                      │  3. Return orderId   │
@@ -362,14 +362,14 @@ The payment integration follows a secure **three-phase cryptographic handshake**
      │ 6. Payment Complete  │                      │
      │<────────────────────────────────────────────│
      │  {payment_id,        │                      │
-     │   signature}          │                      │
+     │   signature}         │                      │
      │                      │                      │
      │ 7. Verify Signature  │                      │
      │─────────────────────>│                      │
      │                      │ 8. HMAC SHA256 verify│
      │                      │─────────────────────>│
      │                      │                      │
-     │  9. Verified ✅       │                      │
+     │  9. Verified ✅      │                      │
      │<─────────────────────│                      │
      │                      │                      │
      │ 10. Activate Policy  │                      │

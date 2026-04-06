@@ -166,6 +166,7 @@
 					</execution>
 				</executions>
 				<configuration>
+					<mainClass>com.group2.policy_service.PolicyServiceApplication</mainClass>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>

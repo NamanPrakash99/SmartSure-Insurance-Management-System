@@ -130,6 +130,9 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<mainClass>com.group2.api_gateway.ApiGatewayApplication</mainClass>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>

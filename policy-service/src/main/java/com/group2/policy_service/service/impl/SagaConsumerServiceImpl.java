@@ -27,12 +27,16 @@ public class SagaConsumerServiceImpl implements SagaConsumerService {
         if ("SUCCESS".equals(event.getStatus())) {
             if (policy.getStatus() == PolicyStatus.PENDING_PAYMENT) {
                 policy.setStatus(PolicyStatus.ACTIVE);
-            } else if (policy.getStatus() == PolicyStatus.ACTIVE || policy.getStatus() == PolicyStatus.EXPIRED) {
-                // Handle renewal
+                policy.setNextPaymentDueDate(java.time.LocalDate.now().plusMonths(1));
+                // Handle sequential renewal: advance based on current due date if it's already in the future
+                java.time.LocalDate currentDueDate = policy.getNextPaymentDueDate();
+                if (currentDueDate == null || currentDueDate.isBefore(java.time.LocalDate.now())) {
+                    policy.setNextPaymentDueDate(java.time.LocalDate.now().plusMonths(1));
+                } else {
+                    policy.setNextPaymentDueDate(currentDueDate.plusMonths(1));
+                }
+
                 policy.setStatus(PolicyStatus.ACTIVE);
-                java.time.LocalDate baseDate = (policy.getEndDate() == null || java.time.LocalDate.now().isAfter(policy.getEndDate())) 
-                             ? java.time.LocalDate.now() : policy.getEndDate();
-                policy.setEndDate(baseDate.plusMonths(policy.getPolicy().getDurationInMonths()));
             }
         } else {
             // Only cancel if it was a new purchase pending payment

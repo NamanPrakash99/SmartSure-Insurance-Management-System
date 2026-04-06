@@ -193,9 +193,14 @@ export default function MyPolicies() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedPolicies.map((policy, idx) => {
-            const startDate = new Date(policy.startDate || Date.now())
-            const nextDueDate = new Date(startDate)
-            nextDueDate.setMonth(nextDueDate.getMonth() + 1)
+            const nextDueDate = policy.nextPaymentDueDate
+              ? new Date(policy.nextPaymentDueDate)
+              : (() => {
+                  const startDate = new Date(policy.startDate || Date.now())
+                  const fallback = new Date(startDate)
+                  fallback.setMonth(fallback.getMonth() + 1)
+                  return fallback
+                })()
 
             return (
               <div

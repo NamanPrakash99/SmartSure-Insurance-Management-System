@@ -14,6 +14,7 @@ public class UserPolicyResponseDTO {
     private LocalDate endDate;
     private Double premiumAmount;
     private Long policyId;
+    private LocalDate nextPaymentDueDate;
 
 	public Long getPolicyId() {
 		return policyId;
@@ -67,6 +68,11 @@ public class UserPolicyResponseDTO {
 		this.premiumAmount = premiumAmount;
 	}
 
-    
+	public LocalDate getNextPaymentDueDate() {
+		return nextPaymentDueDate;
+	}
+	public void setNextPaymentDueDate(LocalDate nextPaymentDueDate) {
+		this.nextPaymentDueDate = nextPaymentDueDate;
+	}
     
 }

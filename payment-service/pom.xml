@@ -108,6 +108,9 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<mainClass>com.group2.payment_service.PaymentServiceApplication</mainClass>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>

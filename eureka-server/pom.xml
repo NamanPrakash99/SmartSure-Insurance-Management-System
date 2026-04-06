@@ -67,6 +67,9 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<mainClass>com.group2.eureka_server.EurekaServerApplication</mainClass>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>

@@ -135,6 +135,7 @@
 					</execution>
 				</executions>
 				<configuration>
+					<mainClass>com.group2.admin_service.AdminServiceApplication</mainClass>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
@@ -142,6 +143,7 @@
 						</exclude>
 					</excludes>
 				</configuration>
+
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

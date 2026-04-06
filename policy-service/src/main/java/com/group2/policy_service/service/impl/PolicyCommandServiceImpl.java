@@ -60,6 +60,7 @@ public class PolicyCommandServiceImpl implements PolicyCommandService {
         userPolicy.setStartDate(LocalDate.now());
         userPolicy.setEndDate(LocalDate.now().plusMonths(policy.getDurationInMonths()));
         userPolicy.setPremiumAmount(policy.getPremiumAmount());
+        userPolicy.setNextPaymentDueDate(LocalDate.now().plusMonths(1));
 
         UserPolicy savedPolicy = userPolicyRepository.save(userPolicy);
 
@@ -143,12 +144,15 @@ public class PolicyCommandServiceImpl implements PolicyCommandService {
         UserPolicy userPolicy = userPolicyRepository.findById(userPolicyId)
                 .orElseThrow(() -> new RuntimeException("UserPolicy not found with id: " + userPolicyId));
 
-        Policy policy = userPolicy.getPolicy();
-        LocalDate baseDate = (userPolicy.getEndDate() == null || LocalDate.now().isAfter(userPolicy.getEndDate())) 
-                             ? LocalDate.now() : userPolicy.getEndDate();
-
         userPolicy.setStatus(PolicyStatus.ACTIVE);
-        userPolicy.setEndDate(baseDate.plusMonths(policy.getDurationInMonths()));
+
+        // Advance next payment due date by 1 month
+        LocalDate currentDueDate = userPolicy.getNextPaymentDueDate();
+        if (currentDueDate == null || currentDueDate.isBefore(LocalDate.now())) {
+            userPolicy.setNextPaymentDueDate(LocalDate.now().plusMonths(1));
+        } else {
+            userPolicy.setNextPaymentDueDate(currentDueDate.plusMonths(1));
+        }
 
         userPolicyRepository.save(userPolicy);
         return mapToUserPolicyResponse(userPolicy);
@@ -197,6 +201,7 @@ public class PolicyCommandServiceImpl implements PolicyCommandService {
         dto.setStartDate(userPolicy.getStartDate());
         dto.setEndDate(userPolicy.getEndDate());
         dto.setPolicyId(userPolicy.getPolicy().getId());
+        dto.setNextPaymentDueDate(userPolicy.getNextPaymentDueDate());
         return dto;
     }
 }

@@ -37,6 +37,8 @@ public class UserPolicy {
 
     private LocalDate endDate;
 
+    private LocalDate nextPaymentDueDate;
+
 	public Long getId() {
 		return id;
 	}
@@ -93,6 +95,14 @@ public class UserPolicy {
 
 	public void setEndDate(LocalDate endDate) {
 		this.endDate = endDate;
+	}
+
+	public LocalDate getNextPaymentDueDate() {
+		return nextPaymentDueDate;
+	}
+
+	public void setNextPaymentDueDate(LocalDate nextPaymentDueDate) {
+		this.nextPaymentDueDate = nextPaymentDueDate;
 	}
     
     

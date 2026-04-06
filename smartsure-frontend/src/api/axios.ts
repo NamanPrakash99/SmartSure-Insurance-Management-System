@@ -19,7 +19,7 @@ const API = axios.create({
   },
 })
 
-// ── Request Interceptor ──────────────────────────────────────────────
+//  Request Interceptor 
 // Automatically injects the Bearer token if it exists in storage.
 API.interceptors.request.use(
   (config) => {
@@ -32,7 +32,7 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// ── Response Interceptor ─────────────────────────────────────────────
+//  Response Interceptor 
 // Handles global error states (like 401s) and executes silent token refreshes.
 API.interceptors.response.use(
   (response) => response,
@@ -48,12 +48,12 @@ API.interceptors.response.use(
         try {
           // Perform a silent refresh using raw axios to avoid interceptor recursion
           const refreshResponse = await axios.post(`${API_BASE_URL}/auth-service/api/auth/refresh-token`, {
-             refreshToken: refreshToken
+            refreshToken: refreshToken
           })
 
           const { accessToken } = refreshResponse.data
           localStorage.setItem(AUTH_TOKEN_KEY, accessToken)
-          
+
           // Re-attempt the original request with the new token
           originalRequest.headers.Authorization = `Bearer ${accessToken}`
           return API(originalRequest)
@@ -65,7 +65,7 @@ API.interceptors.response.use(
         handleLogOut()
       }
     }
-    
+
     return Promise.reject(error)
   }
 )
@@ -77,7 +77,7 @@ function handleLogOut() {
   localStorage.removeItem(AUTH_TOKEN_KEY)
   localStorage.removeItem(REFRESH_TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
-  
+
   if (window.location.pathname !== '/login') {
     window.location.href = '/login'
   }

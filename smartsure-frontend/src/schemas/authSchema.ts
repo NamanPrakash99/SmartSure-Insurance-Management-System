@@ -8,9 +8,7 @@ export const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
-/**
- * Registration Validation Schemas (Step-by-Step)
- */
+//  Registration Validation Schemas 
 
 export const registerStep1Schema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address'),

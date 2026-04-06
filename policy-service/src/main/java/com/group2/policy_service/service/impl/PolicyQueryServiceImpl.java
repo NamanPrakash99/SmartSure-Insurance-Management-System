@@ -114,6 +114,7 @@ public class PolicyQueryServiceImpl implements PolicyQueryService {
         dto.setStartDate(userPolicy.getStartDate());
         dto.setEndDate(userPolicy.getEndDate());
         dto.setPolicyId(userPolicy.getPolicy().getId());
+        dto.setNextPaymentDueDate(userPolicy.getNextPaymentDueDate());
         return dto;
     }
 }

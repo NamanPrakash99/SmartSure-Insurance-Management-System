@@ -1,7 +1,7 @@
 [build]
   base = "smartsure-frontend"
   command = "npm run build"
-  publish = "smartsure-frontend/dist"
+  publish = "dist"
 
 [[redirects]]
   from = "/api/*"

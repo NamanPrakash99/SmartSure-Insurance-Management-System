@@ -1,7 +1,15 @@
+import React from 'react'
 import { createPortal } from 'react-dom'
 import { HiOutlineX } from 'react-icons/hi'
 
-export function Modal({ isOpen, onClose, title, children }) {
+interface ModalProps {
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  children: React.ReactNode
+}
+
+export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   if (!isOpen) return null
 
   // We use a Portal to ensure the modal is rendered at the root of the document.

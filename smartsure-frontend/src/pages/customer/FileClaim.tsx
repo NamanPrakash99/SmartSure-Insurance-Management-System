@@ -77,14 +77,25 @@ export default function FileClaim() {
 
   const onSubmit = async (data: ClaimInput) => {
     if (!user?.id) return
-    setSubmitting(true)
 
-    const response = await claimService.initiateClaim({
+    // Business Rule Check: Claim amount cannot exceed the premium amount
+    const selectedPolicy = policies.find(p => p.id.toString() === data.policyId.toString());
+    if (selectedPolicy && selectedPolicy.coverageAmount && Number(data.amount) > selectedPolicy.coverageAmount) {
+        toast.error(`The claim amount is greater than the total coverage amount (₹${selectedPolicy.coverageAmount.toLocaleString()}) of this policy.`);
+        return;
+    }
+
+    setSubmitting(true)
+    
+    // Convert policyId to Number
+    const payload = {
       policyId: Number(data.policyId),
       userId: user.id,
       claimAmount: Number(data.amount),
       description: data.description,
-    })
+    }
+
+    const response = await claimService.initiateClaim(payload)
 
     if (response.success) {
       const claimId = (response.data as any).claimId
@@ -194,7 +205,7 @@ export default function FileClaim() {
                   >
                     <FormRadio
                       label={p.policyName}
-                      description={`ID: ${p.id} • Premium: ₹${p.premiumAmount}`}
+                      description={`ID: ${p.id} • Premium: ₹${p.premiumAmount?.toLocaleString()} • Coverage: ₹${p.coverageAmount?.toLocaleString()}`}
                       checked={selectedPolicyId === p.id.toString()}
                       {...register('policyId')}
                       value={p.id.toString()}

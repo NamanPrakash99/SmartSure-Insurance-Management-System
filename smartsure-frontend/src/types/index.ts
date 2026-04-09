@@ -68,6 +68,7 @@ export interface UserPolicy {
   startDate: string;
   endDate: string;
   premiumAmount?: number;
+  coverageAmount?: number;
   status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'PENDING_PAYMENT';
   policy?: Policy;
   nextPaymentDueDate?: string;

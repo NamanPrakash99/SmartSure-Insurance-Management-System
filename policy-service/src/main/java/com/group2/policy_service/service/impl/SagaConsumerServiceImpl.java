@@ -25,19 +25,24 @@ public class SagaConsumerServiceImpl implements SagaConsumerService {
                 .orElseThrow(() -> new RuntimeException("Policy not found: " + event.getUserPolicyId()));
 
         if ("SUCCESS".equals(event.getStatus())) {
+            // For new purchases (PENDING_PAYMENT), the due date is already set to 1 month ahead in PolicyCommandServiceImpl.
+            // We only want to advance the date for renewals (ACTIVE or EXPIRED).
             if (policy.getStatus() == PolicyStatus.PENDING_PAYMENT) {
+                if (policy.getNextPaymentDueDate() == null) {
+                    policy.setNextPaymentDueDate(java.time.LocalDate.now().plusMonths(1));
+                }
                 policy.setStatus(PolicyStatus.ACTIVE);
-                policy.setNextPaymentDueDate(java.time.LocalDate.now().plusMonths(1));
-                // Handle sequential renewal: advance based on current due date if it's already in the future
+            } else {
+                // Renewal logic for ACTIVE or EXPIRED policies:
                 java.time.LocalDate currentDueDate = policy.getNextPaymentDueDate();
                 if (currentDueDate == null || currentDueDate.isBefore(java.time.LocalDate.now())) {
                     policy.setNextPaymentDueDate(java.time.LocalDate.now().plusMonths(1));
                 } else {
                     policy.setNextPaymentDueDate(currentDueDate.plusMonths(1));
                 }
-
                 policy.setStatus(PolicyStatus.ACTIVE);
             }
+            // Completion date (endDate) remains untouched.
         } else {
             // Only cancel if it was a new purchase pending payment
             if (policy.getStatus() == PolicyStatus.PENDING_PAYMENT) {

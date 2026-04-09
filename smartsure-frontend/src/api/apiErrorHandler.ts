@@ -26,7 +26,7 @@ export const normalizeError = (error: any): ApiErrorResponse => {
     const { status, data } = error.response
 
     const message =
-      data?.message ||
+      (typeof data === 'string' ? data : data?.message) ||
       data?.error ||
       data?.detail ||
       getDefaultMessageForStatus(status)
@@ -55,7 +55,7 @@ export const normalizeError = (error: any): ApiErrorResponse => {
     }
   }
 
-  // ── Something else went wrong before the request was sent ─────────
+  // Something else went wrong before the request was sent 
   return {
     success: false,
     status: -1,

@@ -112,19 +112,59 @@ public class PaymentServiceImpl implements PaymentService {
 
                     // Send Confirmation Email
                     try {
-                        userRepository.findById(transaction.getUserId()).ifPresent(user -> {
-                            String subject = "Policy Purchase Confirmation - SmartSure";
-                            String body = "Hi " + user.getName() + ",\n\n" +
-                                    "Congratulations! You have successfully purchased the policy.\n" +
-                                    "Transaction ID: " + verifyRequest.getRazorpayPaymentId() + "\n" +
-                                    "Amount Paid: ₹" + transaction.getAmount() + "\n\n" +
-                                    "Thank you for choosing SmartSure!\n" +
-                                    "Best regards,\nSmartSure Team";
-                            emailService.sendEmail(user.getEmail(), subject, body);
+                        userRepository.findById(transaction.getUserId()).ifPresentOrElse(user -> {
+                            policyRepository.findById(transaction.getPolicyId()).ifPresentOrElse(policy -> {
+                                String expiryDate = java.time.LocalDate.now().plusYears(1).toString();
+                                String subject = "Policy Purchase Confirmation - SmartSure";
+                                
+                                String htmlBody = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+                                        "<style>" +
+                                        "body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f4f8; margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }" +
+                                        ".container { width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }" +
+                                        ".header { background: linear-gradient(135deg, #1e3a8a 0%, #1a365d 100%); color: #ffffff; padding: 40px 20px; text-align: center; }" +
+                                        ".header h1 { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; }" +
+                                        ".content { padding: 30px; color: #333333; line-height: 1.6; }" +
+                                        ".congrats { font-size: 24px; font-weight: 700; color: #1e3a8a; margin-bottom: 16px; }" +
+                                        ".details-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 6px solid #1e3a8a; padding: 25px; margin: 24px 0; border-radius: 8px; }" +
+                                        ".detail-row { margin-bottom: 14px; display: block; }" +
+                                        ".detail-label { font-weight: 700; color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px; }" +
+                                        ".detail-value { color: #1e293b; font-size: 17px; font-weight: 600; display: block; word-break: break-word; }" +
+                                        ".footer { padding: 30px; text-align: center; color: #94a3b8; font-size: 14px; background-color: #f1f5f9; }" +
+                                        "@media only screen and (max-width: 480px) {" +
+                                        "  .content { padding: 20px; }" +
+                                        "  .congrats { font-size: 20px; }" +
+                                        "  .header { padding: 30px 15px; }" +
+                                        "}" +
+                                        "</style></head><body>" +
+                                        "<div class=\"container\">" +
+                                        "<div class=\"header\"><h1>🛡️ SmartSure</h1></div>" +
+                                        "<div class=\"content\">" +
+                                        "<div class=\"congrats\">Congratulations " + user.getName() + "!</div>" +
+                                        "<p>Your insurance purchase is successful! Your protection coverage is now active. Below are your policy details:</p>" +
+                                        "<div class=\"details-card\">" +
+                                        "<div class=\"detail-row\"><span class=\"detail-label\">Policy Name</span><span class=\"detail-value\">" + policy.getPolicyName() + "</span></div>" +
+                                        "<div class=\"detail-row\"><span class=\"detail-label\">Transaction Amount</span><span class=\"detail-value\">₹" + String.format("%.2f", transaction.getAmount()) + "</span></div>" +
+                                        "<div class=\"detail-row\"><span class=\"detail-label\">Coverage Limit</span><span class=\"detail-value\">₹" + String.format("%.2f", policy.getCoverageAmount()) + "</span></div>" +
+                                        "<div class=\"detail-row\"><span class=\"detail-label\">Expiry Date</span><span class=\"detail-value\">" + expiryDate + "</span></div>" +
+                                        "</div>" +
+                                        "<p style=\"margin-top: 24px;\">We've attached your digital policy document to this email (coming soon) or you can download it from your portal.</p>" +
+                                        "</div>" +
+                                        "<div class=\"footer\">&copy; 2026 SmartSure Insurance Management. Trusted by millions worldwide.</div>" +
+                                        "</div></body></html>";
+
+                                emailService.sendHtmlEmail(user.getEmail(), subject, htmlBody);
+                                System.out.println("Email queued for policy purchase: " + user.getEmail());
+                            }, () -> {
+                                System.err.println("EMAIL ERROR: Policy not found for ID: " + transaction.getPolicyId());
+                            });
+                        }, () -> {
+                            System.err.println("EMAIL ERROR: User not found for ID: " + transaction.getUserId());
                         });
+
                     } catch (Exception e) {
                         System.err.println("Failed to send purchase email: " + e.getMessage());
                     }
+
                 }
                 return "Payment Verification Successful";
             } else {

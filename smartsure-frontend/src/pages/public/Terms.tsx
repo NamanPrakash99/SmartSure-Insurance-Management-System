@@ -54,7 +54,7 @@ export default function Terms() {
 
         <div className="pt-10 border-t border-surface-100 dark:border-surface-800 text-center">
           <p className="text-xs text-surface-400 font-bold uppercase tracking-[4px]">
-            Last Updated: March 2024
+            Last Updated: April 2026
           </p>
         </div>
       </div>

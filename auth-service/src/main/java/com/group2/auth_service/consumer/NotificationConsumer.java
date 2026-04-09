@@ -36,7 +36,7 @@ public class NotificationConsumer {
         this.policyFeignClient = policyFeignClient;
     }
 
-    @RabbitListener(queues = RabbitConfig.AUTH_POLICY_STATUS_QUEUE)
+    // @RabbitListener(queues = RabbitConfig.AUTH_POLICY_STATUS_QUEUE)
     public void consumePaymentStatus(PaymentStatusEvent event) {
         if ("SUCCESS".equalsIgnoreCase(event.getStatus())) {
             try {
@@ -60,7 +60,7 @@ public class NotificationConsumer {
         }
     }
 
-    @RabbitListener(queues = RabbitConfig.AUTH_CLAIM_CREATED_QUEUE)
+    // @RabbitListener(queues = RabbitConfig.AUTH_CLAIM_CREATED_QUEUE)
     public void consumeClaimCreated(ClaimCreatedEvent event) {
         try {
             User user = userRepository.findById(event.getUserId()).orElse(null);
@@ -76,7 +76,7 @@ public class NotificationConsumer {
         }
     }
 
-    @RabbitListener(queues = RabbitConfig.AUTH_CLAIM_REVIEW_QUEUE)
+    // @RabbitListener(queues = RabbitConfig.AUTH_CLAIM_REVIEW_QUEUE)
     public void consumeClaimReview(ClaimReviewEvent event) {
         try {
             // Get userId from claim details
@@ -98,3 +98,4 @@ public class NotificationConsumer {
         }
     }
 }
+

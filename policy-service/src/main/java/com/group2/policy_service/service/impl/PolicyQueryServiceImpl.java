@@ -111,6 +111,7 @@ public class PolicyQueryServiceImpl implements PolicyQueryService {
         dto.setPolicyName(userPolicy.getPolicy().getPolicyName());
         dto.setStatus(userPolicy.getStatus());
         dto.setPremiumAmount(userPolicy.getPremiumAmount());
+        dto.setCoverageAmount(userPolicy.getPolicy().getCoverageAmount());
         dto.setStartDate(userPolicy.getStartDate());
         dto.setEndDate(userPolicy.getEndDate());
         dto.setPolicyId(userPolicy.getPolicy().getId());

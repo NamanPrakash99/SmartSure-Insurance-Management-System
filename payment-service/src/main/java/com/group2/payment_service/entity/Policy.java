@@ -12,7 +12,10 @@ public class Policy {
     @Id
     private Long id;
     
-    // We only need the ID to verify existence
+    private String policyName;
+    private Double premiumAmount;
+    private Double coverageAmount;
+    
     public Long getId() {
         return id;
     }
@@ -20,4 +23,29 @@ public class Policy {
     public void setId(Long id) {
         this.id = id;
     }
+
+    public String getPolicyName() {
+        return policyName;
+    }
+
+    public void setPolicyName(String policyName) {
+        this.policyName = policyName;
+    }
+
+    public Double getPremiumAmount() {
+        return premiumAmount;
+    }
+
+    public void setPremiumAmount(Double premiumAmount) {
+        this.premiumAmount = premiumAmount;
+    }
+
+    public Double getCoverageAmount() {
+        return coverageAmount;
+    }
+
+    public void setCoverageAmount(Double coverageAmount) {
+        this.coverageAmount = coverageAmount;
+    }
 }
+

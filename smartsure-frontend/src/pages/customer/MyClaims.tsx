@@ -140,10 +140,16 @@ export default function MyClaims() {
   const onSubmit = async (data: ClaimInput) => {
     if (!user) return
 
+    // Business Rule Check: Claim amount cannot exceed the premium amount
+    const selectedPolicy = policies.find(p => p.id.toString() === data.policyId.toString());
+    if (selectedPolicy && selectedPolicy.coverageAmount && Number(data.amount) > selectedPolicy.coverageAmount) {
+      toast.error(`The claim amount is greater than the total coverage amount (₹${selectedPolicy.coverageAmount.toLocaleString()}) of this policy.`);
+      return;
+    }
+
     const claimData: Partial<Claim> = {
       policyId: Number(data.policyId),
       userId: Number(user.id),
-      amount: Number(data.amount),
       claimAmount: Number(data.amount),
       description: data.description,
     }
@@ -297,7 +303,7 @@ export default function MyClaims() {
                               {p.policy?.name || p.policy?.policyName || 'Policy ' + p.id}
                             </span>
                             <span className="block text-xs text-surface-500 font-mono mt-0.5">
-                              ID: {p.id} • Premium: ₹{p.premiumAmount}
+                              ID: {p.id} • Premium: ₹{p.premiumAmount?.toLocaleString()} • Coverage: ₹{p.coverageAmount?.toLocaleString()}
                             </span>
                           </div>
                         </label>

@@ -13,9 +13,16 @@ public class UserPolicyResponseDTO {
     private LocalDate startDate;
     private LocalDate endDate;
     private Double premiumAmount;
+    private Double coverageAmount;
     private Long policyId;
     private LocalDate nextPaymentDueDate;
 
+	public Double getCoverageAmount() {
+		return coverageAmount;
+	}
+	public void setCoverageAmount(Double coverageAmount) {
+		this.coverageAmount = coverageAmount;
+	}
 	public Long getPolicyId() {
 		return policyId;
 	}

@@ -28,21 +28,33 @@ public class ClaimServiceImpl implements ClaimService {
 	private final RabbitTemplate rabbitTemplate;
 	private final UserRepository userRepository;
 	private final EmailService emailService;
+	private final com.group2.claims_service.client.PolicyClient policyClient;
 	
 	public ClaimServiceImpl(ClaimRepository claimRepository, 
 	                  ClaimDocumentRepository documentRepository,
 	                  RabbitTemplate rabbitTemplate,
 	                  UserRepository userRepository,
-	                  EmailService emailService) {
+	                  EmailService emailService,
+	                  com.group2.claims_service.client.PolicyClient policyClient) {
 		this.claimRepository = claimRepository;
 		this.documentRepository = documentRepository;
 		this.rabbitTemplate = rabbitTemplate;
 		this.userRepository = userRepository;
 		this.emailService = emailService;
+		this.policyClient = policyClient;
 	}
 	
 	public ClaimResponseDTO initiateClaim(ClaimRequestDTO requestDTO) {
-
+		
+		// Validate against policy coverage amount via synchronous call to policy-service
+		com.group2.claims_service.dto.UserPolicyResponseDTO policyByClient = policyClient.getUserPolicyById(
+				requestDTO.getPolicyId(),
+				"SmartSureSecretKey2026"
+		);
+		if (policyByClient != null && requestDTO.getClaimAmount() > policyByClient.getCoverageAmount()) {
+			throw new RuntimeException("Claim amount (₹" + requestDTO.getClaimAmount() + ") cannot exceed your policy's coverage amount (₹" + policyByClient.getCoverageAmount() + ").");
+		}
+		
 	    // 1. Create Claim Entity
 	    Claim claim = new Claim();
 	    claim.setPolicyId(requestDTO.getPolicyId());
@@ -83,20 +95,53 @@ public class ClaimServiceImpl implements ClaimService {
 
 	    // Send Claim Initiation Email
 	    try {
-	        userRepository.findById(savedClaim.getUserId()).ifPresent(user -> {
+	        userRepository.findById(savedClaim.getUserId()).ifPresentOrElse(user -> {
 	            String subject = "Claim Filed Successfully - SmartSure";
-	            String body = "Hi " + user.getName() + ",\n\n" +
-	                    "Your claim for Policy ID: " + savedClaim.getPolicyId() + " has been successfully submitted.\n" +
-	                    "Claim ID: " + savedClaim.getId() + "\n" +
-	                    "Claim Amount: ₹" + savedClaim.getClaimAmount() + "\n" +
-	                    "Status: " + savedClaim.getClaimStatus() + "\n\n" +
-	                    "Our team will review your claim and get back to you shortly.\n" +
-	                    "Best regards,\nSmartSure Team";
-	            emailService.sendEmail(user.getEmail(), subject, body);
+	            
+	            String htmlBody = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+	                    "<style>" +
+	                    "body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f4f8; margin: 0; padding: 0; }" +
+	                    ".container { width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }" +
+	                    ".header { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); color: #ffffff; padding: 40px 20px; text-align: center; }" +
+	                    ".header h1 { margin: 0; font-size: 32px; font-weight: 800; }" +
+	                    ".content { padding: 30px; color: #333333; line-height: 1.6; }" +
+	                    ".title { font-size: 24px; font-weight: 700; color: #2c3e50; margin-bottom: 16px; }" +
+	                    ".details-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 6px solid #2c3e50; padding: 25px; margin: 24px 0; border-radius: 8px; }" +
+	                    ".detail-row { margin-bottom: 14px; display: block; }" +
+	                    ".detail-label { font-weight: 700; color: #64748b; font-size: 13px; text-transform: uppercase; display: block; margin-bottom: 2px; }" +
+	                    ".detail-value { color: #1e293b; font-size: 17px; font-weight: 600; display: block; }" +
+	                    ".footer { padding: 30px; text-align: center; color: #94a3b8; font-size: 14px; background-color: #f1f5f9; }" +
+	                    "@media only screen and (max-width: 480px) {" +
+	                    "  .content { padding: 20px; }" +
+	                    "  .title { font-size: 20px; }" +
+	                    "}" +
+	                    "</style></head><body>" +
+	                    "<div class=\"container\">" +
+	                    "<div class=\"header\"><h1>🛡️ SmartSure</h1></div>" +
+	                    "<div class=\"content\">" +
+	                    "<div class=\"title\">Claim Filed Successfully</div>" +
+	                    "<p>Hi " + user.getName() + ", your claim has been submitted and is currently being processed by our claims adjusters.</p>" +
+	                    "<div class=\"details-card\">" +
+	                    "<div class=\"detail-row\"><span class=\"detail-label\">Claim ID</span><span class=\"detail-value\">#" + savedClaim.getId() + "</span></div>" +
+	                    "<div class=\"detail-row\"><span class=\"detail-label\">Policy ID</span><span class=\"detail-value\">" + savedClaim.getPolicyId() + "</span></div>" +
+	                    "<div class=\"detail-row\"><span class=\"detail-label\">Estimated Amount</span><span class=\"detail-value\">₹" + String.format("%.2f", savedClaim.getClaimAmount()) + "</span></div>" +
+	                    "<div class=\"detail-row\"><span class=\"detail-label\">Current Status</span><span class=\"detail-value\">" + savedClaim.getClaimStatus() + "</span></div>" +
+	                    "</div>" +
+	                    "<p>We'll notify you via email of any status changes. You can also monitor your claim in real-time on your dashboard.</p>" +
+	                    "</div>" +
+	                    "<div class=\"footer\">&copy; 2026 SmartSure Insurance Management. Efficient. Transparent. Reliable.</div>" +
+	                    "</div></body></html>";
+
+	            emailService.sendHtmlEmail(user.getEmail(), subject, htmlBody);
+	            System.out.println("Email queued for claim initiation: " + user.getEmail());
+	        }, () -> {
+	            System.err.println("EMAIL ERROR: User not found for claim filing ID: " + savedClaim.getUserId());
 	        });
 	    } catch (Exception e) {
 	        System.err.println("Failed to send claim initiation email: " + e.getMessage());
 	    }
+
+
 
 	    // 6. Return response
 	    return response;
@@ -222,19 +267,52 @@ public class ClaimServiceImpl implements ClaimService {
 
 		// Send Claim Status Update Email
 		try {
-			userRepository.findById(savedClaim.getUserId()).ifPresent(user -> {
+			userRepository.findById(savedClaim.getUserId()).ifPresentOrElse(user -> {
 				String subject = "Claim Status Updated - SmartSure";
-				String body = "Hi " + user.getName() + ",\n\n" +
-						"The status of your Claim (ID: " + savedClaim.getId() + ") has been updated.\n" +
-						"New Status: " + savedClaim.getClaimStatus() + "\n" +
-						(savedClaim.getRemark() != null ? "Admin Remark: " + savedClaim.getRemark() + "\n\n" : "\n") +
-						"You can check the details on your dashboard.\n" +
-						"Best regards,\nSmartSure Team";
-				emailService.sendEmail(user.getEmail(), subject, body);
+				
+				String htmlBody = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+						"<style>" +
+						"body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f4f8; margin: 0; padding: 0; }" +
+						".container { width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }" +
+						".header { background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%); color: #ffffff; padding: 40px 20px; text-align: center; }" +
+						".header h1 { margin: 0; font-size: 32px; font-weight: 800; }" +
+						".content { padding: 30px; color: #333333; line-height: 1.6; }" +
+						".title { font-size: 24px; font-weight: 700; color: #27ae60; margin-bottom: 16px; }" +
+						".details-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 6px solid #27ae60; padding: 25px; margin: 24px 0; border-radius: 8px; }" +
+						".detail-row { margin-bottom: 14px; display: block; }" +
+						".detail-label { font-weight: 700; color: #64748b; font-size: 13px; text-transform: uppercase; display: block; margin-bottom: 2px; }" +
+						".detail-value { color: #1e293b; font-size: 17px; font-weight: 600; display: block; }" +
+						".footer { padding: 30px; text-align: center; color: #94a3b8; font-size: 14px; background-color: #f1f5f9; }" +
+						"@media only screen and (max-width: 480px) {" +
+						"  .content { padding: 20px; }" +
+						"  .title { font-size: 20px; }" +
+						"}" +
+						"</style></head><body>" +
+						"<div class=\"container\">" +
+						"<div class=\"header\"><h1>🛡️ SmartSure</h1></div>" +
+						"<div class=\"content\">" +
+						"<div class=\"title\">Claim Status Update</div>" +
+						"<p>Hi " + user.getName() + ", the status of your insurance claim has been updated. Please review the changes below:</p>" +
+						"<div class=\"details-card\">" +
+						"<div class=\"detail-row\"><span class=\"detail-label\">Claim Reference</span><span class=\"detail-value\">#" + savedClaim.getId() + "</span></div>" +
+						"<div class=\"detail-row\"><span class=\"detail-label\">New Status</span><span class=\"detail-value\" style=\"color: #27ae60;\">" + savedClaim.getClaimStatus() + "</span></div>" +
+						"<div class=\"detail-row\"><span class=\"detail-label\">Admin Review Remark</span><span class=\"detail-value\">" + (savedClaim.getRemark() != null ? savedClaim.getRemark() : "No additional remarks provided.") + "</span></div>" +
+						"</div>" +
+						"<p>If you have any questions regarding this update, please reply to this email or contact support.</p>" +
+						"</div>" +
+						"<div class=\"footer\">&copy; 2026 SmartSure Insurance Management. Digital first, customer always.</div>" +
+						"</div></body></html>";
+
+				emailService.sendHtmlEmail(user.getEmail(), subject, htmlBody);
+				System.out.println("Email queued for claim status update: " + user.getEmail());
+			}, () -> {
+				System.err.println("EMAIL ERROR: User not found for claim status update ID: " + savedClaim.getUserId());
 			});
 		} catch (Exception e) {
 			System.err.println("Failed to send claim status update email: " + e.getMessage());
 		}
+
+
 	}
 	
 	// Get all claims for a specific user

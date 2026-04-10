@@ -20,8 +20,7 @@ Thumbs.db
 
 # Sensitive Info & Configurations
 *.properties
-*.yml
-*.yaml
+
 
 # IDEs
 .idea/

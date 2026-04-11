@@ -238,6 +238,7 @@ export default function FileClaim() {
                 step="0.01"
                 label="Claim Request Amount"
                 placeholder="50000"
+                autoComplete="off"
                 leftIcon={<RiCoinLine />}
                 error={errors.amount?.message}
                 {...register('amount')}

@@ -7,10 +7,13 @@ import com.group2.auth_service.exception.UserAlreadyExistsException;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.repository.OtpRepository;
 import com.group2.auth_service.service.impl.OtpServiceImpl;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -34,6 +37,18 @@ public class AuthServiceExtraTest {
 
     @Mock
     private EmailService emailService;
+
+    private AutoCloseable closeable;
+
+    @BeforeEach
+    void setUp() {
+        closeable = MockitoAnnotations.openMocks(this);
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        closeable.close();
+    }
 
     @Test
     public void testSendOtp_UserExists() {

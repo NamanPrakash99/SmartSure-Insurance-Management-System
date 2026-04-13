@@ -44,6 +44,18 @@ public class AuthServiceTest {
     @InjectMocks
     private AuthServiceImpl authService;
 
+    private java.lang.AutoCloseable closeable;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        closeable = org.mockito.MockitoAnnotations.openMocks(this);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() throws Exception {
+        closeable.close();
+    }
+
     @Test
     public void testRegister_Success() {
         RegisterRequest request = new RegisterRequest();

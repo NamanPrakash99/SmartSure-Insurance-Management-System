@@ -298,6 +298,25 @@ services:
     depends_on:
       - api-gateway
 
+  # ==========================================
+  # 7. CODE QUALITY (SonarQube)
+  # ==========================================
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    restart: always
+    networks:
+      - smartsure-network
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+
+
 networks:
   smartsure-network:
     driver: bridge
@@ -306,3 +325,6 @@ volumes:
   postgres-data:
   rabbitmq-data:
   redis-data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:

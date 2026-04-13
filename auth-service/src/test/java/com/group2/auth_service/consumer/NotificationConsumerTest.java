@@ -8,6 +8,7 @@ import com.group2.auth_service.feign.ClaimsFeignClient;
 import com.group2.auth_service.feign.PolicyFeignClient;
 import com.group2.auth_service.repository.AuthServiceRepository;
 import com.group2.auth_service.service.EmailService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -39,9 +40,16 @@ public class NotificationConsumerTest {
     @InjectMocks
     private NotificationConsumer notificationConsumer;
 
+    private AutoCloseable closeable;
+
     @BeforeEach
     public void setUp() {
-        MockitoAnnotations.openMocks(this);
+        closeable = MockitoAnnotations.openMocks(this);
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
+        closeable.close();
     }
 
     @Test

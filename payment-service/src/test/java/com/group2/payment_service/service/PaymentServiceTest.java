@@ -176,6 +176,8 @@ public class PaymentServiceTest {
             verify(transactionRepository, times(1)).save(transaction);
             verify(rabbitTemplate, times(1)).convertAndSend(anyString(), anyString(), (Object) any());
         }
+    }
+
     @Test
     public void testVerifyPayment_SuccessWithEmail() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();

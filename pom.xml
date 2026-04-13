@@ -88,6 +88,19 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sonar.cpd.exclusions>**/*DTO.java,**/*Entity.java,**/*Exception.java,**/*Request.java,**/*Response.java</sonar.cpd.exclusions>
+        <sonar.coverage.exclusions>
+            **/dto/**,
+            **/entity/**,
+            **/exception/**,
+            **/config/**,
+            **/filter/**,
+            **/security/**,
+            **/*Application.java
+        </sonar.coverage.exclusions>
+        <sonar.exclusions>
+            config-server/**,
+            eureka-server/**
+        </sonar.exclusions>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../target/site/jacoco-aggregate/jacoco.xml,${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 

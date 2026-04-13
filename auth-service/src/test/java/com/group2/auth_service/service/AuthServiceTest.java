@@ -3,6 +3,8 @@ package com.group2.auth_service.service;
 import com.group2.auth_service.dto.AuthResponse;
 import com.group2.auth_service.dto.LoginRequest;
 import com.group2.auth_service.dto.RegisterRequest;
+import com.group2.auth_service.dto.UpdateProfileRequest;
+import com.group2.auth_service.entity.PasswordResetToken;
 import com.group2.auth_service.entity.RefreshToken;
 import com.group2.auth_service.entity.Role;
 import com.group2.auth_service.entity.User;
@@ -20,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -102,18 +105,54 @@ public class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Should trigger password reset process successfully when email exists")
-    public void shouldInitiateForgotPasswordSuccessfully() {
-        String email = "test@test.com";
+    @DisplayName("Should successfully reset password when token is valid")
+    public void shouldResetPasswordSuccessfully() {
+        String token = "valid-token";
+        String newPassword = "NewPassword123";
         User user = new User();
-        user.setEmail(email);
+        PasswordResetToken resetToken = new PasswordResetToken(token, user);
+        
+        when(tokenRepository.findByToken(token)).thenReturn(Optional.of(resetToken));
+        when(passwordEncoder.encode(newPassword)).thenReturn("new_hashed_pass");
 
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
+        authService.resetPassword(token, newPassword);
 
-        authService.forgotPassword(email);
+        verify(userRepository).save(user);
+        verify(tokenRepository).delete(resetToken);
+        assertEquals("new_hashed_pass", user.getPassword());
+    }
 
-        verify(tokenRepository).deleteByUser(user);
-        verify(tokenRepository).save(any());
-        verify(emailService).sendResetPasswordEmail(eq(email), anyString());
+    @Test
+    @DisplayName("Should update user profile details correctly")
+    public void shouldUpdateUserProfileSuccessfully() {
+        Long userId = 1L;
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setName("New Name");
+        request.setPhone("9876543210");
+        request.setAddress("New Address");
+
+        User user = new User();
+        user.setId(userId);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        User result = authService.updateUser(userId, request);
+
+        assertEquals("New Name", result.getName());
+        assertEquals("9876543210", result.getPhone());
+        assertEquals("New Address", result.getAddress());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Should return list of all customers")
+    public void shouldReturnAllCustomers() {
+        when(userRepository.findByRole(Role.CUSTOMER)).thenReturn(List.of(new User(), new User()));
+        
+        List<User> customers = authService.getAllCustomers();
+        
+        assertEquals(2, customers.size());
+        verify(userRepository).findByRole(Role.CUSTOMER);
     }
 }

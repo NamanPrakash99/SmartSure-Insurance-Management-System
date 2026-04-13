@@ -85,7 +85,7 @@ public class AuthServiceTest {
         when(refreshTokenService.createRefreshToken(anyLong())).thenReturn(rt);
 
         AuthResponse response = authService.login(request);
-        assertEquals("jwt_token", response.getAccessToken());
+        assertEquals("jwt_token", response.getToken());
         assertEquals("refresh_token", response.getRefreshToken());
     }
 

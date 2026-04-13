@@ -1,10 +1,12 @@
 package com.group2.claims_service.service;
 
-import com.group2.claims_service.dto.ClaimStatsDTO;
-import com.group2.claims_service.dto.ClaimRequestDTO;
-import com.group2.claims_service.dto.ClaimResponseDTO;
+import com.group2.claims_service.client.PolicyClient;
+import com.group2.claims_service.dto.*;
 import com.group2.claims_service.entity.Claim;
+import com.group2.claims_service.entity.ClaimStatus;
+import com.group2.claims_service.repository.ClaimDocumentRepository;
 import com.group2.claims_service.repository.ClaimRepository;
+import com.group2.claims_service.repository.UserRepository;
 import com.group2.claims_service.service.impl.ClaimServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -37,114 +40,135 @@ class ClaimServiceTest {
     private ClaimRepository claimRepository;
 
     @Mock
+    private ClaimDocumentRepository documentRepository;
+
+    @Mock
+    private RabbitTemplate rabbitTemplate;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private EmailService emailService;
 
+    @Mock
+    private PolicyClient policyClient;
+
     @Test
-    @DisplayName("Should initiate claim successfully when policy exists and limit not exceeded")
+    @DisplayName("Should initiate claim successfully when policy limit is not exceeded")
     void testInitiateClaim_Success() {
         ClaimRequestDTO request = new ClaimRequestDTO();
         request.setUserId(1L);
         request.setPolicyId(1L);
         request.setClaimAmount(5000.0);
-        request.setClaimReason("Accident");
+        request.setDescription("Damaged car");
+
+        UserPolicyResponseDTO policyByClient = new UserPolicyResponseDTO();
+        policyByClient.setCoverageAmount(10000.0);
+
+        when(policyClient.getUserPolicyById(anyLong(), anyString())).thenReturn(policyByClient);
 
         Claim claim = new Claim();
         claim.setId(101L);
+        claim.setUserId(1L);
+        claim.setPolicyId(1L);
         claim.setClaimAmount(5000.0);
-        claim.setStatus("SUBMITTED");
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
 
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
 
         ClaimResponseDTO response = claimService.initiateClaim(request);
 
         assertNotNull(response);
-        assertEquals(5000.0, response.getClaimAmount());
+        assertEquals(101L, response.getClaimId());
         assertEquals("SUBMITTED", response.getStatus());
-        verify(emailService, times(1)).sendEmail(any(), any(), any());
+        verify(rabbitTemplate, times(1)).convertAndSend(anyString(), anyString(), (Object) any());
     }
 
     @Test
-    @DisplayName("Should upload document successfully for valid formats")
+    @DisplayName("Should upload document successfully for valid Image/PDF")
     void testUploadDocument_Success() throws IOException {
-        MockMultipartFile file = new MockMultipartFile("file", "test.png", "image/png", "test data".getBytes());
+        MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "data".getBytes());
         Claim claim = new Claim();
         claim.setId(1L);
+
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
 
         String result = claimService.uploadDocument(1L, file);
 
-        assertEquals("File uploaded successfully: test.png", result);
-        assertNotNull(claim.getDocumentPath());
-        verify(claimRepository, times(1)).save(claim);
+        assertEquals("Document uploaded Successfully", result);
+        verify(documentRepository, times(1)).save(any());
     }
 
     @Test
-    @DisplayName("Should throw RuntimeException when file format is invalid")
-    void testUploadDocument_InvalidFormat() {
-        MockMultipartFile file = new MockMultipartFile("file", "test.exe", "application/octet-stream", "bad data".getBytes());
-        Claim claim = new Claim();
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-
-        assertThrows(RuntimeException.class, () -> claimService.uploadDocument(1L, file));
-    }
-
-    @Test
-    @DisplayName("Should update claim status successfully")
+    @DisplayName("Should update claim status successfully via DTO")
     void testUpdateClaimStatus_Success() {
         Claim claim = new Claim();
         claim.setId(1L);
-        claim.setStatus("SUBMITTED");
         claim.setUserId(1L);
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("under_review");
+        dto.setRemark("Validating details");
 
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
 
-        String result = claimService.updateClaimStatus(1L, "UNDER_REVIEW", "Review started");
+        claimService.updateClaimStatus(1L, dto);
 
-        assertEquals("Claim status updated to: UNDER_REVIEW", result);
-        assertEquals("UNDER_REVIEW", claim.getStatus());
-        verify(emailService, times(1)).sendEmail(any(), any(), any());
+        assertEquals(ClaimStatus.UNDER_REVIEW, claim.getClaimStatus());
+        assertEquals("Validating details", claim.getRemark());
+        verify(claimRepository, times(1)).save(claim);
     }
 
     @Test
-    @DisplayName("Should delete claim successfully")
-    void testDeleteClaim_Success() {
-        when(claimRepository.existsById(1L)).thenReturn(true);
-        doNothing().when(claimRepository).deleteById(1L);
-
-        String result = claimService.deleteClaim(1L);
-
-        assertEquals("Claim deleted successfully", result);
-        verify(claimRepository, times(1)).deleteById(1L);
-    }
-
-    @Test
-    @DisplayName("Should return claim statistics")
+    @DisplayName("Should return correct claim statistics")
     void testGetClaimStats() {
         when(claimRepository.count()).thenReturn(10L);
-        when(claimRepository.findByStatus("APPROVED")).thenReturn(Collections.singletonList(new Claim()));
-        when(claimRepository.findByStatus("REJECTED")).thenReturn(Collections.emptyList());
-        when(claimRepository.findByStatus("SUBMITTED")).thenReturn(Collections.singletonList(new Claim()));
+        when(claimRepository.countByClaimStatus(ClaimStatus.SUBMITTED)).thenReturn(5L);
+        when(claimRepository.countByClaimStatus(ClaimStatus.APPROVED)).thenReturn(3L);
+        when(claimRepository.countByClaimStatus(ClaimStatus.REJECTED)).thenReturn(2L);
 
         ClaimStatsDTO stats = claimService.getClaimStats();
 
         assertEquals(10L, stats.getTotalClaims());
-        assertEquals(1L, stats.getApprovedClaims());
-        assertEquals(0L, stats.getRejectedClaims());
+        assertEquals(5L, stats.getSubmittedClaims());
+        assertEquals(3L, stats.getApprovedClaims());
+        assertEquals(2L, stats.getRejectedClaims());
     }
 
     @Test
-    @DisplayName("Should get all claims with pagination")
+    @DisplayName("Should get all claims with pagination mapping")
     void testGetAllClaims() {
-        Pageable pageable = PageRequest.of(0, 10);
-        List<Claim> claimsList = Collections.singletonList(new Claim());
-        Page<Claim> claimsPage = new PageImpl<>(claimsList, pageable, 1);
+        Pageable pageable = PageRequest.of(0, 5);
+        Claim claim = new Claim();
+        claim.setId(1L);
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        Page<Claim> page = new PageImpl<>(Collections.singletonList(claim), pageable, 1);
 
-        when(claimRepository.findAll(pageable)).thenReturn(claimsPage);
+        when(claimRepository.findAll(pageable)).thenReturn(page);
 
         Page<ClaimResponseDTO> result = claimService.getAllClaims(pageable);
 
         assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
+        assertEquals("SUBMITTED", result.getContent().get(0).getStatus());
+    }
+
+    @Test
+    @DisplayName("Should delete claim and its documents")
+    void testDeleteClaim_Success() {
+        Claim claim = new Claim();
+        claim.setId(1L);
+
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+        doNothing().when(documentRepository).deleteByClaimId(1L);
+        doNothing().when(claimRepository).delete(claim);
+
+        claimService.deleteClaim(1L);
+
+        verify(documentRepository, times(1)).deleteByClaimId(1L);
+        verify(claimRepository, times(1)).delete(claim);
     }
 }

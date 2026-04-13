@@ -37,7 +37,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class PaymentServiceTest {
+public class PaymentServiceTest {
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
@@ -58,7 +58,7 @@ class PaymentServiceTest {
     private EmailService emailService;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         ReflectionTestUtils.setField(paymentService, "razorpayKeyId", "test_id");
         ReflectionTestUtils.setField(paymentService, "razorpayKeySecret", "test_secret");
     }
@@ -67,7 +67,7 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("Should create Razorpay order successfully")
-    void testCreateOrder_Success() throws RazorpayException {
+    public void testCreateOrder_Success() throws RazorpayException {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
         request.setPolicyId(1L);
@@ -88,7 +88,8 @@ class PaymentServiceTest {
                 when(createMethod.invoke(ordersMock, any(JSONObject.class))).thenReturn(order);
                 ordersField.set(mock, ordersMock);
             } catch (Exception e) {
-                // ignore
+                // Fallback
+                mock.orders = mock(mock.orders.getClass());
             }
         })) {
             PaymentResponse response = paymentService.createOrder(request);
@@ -102,7 +103,7 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("Should throw IllegalArgumentException when user does not exist")
-    void testCreateOrder_UserNotFound() {
+    public void testCreateOrder_UserNotFound() {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
 
@@ -116,7 +117,7 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("Should throw IllegalArgumentException when policy does not exist")
-    void testCreateOrder_PolicyNotFound() {
+    public void testCreateOrder_PolicyNotFound() {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
         request.setPolicyId(1L);
@@ -131,8 +132,8 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw RuntimeException when RazorpayException occurs")
-    void testCreateOrder_RazorpayException() {
+    @DisplayName("Should throw RuntimeException when RazorpayException occurs during order creation")
+    public void testCreateOrder_RazorpayException() {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
         request.setPolicyId(1L);
@@ -162,8 +163,8 @@ class PaymentServiceTest {
     // ==================== verifyPayment ====================
 
     @Test
-    @DisplayName("Should return success when payment signature is valid")
-    void testVerifyPayment_Success() {
+    @DisplayName("Should return success when payment signature is valid and transaction exists")
+    public void testVerifyPayment_Success() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_123");
         verifyRequest.setRazorpayPaymentId("pay_123");
@@ -191,12 +192,14 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("Should return success but not emit event when userPolicyId is null")
-    void testVerifyPayment_SuccessNullUserPolicyId() {
+    public void testVerifyPayment_SuccessNullUserPolicyId() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_456");
+        verifyRequest.setRazorpayPaymentId("pay_456");
+        verifyRequest.setRazorpaySignature("sig_456");
 
         Transaction transaction = new Transaction();
-        transaction.setUserPolicyId(null);
+        transaction.setUserPolicyId(null); // null → emitPaymentStatus does nothing
         transaction.setRazorpayOrderId("order_456");
 
         when(transactionRepository.findByRazorpayOrderId("order_456")).thenReturn(Optional.of(transaction));
@@ -209,13 +212,38 @@ class PaymentServiceTest {
             String result = paymentService.verifyPayment(verifyRequest);
 
             assertEquals("Payment Verification Successful", result);
+            assertEquals("SUCCESS", transaction.getStatus());
+            // rabbitTemplate should NOT be called since userPolicyId is null
             verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), (Object) any());
         }
     }
 
     @Test
-    @DisplayName("Should return failure when signature is invalid")
-    void testVerifyPayment_Failed() {
+    @DisplayName("Should return success when valid signature but no transaction found in DB")
+    public void testVerifyPayment_SuccessNoTransaction() {
+        PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
+        verifyRequest.setRazorpayOrderId("order_unknown");
+        verifyRequest.setRazorpayPaymentId("pay_unknown");
+        verifyRequest.setRazorpaySignature("sig_unknown");
+
+        when(transactionRepository.findByRazorpayOrderId("order_unknown")).thenReturn(Optional.empty());
+
+        try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class);
+             MockedStatic<Utils> mockedUtils = mockStatic(Utils.class)) {
+
+            mockedUtils.when(() -> Utils.verifyPaymentSignature(any(JSONObject.class), anyString())).thenReturn(true);
+
+            String result = paymentService.verifyPayment(verifyRequest);
+
+            assertEquals("Payment Verification Successful", result);
+            verify(transactionRepository, never()).save(any());
+            verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), (Object) any());
+        }
+    }
+
+    @Test
+    @DisplayName("Should return failure when signature is invalid and transaction exists")
+    public void testVerifyPayment_Failed() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_123");
 
@@ -235,30 +263,56 @@ class PaymentServiceTest {
             assertEquals("Payment Verification Failed", result);
             assertEquals("FAILED", transaction.getStatus());
             verify(transactionRepository, times(1)).save(transaction);
+            verify(rabbitTemplate, times(1)).convertAndSend(anyString(), anyString(), (Object) any());
         }
     }
 
     @Test
-    @DisplayName("Should throw RuntimeException on RazorpayException in verify")
-    void testVerifyPayment_RazorpayException() {
+    @DisplayName("Should return failure and not save when invalid signature and no transaction found")
+    public void testVerifyPayment_FailedNoTransaction() {
+        PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
+        verifyRequest.setRazorpayOrderId("order_none");
+
+        when(transactionRepository.findByRazorpayOrderId("order_none")).thenReturn(Optional.empty());
+
+        try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class);
+             MockedStatic<Utils> mockedUtils = mockStatic(Utils.class)) {
+
+            mockedUtils.when(() -> Utils.verifyPaymentSignature(any(JSONObject.class), anyString())).thenReturn(false);
+
+            String result = paymentService.verifyPayment(verifyRequest);
+
+            assertEquals("Payment Verification Failed", result);
+            verify(transactionRepository, never()).save(any());
+            verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), (Object) any());
+        }
+    }
+
+    @Test
+    @DisplayName("Should throw RuntimeException when RazorpayException occurs during payment verification")
+    public void testVerifyPayment_RazorpayException() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_err");
+        verifyRequest.setRazorpayPaymentId("pay_err");
+        verifyRequest.setRazorpaySignature("sig_err");
 
         try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class);
              MockedStatic<Utils> mockedUtils = mockStatic(Utils.class)) {
 
             mockedUtils.when(() -> Utils.verifyPaymentSignature(any(JSONObject.class), anyString()))
-                    .thenThrow(new RazorpayException("Signature error"));
+                    .thenThrow(new RazorpayException("Signature verification error"));
 
             assertThrows(RuntimeException.class, () -> paymentService.verifyPayment(verifyRequest));
         }
     }
 
     @Test
-    @DisplayName("Should send confirmation email when payment succeeds")
-    void testVerifyPayment_SuccessWithEmail() {
+    @DisplayName("Should send confirmation email when payment succeeds with user and policy found")
+    public void testVerifyPayment_SuccessWithEmail() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_123");
+        verifyRequest.setRazorpayPaymentId("pay_123");
+        verifyRequest.setRazorpaySignature("sig_123");
 
         Transaction transaction = new Transaction();
         transaction.setUserId(1L);
@@ -273,6 +327,7 @@ class PaymentServiceTest {
 
         Policy policy = new Policy();
         policy.setPolicyName("Test Policy");
+        policy.setCoverageAmount(10000.0);
 
         when(transactionRepository.findByRazorpayOrderId("order_123")).thenReturn(Optional.of(transaction));
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
@@ -291,17 +346,20 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("Should succeed without email when user/policy not found")
-    void testVerifyPayment_SuccessEmailNotFound() {
+    @DisplayName("Should succeed without email when user is not found in DB")
+    public void testVerifyPayment_SuccessEmailUserNotFound() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
-        verifyRequest.setRazorpayOrderId("order_99");
+        verifyRequest.setRazorpayOrderId("order_789");
+        verifyRequest.setRazorpayPaymentId("pay_789");
+        verifyRequest.setRazorpaySignature("sig_789");
 
         Transaction transaction = new Transaction();
-        transaction.setUserId(99L);
-        transaction.setPolicyId(99L);
-        transaction.setRazorpayOrderId("order_99");
+        transaction.setUserId(99L); // non-existent user
+        transaction.setPolicyId(1L);
+        transaction.setUserPolicyId(1L);
+        transaction.setRazorpayOrderId("order_789");
 
-        when(transactionRepository.findByRazorpayOrderId("order_99")).thenReturn(Optional.of(transaction));
+        when(transactionRepository.findByRazorpayOrderId("order_789")).thenReturn(Optional.of(transaction));
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class);
@@ -312,7 +370,69 @@ class PaymentServiceTest {
             String result = paymentService.verifyPayment(verifyRequest);
 
             assertEquals("Payment Verification Successful", result);
+            // email should NOT be sent since user is not found
             verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        }
+    }
+
+    @Test
+    @DisplayName("Should succeed without email when policy is not found in DB")
+    public void testVerifyPayment_SuccessEmailPolicyNotFound() {
+        PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
+        verifyRequest.setRazorpayOrderId("order_321");
+        verifyRequest.setRazorpayPaymentId("pay_321");
+        verifyRequest.setRazorpaySignature("sig_321");
+
+        Transaction transaction = new Transaction();
+        transaction.setUserId(1L);
+        transaction.setPolicyId(99L); // non-existent policy
+        transaction.setUserPolicyId(1L);
+        transaction.setRazorpayOrderId("order_321");
+
+        User user = new User();
+        user.setName("Test User");
+        user.setEmail("test@test.com");
+
+        when(transactionRepository.findByRazorpayOrderId("order_321")).thenReturn(Optional.of(transaction));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(policyRepository.findById(99L)).thenReturn(Optional.empty());
+
+        try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class);
+             MockedStatic<Utils> mockedUtils = mockStatic(Utils.class)) {
+
+            mockedUtils.when(() -> Utils.verifyPaymentSignature(any(JSONObject.class), anyString())).thenReturn(true);
+
+            String result = paymentService.verifyPayment(verifyRequest);
+
+            assertEquals("Payment Verification Successful", result);
+            // email should NOT be sent since policy is not found
+            verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        }
+    }
+
+    @Test
+    @DisplayName("Should fail payment and not emit event when userPolicyId is null on failure")
+    public void testVerifyPayment_FailedNullUserPolicyId() {
+        PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
+        verifyRequest.setRazorpayOrderId("order_fail_null");
+
+        Transaction transaction = new Transaction();
+        transaction.setUserPolicyId(null); // null → no rabbit emit
+        transaction.setRazorpayOrderId("order_fail_null");
+
+        when(transactionRepository.findByRazorpayOrderId("order_fail_null")).thenReturn(Optional.of(transaction));
+
+        try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class);
+             MockedStatic<Utils> mockedUtils = mockStatic(Utils.class)) {
+
+            mockedUtils.when(() -> Utils.verifyPaymentSignature(any(JSONObject.class), anyString())).thenReturn(false);
+
+            String result = paymentService.verifyPayment(verifyRequest);
+
+            assertEquals("Payment Verification Failed", result);
+            assertEquals("FAILED", transaction.getStatus());
+            // rabbitTemplate should NOT be called since userPolicyId is null
+            verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), (Object) any());
         }
     }
 }

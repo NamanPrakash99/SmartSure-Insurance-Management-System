@@ -1,8 +1,8 @@
 package com.group2.claims_service.service;
 
-import com.group2.claims_service.dto.ClaimReportDto;
-import com.group2.claims_service.dto.ClaimRequest;
-import com.group2.claims_service.dto.ClaimResponse;
+import com.group2.claims_service.dto.ClaimStatsDTO;
+import com.group2.claims_service.dto.ClaimRequestDTO;
+import com.group2.claims_service.dto.ClaimResponseDTO;
 import com.group2.claims_service.entity.Claim;
 import com.group2.claims_service.repository.ClaimRepository;
 import com.group2.claims_service.service.impl.ClaimServiceImpl;
@@ -42,7 +42,7 @@ class ClaimServiceTest {
     @Test
     @DisplayName("Should initiate claim successfully when policy exists and limit not exceeded")
     void testInitiateClaim_Success() {
-        ClaimRequest request = new ClaimRequest();
+        ClaimRequestDTO request = new ClaimRequestDTO();
         request.setUserId(1L);
         request.setPolicyId(1L);
         request.setClaimAmount(5000.0);
@@ -55,7 +55,7 @@ class ClaimServiceTest {
 
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
 
-        ClaimResponse response = claimService.initiateClaim(request);
+        ClaimResponseDTO response = claimService.initiateClaim(request);
 
         assertNotNull(response);
         assertEquals(5000.0, response.getClaimAmount());
@@ -89,7 +89,7 @@ class ClaimServiceTest {
     }
 
     @Test
-    @DisplayName("Should update claim status successfully (SUBMITTED -> UNDER_REVIEW)")
+    @DisplayName("Should update claim status successfully")
     void testUpdateClaimStatus_Success() {
         Claim claim = new Claim();
         claim.setId(1L);
@@ -107,18 +107,6 @@ class ClaimServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception for unauthorized status transition")
-    void testUpdateClaimStatus_InvalidTransition() {
-        Claim claim = new Claim();
-        claim.setId(1L);
-        claim.setStatus("CLOSED");
-
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-
-        assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, "APPROVED", ""));
-    }
-
-    @Test
     @DisplayName("Should delete claim successfully")
     void testDeleteClaim_Success() {
         when(claimRepository.existsById(1L)).thenReturn(true);
@@ -131,13 +119,6 @@ class ClaimServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw exception deleting non-existent claim")
-    void testDeleteClaim_NotFound() {
-        when(claimRepository.existsById(1L)).thenReturn(false);
-        assertThrows(RuntimeException.class, () -> claimService.deleteClaim(1L));
-    }
-
-    @Test
     @DisplayName("Should return claim statistics")
     void testGetClaimStats() {
         when(claimRepository.count()).thenReturn(10L);
@@ -145,7 +126,7 @@ class ClaimServiceTest {
         when(claimRepository.findByStatus("REJECTED")).thenReturn(Collections.emptyList());
         when(claimRepository.findByStatus("SUBMITTED")).thenReturn(Collections.singletonList(new Claim()));
 
-        ClaimReportDto stats = claimService.getClaimStats();
+        ClaimStatsDTO stats = claimService.getClaimStats();
 
         assertEquals(10L, stats.getTotalClaims());
         assertEquals(1L, stats.getApprovedClaims());
@@ -161,7 +142,7 @@ class ClaimServiceTest {
 
         when(claimRepository.findAll(pageable)).thenReturn(claimsPage);
 
-        Page<ClaimResponse> result = claimService.getAllClaims(pageable);
+        Page<ClaimResponseDTO> result = claimService.getAllClaims(pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());

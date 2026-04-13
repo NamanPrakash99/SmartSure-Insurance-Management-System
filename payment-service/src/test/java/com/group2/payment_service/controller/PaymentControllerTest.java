@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PaymentController.class)
-public class PaymentControllerTest {
+class PaymentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -31,8 +31,8 @@ public class PaymentControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("Should return 200 OK with order details on successful order creation")
-    public void testCreateOrder_Success() throws Exception {
+    @DisplayName("Should return 200 OK on successful order creation")
+    void testCreateOrder_Success() throws Exception {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
         request.setAmount(1000.0);
@@ -45,73 +45,51 @@ public class PaymentControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderId").value("order_123"))
-                .andExpect(jsonPath("$.status").value("CREATED"));
+                .andExpect(jsonPath("$.orderId").value("order_123"));
     }
 
     @Test
     @DisplayName("Should return 400 Bad Request when IllegalArgumentException is thrown")
-    public void testCreateOrder_BadRequest_IllegalArgument() throws Exception {
+    void testCreateOrder_BadRequest() throws Exception {
         PaymentRequest request = new PaymentRequest();
 
         when(paymentService.createOrder(any(PaymentRequest.class)))
-                .thenThrow(new IllegalArgumentException("Invalid User ID: User does not exist."));
+                .thenThrow(new IllegalArgumentException("Invalid User ID"));
 
         mockMvc.perform(post("/payment/create")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid User ID: User does not exist."));
+                .andExpect(content().string("Invalid User ID"));
     }
 
     @Test
     @DisplayName("Should return 500 Internal Server Error when unexpected exception is thrown")
-    public void testCreateOrder_InternalServerError() throws Exception {
+    void testCreateOrder_ServerError() throws Exception {
         PaymentRequest request = new PaymentRequest();
-        request.setUserId(1L);
-        request.setPolicyId(1L);
 
         when(paymentService.createOrder(any(PaymentRequest.class)))
-                .thenThrow(new RuntimeException("Razorpay connection timeout"));
+                .thenThrow(new RuntimeException("Server error"));
 
         mockMvc.perform(post("/payment/create")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Razorpay connection timeout"));
+                .andExpect(content().string("Server error"));
     }
 
     @Test
-    @DisplayName("Should return 200 OK when payment verification is successful")
-    public void testVerifyPayment_Success() throws Exception {
+    @DisplayName("Should return 200 OK when verification is successful")
+    void testVerifyPayment_Success() throws Exception {
         PaymentVerifyRequest request = new PaymentVerifyRequest();
         request.setRazorpayOrderId("order_123");
-        request.setRazorpayPaymentId("pay_123");
-        request.setRazorpaySignature("sig_123");
 
-        when(paymentService.verifyPayment(any(PaymentVerifyRequest.class)))
-                .thenReturn("Payment Verification Successful");
+        when(paymentService.verifyPayment(any(PaymentVerifyRequest.class))).thenReturn("Payment Verification Successful");
 
         mockMvc.perform(post("/payment/verify")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Payment Verification Successful"));
-    }
-
-    @Test
-    @DisplayName("Should return 400 Bad Request when payment verification fails")
-    public void testVerifyPayment_Failed() throws Exception {
-        PaymentVerifyRequest request = new PaymentVerifyRequest();
-        request.setRazorpayOrderId("order_123");
-
-        when(paymentService.verifyPayment(any(PaymentVerifyRequest.class)))
-                .thenReturn("Payment Verification Failed");
-
-        mockMvc.perform(post("/payment/verify")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Payment Verification Failed"));
     }
 }

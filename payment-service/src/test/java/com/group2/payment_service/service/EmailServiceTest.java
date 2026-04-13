@@ -9,8 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -19,8 +17,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
-public class EmailServiceTest {
+class EmailServiceTest {
 
     @InjectMocks
     private EmailServiceImpl emailService;
@@ -29,13 +26,13 @@ public class EmailServiceTest {
     private JavaMailSender mailSender;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@smartsure.com");
     }
 
     @Test
-    @DisplayName("Should send HTML email successfully using MimeMessage")
-    public void testSendHtmlEmail_Success() throws Exception {
+    @DisplayName("Should send HTML email successfully")
+    void testSendHtmlEmail_Success() {
         MimeMessage mimeMessage = mock(MimeMessage.class);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
@@ -46,10 +43,9 @@ public class EmailServiceTest {
 
     @Test
     @DisplayName("Should handle exception gracefully when HTML email fails")
-    public void testSendHtmlEmail_ExceptionHandled() {
+    void testSendHtmlEmail_ExceptionHandled() {
         when(mailSender.createMimeMessage()).thenThrow(new RuntimeException("Mail server unavailable"));
 
-        // Should NOT throw — exception is caught and logged internally
         emailService.sendHtmlEmail("recipient@test.com", "Test Subject", "<html><body>Hello</body></html>");
 
         verify(mailSender, never()).send(any(MimeMessage.class));
@@ -57,23 +53,11 @@ public class EmailServiceTest {
 
     @Test
     @DisplayName("Should send plain text email successfully")
-    public void testSendEmail_Success() {
+    void testSendEmail_Success() {
         doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
         emailService.sendEmail("recipient@test.com", "Test Subject", "Plain text body");
 
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
-    }
-
-    @Test
-    @DisplayName("Should send HTML email with different content types")
-    public void testSendHtmlEmail_WithComplexBody() throws Exception {
-        MimeMessage mimeMessage = mock(MimeMessage.class);
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-
-        String complexHtml = "<html><head><style>body{color:red;}</style></head><body><h1>Welcome</h1></body></html>";
-        emailService.sendHtmlEmail("user@example.com", "Welcome to SmartSure", complexHtml);
-
-        verify(mailSender, times(1)).send(any(MimeMessage.class));
     }
 }

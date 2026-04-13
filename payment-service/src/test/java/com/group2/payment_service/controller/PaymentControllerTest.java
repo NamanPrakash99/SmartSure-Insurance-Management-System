@@ -5,6 +5,7 @@ import com.group2.payment_service.dto.PaymentResponse;
 import com.group2.payment_service.dto.PaymentVerifyRequest;
 import com.group2.payment_service.service.PaymentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -30,6 +31,7 @@ public class PaymentControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @DisplayName("Should return 200 OK with order details on successful order creation")
     public void testCreateOrder_Success() throws Exception {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
@@ -43,28 +45,52 @@ public class PaymentControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderId").value("order_123"));
+                .andExpect(jsonPath("$.orderId").value("order_123"))
+                .andExpect(jsonPath("$.status").value("CREATED"));
     }
 
     @Test
-    public void testCreateOrder_BadRequest() throws Exception {
+    @DisplayName("Should return 400 Bad Request when IllegalArgumentException is thrown")
+    public void testCreateOrder_BadRequest_IllegalArgument() throws Exception {
         PaymentRequest request = new PaymentRequest();
 
-        when(paymentService.createOrder(any(PaymentRequest.class))).thenThrow(new IllegalArgumentException("Invalid User ID"));
+        when(paymentService.createOrder(any(PaymentRequest.class)))
+                .thenThrow(new IllegalArgumentException("Invalid User ID: User does not exist."));
 
         mockMvc.perform(post("/payment/create")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("Invalid User ID"));
+                .andExpect(content().string("Invalid User ID: User does not exist."));
     }
 
     @Test
+    @DisplayName("Should return 500 Internal Server Error when unexpected exception is thrown")
+    public void testCreateOrder_InternalServerError() throws Exception {
+        PaymentRequest request = new PaymentRequest();
+        request.setUserId(1L);
+        request.setPolicyId(1L);
+
+        when(paymentService.createOrder(any(PaymentRequest.class)))
+                .thenThrow(new RuntimeException("Razorpay connection timeout"));
+
+        mockMvc.perform(post("/payment/create")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Razorpay connection timeout"));
+    }
+
+    @Test
+    @DisplayName("Should return 200 OK when payment verification is successful")
     public void testVerifyPayment_Success() throws Exception {
         PaymentVerifyRequest request = new PaymentVerifyRequest();
         request.setRazorpayOrderId("order_123");
+        request.setRazorpayPaymentId("pay_123");
+        request.setRazorpaySignature("sig_123");
 
-        when(paymentService.verifyPayment(any(PaymentVerifyRequest.class))).thenReturn("Payment Verification Successful");
+        when(paymentService.verifyPayment(any(PaymentVerifyRequest.class)))
+                .thenReturn("Payment Verification Successful");
 
         mockMvc.perform(post("/payment/verify")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -74,11 +100,13 @@ public class PaymentControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 400 Bad Request when payment verification fails")
     public void testVerifyPayment_Failed() throws Exception {
         PaymentVerifyRequest request = new PaymentVerifyRequest();
         request.setRazorpayOrderId("order_123");
 
-        when(paymentService.verifyPayment(any(PaymentVerifyRequest.class))).thenReturn("Payment Verification Failed");
+        when(paymentService.verifyPayment(any(PaymentVerifyRequest.class)))
+                .thenReturn("Payment Verification Failed");
 
         mockMvc.perform(post("/payment/verify")
                 .contentType(MediaType.APPLICATION_JSON)

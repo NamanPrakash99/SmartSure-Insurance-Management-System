@@ -48,6 +48,9 @@ public class PaymentServiceTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
+    @Mock
+    private com.group2.payment_service.service.EmailService emailService;
+
     @BeforeEach
     public void setUp() {
         ReflectionTestUtils.setField(paymentService, "razorpayKeyId", "test_id");
@@ -172,6 +175,42 @@ public class PaymentServiceTest {
             assertEquals("FAILED", transaction.getStatus());
             verify(transactionRepository, times(1)).save(transaction);
             verify(rabbitTemplate, times(1)).convertAndSend(anyString(), anyString(), (Object) any());
+        }
+    @Test
+    public void testVerifyPayment_SuccessWithEmail() {
+        PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
+        verifyRequest.setRazorpayOrderId("order_123");
+        verifyRequest.setRazorpayPaymentId("pay_123");
+        verifyRequest.setRazorpaySignature("sig_123");
+
+        Transaction transaction = new Transaction();
+        transaction.setUserId(1L);
+        transaction.setPolicyId(1L);
+        transaction.setUserPolicyId(1L);
+        transaction.setRazorpayOrderId("order_123");
+        transaction.setAmount(100.0);
+
+        com.group2.payment_service.entity.User user = new com.group2.payment_service.entity.User();
+        user.setName("Test User");
+        user.setEmail("test@test.com");
+
+        com.group2.payment_service.entity.Policy policy = new com.group2.payment_service.entity.Policy();
+        policy.setPolicyName("Test Policy");
+        policy.setCoverageAmount(10000.0);
+
+        when(transactionRepository.findByRazorpayOrderId("order_123")).thenReturn(Optional.of(transaction));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(policyRepository.findById(1L)).thenReturn(Optional.of(policy));
+
+        try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class);
+             MockedStatic<Utils> mockedUtils = mockStatic(Utils.class)) {
+            
+            mockedUtils.when(() -> Utils.verifyPaymentSignature(any(JSONObject.class), anyString())).thenReturn(true);
+
+            String result = paymentService.verifyPayment(verifyRequest);
+
+            assertEquals("Payment Verification Successful", result);
+            verify(emailService, times(1)).sendHtmlEmail(anyString(), anyString(), anyString());
         }
     }
 }

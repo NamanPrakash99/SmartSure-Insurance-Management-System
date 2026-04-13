@@ -81,4 +81,43 @@ public class OtpServiceTest {
 
         assertThrows(OtpException.class, () -> otpService.verifyOtp(email, otp));
     }
+
+    @Test
+    @DisplayName("Should throw exception when verifying with incorrect OTP")
+    public void shouldThrowExceptionWhenOtpIsIncorrect() {
+        String email = "test@test.com";
+        Otp otpEntity = new Otp();
+        otpEntity.setOtp("123456");
+        otpEntity.setExpiryTime(LocalDateTime.now().plusMinutes(5));
+
+        when(otpRepository.findByEmail(email)).thenReturn(Optional.of(otpEntity));
+
+        assertThrows(OtpException.class, () -> otpService.verifyOtp(email, "000000"));
+    }
+
+    @Test
+    @DisplayName("Should validate successfully before registration when OTP is verified")
+    public void shouldValidateBeforeRegisterSuccessfully() {
+        String email = "test@test.com";
+        Otp otpEntity = new Otp();
+        otpEntity.setVerified(true);
+
+        when(authServiceRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(otpRepository.findByEmail(email)).thenReturn(Optional.of(otpEntity));
+
+        assertDoesNotThrow(() -> otpService.validateOtpBeforeRegister(email));
+    }
+
+    @Test
+    @DisplayName("Should throw exception during validation if OTP is not verified")
+    public void shouldThrowExceptionIfOtpNotVerified() {
+        String email = "test@test.com";
+        Otp otpEntity = new Otp();
+        otpEntity.setVerified(false);
+
+        when(otpRepository.findByEmail(email)).thenReturn(Optional.of(otpEntity));
+
+        assertThrows(OtpException.class, () -> otpService.validateOtpBeforeRegister(email));
+    }
 }
+

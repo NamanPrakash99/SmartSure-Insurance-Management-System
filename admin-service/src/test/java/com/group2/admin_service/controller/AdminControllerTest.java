@@ -180,7 +180,7 @@ public class AdminControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void testCancelUserPolicy() throws Exception {
-        when(adminService.cancelPolicy(1L)).thenReturn(new Object());
+        when(adminService.cancelPolicy(1L)).thenReturn(Collections.singletonMap("status", "cancelled"));
 
         mockMvc.perform(put("/api/admin/policies/1/cancel"))
                 .andExpect(status().isOk());

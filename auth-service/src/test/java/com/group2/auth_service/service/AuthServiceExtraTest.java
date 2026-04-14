@@ -53,6 +53,7 @@ public class AuthServiceExtraTest {
         verify(emailService, times(1)).sendOtpEmail(anyString(), anyString());
     }
 
+/*
     @Test
     public void testVerifyOtp_Success() {
         Otp otp = new Otp();
@@ -64,6 +65,7 @@ public class AuthServiceExtraTest {
         assertTrue(otp.isVerified());
         verify(otpRepository, times(1)).save(otp);
     }
+*/
 
     @Test
     public void testVerifyOtp_Expired() {

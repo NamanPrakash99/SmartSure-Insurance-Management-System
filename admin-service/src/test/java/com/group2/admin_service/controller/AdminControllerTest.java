@@ -50,6 +50,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetStatus() throws Exception {
         when(adminService.getClaimStatus(1L)).thenReturn(new ClaimStatusDTO());
 
@@ -58,6 +59,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetClaimsByUser() throws Exception {
         when(adminService.getClaimsByUserId(1L)).thenReturn(Collections.emptyList());
 
@@ -66,6 +68,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testDownloadDocument() throws Exception {
         byte[] content = "test".getBytes();
         when(adminService.downloadClaimDocument(1L)).thenReturn(ResponseEntity.ok(content));
@@ -76,6 +79,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetAllClaims() throws Exception {
         when(adminService.getAllClaims(0, 10)).thenReturn(new PageResponse<>());
 
@@ -84,6 +88,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetAllClaims_Error() throws Exception {
         when(adminService.getAllClaims(anyInt(), anyInt())).thenThrow(new RuntimeException("Error"));
 
@@ -92,6 +97,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testUpdateClaim() throws Exception {
         ClaimDTO dto = new ClaimDTO();
         when(adminService.updateClaim(eq(1L), any(ClaimDTO.class))).thenReturn(dto);
@@ -103,6 +109,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testUpdateClaim_Error() throws Exception {
         when(adminService.updateClaim(anyLong(), any(ClaimDTO.class))).thenThrow(new RuntimeException("Error"));
 
@@ -113,6 +120,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testDeleteClaim() throws Exception {
         mockMvc.perform(delete("/api/admin/claims/1"))
                 .andExpect(status().isOk())
@@ -120,6 +128,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testCreatePolicy() throws Exception {
         PolicyRequestDTO dto = new PolicyRequestDTO();
         when(adminService.createPolicy(any(PolicyRequestDTO.class))).thenReturn(new PolicyDTO());
@@ -131,6 +140,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testUpdatePolicy() throws Exception {
         PolicyRequestDTO dto = new PolicyRequestDTO();
         when(adminService.updatePolicy(eq(1L), any(PolicyRequestDTO.class))).thenReturn(new PolicyDTO());
@@ -142,6 +152,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testDeletePolicy() throws Exception {
         mockMvc.perform(delete("/api/admin/policies/1"))
                 .andExpect(status().isOk())
@@ -149,6 +160,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetUserPolicies() throws Exception {
         when(adminService.getUserPolicies(1L)).thenReturn(Collections.emptyList());
 
@@ -157,6 +169,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetAllUserPolicies() throws Exception {
         when(adminService.getAllUserPolicies()).thenReturn(Collections.emptyList());
 
@@ -165,6 +178,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testCancelUserPolicy() throws Exception {
         when(adminService.cancelPolicy(1L)).thenReturn(new Object());
 
@@ -173,6 +187,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetAllCustomers() throws Exception {
         when(adminService.getAllCustomers()).thenReturn(Collections.emptyList());
 
@@ -181,6 +196,7 @@ public class AdminControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void testGetReports() throws Exception {
         when(adminService.getReports()).thenReturn(new ReportResponse());
 

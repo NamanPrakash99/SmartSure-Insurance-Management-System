@@ -139,13 +139,13 @@ public class AdminServiceImplTest {
         data.put("number", 0);
         data.put("size", 10);
         
-        List<Map<String, Object>> content = new ArrayList<>();
+        List<Object> content = new ArrayList<>();
         Map<String, Object> claimMap = new HashMap<>();
         claimMap.put("claimId", 1L);
         content.add(claimMap);
         
-        // Add invalid item to trigger catch block in mapContentList
-        content.add(null); 
+        // Add an incompatible type (String) to trigger catch block in mapContentList
+        content.add("invalid_item_to_trigger_catch"); 
         
         data.put("content", content);
 

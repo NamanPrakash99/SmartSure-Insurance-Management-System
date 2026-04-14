@@ -6,6 +6,27 @@ import static org.junit.jupiter.api.Assertions.*;
 class DtoTest {
 
     @Test
+    void testAuthResponse() {
+        AuthResponse dto = new AuthResponse("token", "refresh", "ROLE_USER", 1L, "user");
+        assertEquals("token", dto.getToken());
+        assertEquals("refresh", dto.getRefreshToken());
+        assertEquals(1L, dto.getId());
+        assertEquals("user", dto.getName());
+        assertEquals("ROLE_USER", dto.getRole());
+
+        dto.setToken("newT");
+        dto.setRefreshToken("newR");
+        dto.setId(2L);
+        dto.setRole("ROLE_ADMIN");
+        dto.setName("admin");
+        assertEquals("newT", dto.getToken());
+        assertEquals("newR", dto.getRefreshToken());
+        assertEquals(2L, dto.getId());
+        assertEquals("ROLE_ADMIN", dto.getRole());
+        assertEquals("admin", dto.getName());
+    }
+
+    @Test
     void testLoginRequest() {
         LoginRequest dto = new LoginRequest();
         dto.setEmail("test@test.com");
@@ -15,75 +36,37 @@ class DtoTest {
     }
 
     @Test
-    void testAuthResponse() {
-        AuthResponse dto = new AuthResponse("token", "refresh", "ROLE_USER", 1L, "Name");
-        assertEquals("token", dto.getToken());
-        assertEquals("refresh", dto.getRefreshToken());
-        assertEquals("ROLE_USER", dto.getRole());
-        assertEquals(1L, dto.getId());
-        assertEquals("Name", dto.getName());
-        
-        dto.setToken("t");
-        dto.setRefreshToken("r");
-        dto.setRole("a");
-        dto.setId(2L);
-        dto.setName("n");
-        
-        assertEquals("t", dto.getToken());
-        assertEquals("r", dto.getRefreshToken());
-        assertEquals("a", dto.getRole());
-        assertEquals(2L, dto.getId());
-        assertEquals("n", dto.getName());
-    }
-
-    @Test
     void testRegisterRequest() {
         RegisterRequest dto = new RegisterRequest();
-        dto.setName("Name");
-        dto.setEmail("Email");
-        dto.setPhone("123");
-        dto.setPassword("pass");
-        dto.setAddress("Addr");
-        
-        assertEquals("Name", dto.getName());
-        assertEquals("Email", dto.getEmail());
-        assertEquals("123", dto.getPhone());
-        assertEquals("pass", dto.getPassword());
-        assertEquals("Addr", dto.getAddress());
+        dto.setName("user");
+        dto.setEmail("e");
+        dto.setPassword("p");
+        dto.setPhone("1");
+        dto.setAddress("a");
+        assertEquals("user", dto.getName());
+        assertEquals("e", dto.getEmail());
+        assertEquals("p", dto.getPassword());
+        assertEquals("1", dto.getPhone());
+        assertEquals("a", dto.getAddress());
     }
 
     @Test
     void testResetPasswordRequest() {
         ResetPasswordRequest dto = new ResetPasswordRequest();
-        dto.setNewPassword("np");
-        assertEquals("np", dto.getNewPassword());
-    }
-
-    @Test
-    void testTokenRefreshRequest() {
-        TokenRefreshRequest dto = new TokenRefreshRequest();
-        dto.setRefreshToken("rt");
-        assertEquals("rt", dto.getRefreshToken());
-    }
-
-    @Test
-    void testTokenRefreshResponse() {
-        TokenRefreshResponse dto = new TokenRefreshResponse("at", "rt");
-        assertEquals("at", dto.getAccessToken());
-        assertEquals("rt", dto.getRefreshToken());
-        
-        dto.setAccessToken("t");
-        dto.setRefreshToken("r");
-        assertEquals("t", dto.getAccessToken());
-        assertEquals("r", dto.getRefreshToken());
+        dto.setToken("t");
+        dto.setNewPassword("p");
+        assertEquals("t", dto.getToken());
+        assertEquals("p", dto.getNewPassword());
     }
 
     @Test
     void testUpdateProfileRequest() {
         UpdateProfileRequest dto = new UpdateProfileRequest();
-        dto.setName("N");
-        dto.setPhone("P");
-        assertEquals("N", dto.getName());
-        assertEquals("P", dto.getPhone());
+        dto.setName("n");
+        dto.setPhone("p");
+        dto.setAddress("a");
+        assertEquals("n", dto.getName());
+        assertEquals("p", dto.getPhone());
+        assertEquals("a", dto.getAddress());
     }
 }

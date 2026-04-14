@@ -28,7 +28,7 @@ import com.group2.admin_service.feign.PolicyFeignClient;
 import feign.FeignException;
 
 @ExtendWith(MockitoExtension.class)
-public class AdminServiceImplTest {
+class AdminServiceImplTest {
 
     @Mock
     private ClaimsFeignClient claimsFeignClient;

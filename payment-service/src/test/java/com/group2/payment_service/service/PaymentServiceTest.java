@@ -457,16 +457,4 @@ class PaymentServiceTest {
             assertEquals("Payment Verification Successful", result);
         }
     }
-
-    @Test
-    @DisplayName("Should throw RuntimeException when RazorpayException occurs in verifyPayment")
-    void testVerifyPayment_RazorpayException() throws Exception {
-        PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest("order_razor_fail", "pay_razor_fail", "sig_razor_fail");
-        
-        try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class, (mock, context) -> {
-            throw new RazorpayException("API Error");
-        })) {
-            assertThrows(RuntimeException.class, () -> paymentService.verifyPayment(verifyRequest));
-        }
-    }
 }

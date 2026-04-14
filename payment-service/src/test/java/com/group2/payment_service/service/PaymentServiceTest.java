@@ -438,7 +438,7 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("Should handle email service exception during verification")
-    void testVerifyPayment_EmailExceptionDuringVerification() throws Exception {
+    void testVerifyPayment_EmailExceptionDuringVerification() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest("order_email_fail", "pay_email_fail", "sig_email_fail");
         Transaction transaction = new Transaction();
         transaction.setUserId(1L);

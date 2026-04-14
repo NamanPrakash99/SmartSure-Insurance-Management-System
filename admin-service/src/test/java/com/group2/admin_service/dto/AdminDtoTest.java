@@ -6,7 +6,7 @@ import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
 
-public class AdminDtoTest {
+class AdminDtoTest {
 
     @Test
     void testDtoBoilerplate() {

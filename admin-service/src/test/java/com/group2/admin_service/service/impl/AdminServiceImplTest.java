@@ -25,8 +25,6 @@ import com.group2.admin_service.feign.AuthFeignClient;
 import com.group2.admin_service.feign.ClaimsFeignClient;
 import com.group2.admin_service.feign.PolicyFeignClient;
 
-import feign.Request;
-import feign.Request.Method;
 import feign.FeignException;
 
 @ExtendWith(MockitoExtension.class)
@@ -209,14 +207,9 @@ public class AdminServiceImplTest {
     void testCreatePolicy_FeignException() {
         PolicyRequestDTO dto = new PolicyRequestDTO();
         
-        // Create a real FeignException Mock
-        FeignException fe = FeignException.errorStatus("createPolicy", 
-            feign.Response.builder()
-                .status(500)
-                .reason("Error")
-                .request(Request.create(Method.POST, "/url", Collections.emptyMap(), null, null))
-                .body("Internal Error", java.nio.charset.StandardCharsets.UTF_8)
-                .build());
+        // Mock the exception to avoid version-specific constructor issues
+        FeignException fe = mock(FeignException.class);
+        when(fe.contentUTF8()).thenReturn("Internal Error");
 
         when(policyFeignClient.createPolicy(dto)).thenThrow(fe);
 

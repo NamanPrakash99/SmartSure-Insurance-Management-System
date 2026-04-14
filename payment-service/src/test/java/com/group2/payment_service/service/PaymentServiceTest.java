@@ -101,7 +101,6 @@ public class PaymentServiceTest {
         }
     }
 
-/*
     @Test
     @DisplayName("Should throw IllegalArgumentException when user does not exist")
     public void testCreateOrder_UserNotFound() {
@@ -160,7 +159,6 @@ public class PaymentServiceTest {
             assertThrows(RuntimeException.class, () -> paymentService.createOrder(request));
         }
     }
-*/
 
     // ==================== verifyPayment ====================
 

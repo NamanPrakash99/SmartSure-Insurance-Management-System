@@ -1,5 +1,7 @@
 package com.group2.claims_service.service.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -8,6 +10,8 @@ import com.group2.claims_service.service.EmailService;
 
 @Service
 public class EmailServiceImpl implements EmailService {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
 
     @Autowired
     private JavaMailSender mailSender;
@@ -18,11 +22,8 @@ public class EmailServiceImpl implements EmailService {
     @org.springframework.scheduling.annotation.Async
     public void sendEmail(String to, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
-        try {
-            message.setFrom("SmartSure <" + fromEmail + ">");
-        } catch (Exception e) {
-            message.setFrom(fromEmail);
-        }
+        message.setFrom("SmartSure <" + fromEmail + ">");
+
         message.setTo(to);
         message.setSubject(subject);
         message.setText(body);
@@ -43,9 +44,7 @@ public class EmailServiceImpl implements EmailService {
             
             mailSender.send(message);
         } catch (Exception e) {
-
-            System.err.println("CRITICAL: Failed to send HTML email to " + to + ". Error: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("CRITICAL: Failed to send HTML email to {}. Error: {}", to, e.getMessage(), e);
         }
     }
 }

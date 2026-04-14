@@ -19,8 +19,13 @@ import com.group2.auth_service.service.AuthService;
 import com.group2.auth_service.service.EmailService;
 import com.group2.auth_service.service.RefreshTokenService;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class AuthServiceImpl implements AuthService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
 
 	private final AuthServiceRepository userRepository;
 	private final PasswordResetTokenRepository tokenRepository;
@@ -87,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
 
 	public AuthResponse login(LoginRequest request) {
 	    String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
-	    System.out.println("Login attempt for email: '" + email + "'");
+	    logger.info("Login attempt for email: '{}'", email);
 	    
 	    Optional<User> userOpt = userRepository.findByEmail(email);
 	    
@@ -96,7 +101,7 @@ public class AuthServiceImpl implements AuthService {
 	    }
 	    
 	    if (userOpt.isEmpty()) {
-	    	System.out.println("Login Failed: User not found for email: " + email);
+	    	logger.warn("Login Failed: User not found for email: {}", email);
 	    	throw new RuntimeException("Invalid credentials: User not found. Please register first.");
 	    }
 	    
@@ -107,7 +112,7 @@ public class AuthServiceImpl implements AuthService {
 			RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 			return new AuthResponse(token, refreshToken.getToken(), user.getRole().name(), user.getId(), user.getName());
 		} else {
-			System.out.println("Login Failed: Password does not match for email: " + email);
+			logger.warn("Login Failed: Password does not match for email: {}", email);
 			throw new RuntimeException("Invalid credentials: Password is incorrect.");
 		}
 	}
@@ -137,7 +142,7 @@ public class AuthServiceImpl implements AuthService {
         // SEND REAL EMAIL VIA BREVO
         emailService.sendResetPasswordEmail(user.getEmail(), token);
 
-        System.out.println("Password reset link sent to: " + user.getEmail());
+        logger.info("Password reset link sent to: {}", user.getEmail());
     }
 
     @Transactional

@@ -51,14 +51,14 @@ public class AdminDtoTest {
         // PolicyDTO
         PolicyDTO p = new PolicyDTO();
         p.setId(1L);
-        p.setName("Life");
+        p.setPolicyName("Life");
         assertEquals(1L, p.getId());
-        assertEquals("Life", p.getName());
+        assertEquals("Life", p.getPolicyName());
 
         // PolicyRequestDTO
         PolicyRequestDTO prd = new PolicyRequestDTO();
-        prd.setName("Home");
-        assertEquals("Home", prd.getName());
+        prd.setPolicyName("Home");
+        assertEquals("Home", prd.getPolicyName());
 
         // PolicyStatsDTO
         PolicyStatsDTO ps = new PolicyStatsDTO();

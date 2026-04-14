@@ -15,21 +15,21 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SecurityTest {
+class SecurityTest {
 
     private JwtUtil jwtUtil;
     private String secretRaw = "mysecretkeymysecretkeymysecretkeymysecretkey";
     private String secretBase64;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         jwtUtil = new JwtUtil();
         secretBase64 = Encoders.BASE64.encode(secretRaw.getBytes());
         ReflectionTestUtils.setField(jwtUtil, "secret", secretBase64);
     }
 
     @Test
-    public void testExtractEmail() {
+    void testExtractEmail() {
         Key key = Keys.hmacShaKeyFor(secretRaw.getBytes());
         String token = Jwts.builder()
                 .setSubject("test@test.com")
@@ -42,7 +42,7 @@ public class SecurityTest {
     }
 
     @Test
-    public void testExtractUserId() {
+    void testExtractUserId() {
         Key key = Keys.hmacShaKeyFor(secretRaw.getBytes());
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", 123L);
@@ -57,7 +57,7 @@ public class SecurityTest {
     }
 
     @Test
-    public void testExtractRole() {
+    void testExtractRole() {
         Key key = Keys.hmacShaKeyFor(secretRaw.getBytes());
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", "ROLE_ADMIN");

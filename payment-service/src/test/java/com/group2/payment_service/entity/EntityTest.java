@@ -7,11 +7,11 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class EntityTest {
+class EntityTest {
 
     @Test
     @DisplayName("Should set and get all Transaction fields correctly")
-    public void testTransaction_AllFields() {
+    void testTransaction_AllFields() {
         Transaction transaction = new Transaction();
         transaction.setId(1L);
         transaction.setUserId(1L);
@@ -36,7 +36,7 @@ public class EntityTest {
 
     @Test
     @DisplayName("Should set and get createdAt for Transaction")
-    public void testTransaction_CreatedAt() {
+    void testTransaction_CreatedAt() {
         Transaction transaction = new Transaction();
         LocalDateTime now = LocalDateTime.now();
         transaction.setCreatedAt(now);
@@ -45,7 +45,7 @@ public class EntityTest {
 
     @Test
     @DisplayName("Should set createdAt via prePersist lifecycle hook")
-    public void testTransaction_PrePersist() {
+    void testTransaction_PrePersist() {
         Transaction transaction = new Transaction();
         assertNull(transaction.getCreatedAt());
 
@@ -57,7 +57,7 @@ public class EntityTest {
 
     @Test
     @DisplayName("Should produce non-null toString for Transaction")
-    public void testTransaction_ToString() {
+    void testTransaction_ToString() {
         Transaction transaction = new Transaction();
         transaction.setId(1L);
         transaction.setRazorpayOrderId("order_1");
@@ -71,7 +71,7 @@ public class EntityTest {
 
     @Test
     @DisplayName("Should set and get all User fields correctly")
-    public void testUser_AllFields() {
+    void testUser_AllFields() {
         User user = new User();
         user.setId(1L);
         user.setName("John Doe");
@@ -84,7 +84,7 @@ public class EntityTest {
 
     @Test
     @DisplayName("Should set and get all Policy fields correctly")
-    public void testPolicy_AllFields() {
+    void testPolicy_AllFields() {
         Policy policy = new Policy();
         policy.setId(2L);
         policy.setPolicyName("Health Shield");

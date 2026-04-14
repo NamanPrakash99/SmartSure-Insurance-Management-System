@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class OtpServiceTest {
+class OtpServiceTest {
 
     @Mock
     private OtpRepository otpRepository;
@@ -39,7 +39,7 @@ public class OtpServiceTest {
 
     @Test
     @DisplayName("Should successfully generate and send OTP when email is valid and not registered")
-    public void shouldSendOtpSuccessfully() {
+    void shouldSendOtpSuccessfully() {
         String email = "test@test.com";
         when(authServiceRepository.findByEmail(anyString())).thenReturn(Optional.empty());
 
@@ -52,7 +52,7 @@ public class OtpServiceTest {
 
     @Test
     @DisplayName("Should return true and verify OTP when correct OTP is provided before expiry")
-    public void shouldVerifyOtpSuccessfully() {
+    void shouldVerifyOtpSuccessfully() {
         String email = "test@test.com";
         String otp = "123456";
         Otp otpEntity = new Otp();
@@ -71,7 +71,7 @@ public class OtpServiceTest {
 
     @Test
     @DisplayName("Should throw exception when verifying an expired OTP")
-    public void shouldThrowExceptionWhenOtpIsExpired() {
+    void shouldThrowExceptionWhenOtpIsExpired() {
         String email = "test@test.com";
         String otp = "123456";
         Otp otpEntity = new Otp();
@@ -84,7 +84,7 @@ public class OtpServiceTest {
 
     @Test
     @DisplayName("Should throw exception when verifying with incorrect OTP")
-    public void shouldThrowExceptionWhenOtpIsIncorrect() {
+    void shouldThrowExceptionWhenOtpIsIncorrect() {
         String email = "test@test.com";
         Otp otpEntity = new Otp();
         otpEntity.setOtp("123456");
@@ -97,7 +97,7 @@ public class OtpServiceTest {
 
     @Test
     @DisplayName("Should validate successfully before registration when OTP is verified")
-    public void shouldValidateBeforeRegisterSuccessfully() {
+    void shouldValidateBeforeRegisterSuccessfully() {
         String email = "test@test.com";
         Otp otpEntity = new Otp();
         otpEntity.setVerified(true);
@@ -110,7 +110,7 @@ public class OtpServiceTest {
 
     @Test
     @DisplayName("Should throw exception during validation if OTP is not verified")
-    public void shouldThrowExceptionIfOtpNotVerified() {
+    void shouldThrowExceptionIfOtpNotVerified() {
         String email = "test@test.com";
         Otp otpEntity = new Otp();
         otpEntity.setVerified(false);
@@ -120,4 +120,3 @@ public class OtpServiceTest {
         assertThrows(OtpException.class, () -> otpService.validateOtpBeforeRegister(email));
     }
 }
-

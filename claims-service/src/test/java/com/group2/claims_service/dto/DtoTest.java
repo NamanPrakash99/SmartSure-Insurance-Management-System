@@ -3,10 +3,10 @@ package com.group2.claims_service.dto;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class DtoTest {
+class DtoTest {
 
     @Test
-    public void testClaimRequestDTO() {
+    void testClaimRequestDTO() {
         ClaimRequestDTO dto = new ClaimRequestDTO();
         dto.setPolicyId(1L);
         dto.setUserId(1L);
@@ -20,7 +20,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testClaimResponseDTO() {
+    void testClaimResponseDTO() {
         ClaimResponseDTO dto = new ClaimResponseDTO();
         dto.setClaimId(1L);
         dto.setPolicyId(2L);
@@ -42,7 +42,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testClaimCreatedEvent() {
+    void testClaimCreatedEvent() {
         ClaimCreatedEvent event = new ClaimCreatedEvent();
         event.setClaimId(1L);
         event.setUserId(2L);
@@ -56,7 +56,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testClaimReviewEvent() {
+    void testClaimReviewEvent() {
         ClaimReviewEvent event = new ClaimReviewEvent();
         event.setClaimId(1L);
         event.setStatus("REJECTED");
@@ -68,7 +68,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testClaimStatsDTO() {
+    void testClaimStatsDTO() {
         ClaimStatsDTO dto = new ClaimStatsDTO();
         dto.setTotalClaims(10L);
         dto.setSubmittedClaims(2L);
@@ -82,7 +82,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testClaimStatusUpdateDTO() {
+    void testClaimStatusUpdateDTO() {
         ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
         dto.setStatus("CLOSED");
         dto.setRemark("Finished");
@@ -92,7 +92,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testUserPolicyResponseDTO() {
+    void testUserPolicyResponseDTO() {
         UserPolicyResponseDTO dto = new UserPolicyResponseDTO();
         dto.setId(1L);
         dto.setUserId(2L);

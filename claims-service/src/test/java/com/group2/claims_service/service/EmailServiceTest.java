@@ -18,7 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class EmailServiceTest {
+class EmailServiceTest {
 
     @Mock
     private JavaMailSender mailSender;
@@ -33,14 +33,14 @@ public class EmailServiceTest {
 
     @Test
     @DisplayName("Should send simple text email successfully")
-    public void shouldSendSimpleEmail() {
+    void shouldSendSimpleEmail() {
         emailService.sendEmail("to@test.com", "Subject", "Body");
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
 
     @Test
     @DisplayName("Should send HTML email successfully")
-    public void shouldSendHtmlEmail() {
+    void shouldSendHtmlEmail() {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
@@ -50,7 +50,7 @@ public class EmailServiceTest {
 
     @Test
     @DisplayName("Should handle HTML email failure gracefully")
-    public void shouldHandleHtmlEmailFailure() {
+    void shouldHandleHtmlEmailFailure() {
         MimeMessage mimeMessage = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         doThrow(new RuntimeException("Mail Error")).when(mailSender).send(any(MimeMessage.class));

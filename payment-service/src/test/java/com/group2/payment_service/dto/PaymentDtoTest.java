@@ -7,11 +7,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class PaymentDtoTest {
+class PaymentDtoTest {
 
     @Test
     @DisplayName("Should set and get PaymentRequest fields using setters")
-    public void testPaymentRequest_Setters() {
+    void testPaymentRequest_Setters() {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
         request.setAmount(100.0);
@@ -26,7 +26,7 @@ public class PaymentDtoTest {
 
     @Test
     @DisplayName("Should construct PaymentRequest using all-args constructor")
-    public void testPaymentRequest_AllArgsConstructor() {
+    void testPaymentRequest_AllArgsConstructor() {
         PaymentRequest request = new PaymentRequest(2L, 3L, 4L, 250.0);
 
         assertEquals(2L, request.getUserId());
@@ -37,7 +37,7 @@ public class PaymentDtoTest {
 
     @Test
     @DisplayName("Should set and get PaymentResponse fields")
-    public void testPaymentResponse() {
+    void testPaymentResponse() {
         PaymentResponse response = new PaymentResponse("order_123", "CREATED", 100.0, "Success");
         assertEquals("order_123", response.getOrderId());
         assertEquals("CREATED", response.getStatus());
@@ -47,7 +47,7 @@ public class PaymentDtoTest {
 
     @Test
     @DisplayName("Should set and get all PaymentVerifyRequest fields")
-    public void testPaymentVerifyRequest_Setters() {
+    void testPaymentVerifyRequest_Setters() {
         PaymentVerifyRequest request = new PaymentVerifyRequest();
         request.setRazorpayOrderId("order_abc");
         request.setRazorpayPaymentId("pay_abc");
@@ -60,7 +60,7 @@ public class PaymentDtoTest {
 
     @Test
     @DisplayName("Should construct PaymentVerifyRequest using all-args constructor")
-    public void testPaymentVerifyRequest_AllArgsConstructor() {
+    void testPaymentVerifyRequest_AllArgsConstructor() {
         PaymentVerifyRequest request = new PaymentVerifyRequest("order_xyz", "pay_xyz", "sig_xyz");
 
         assertEquals("order_xyz", request.getRazorpayOrderId());
@@ -70,7 +70,7 @@ public class PaymentDtoTest {
 
     @Test
     @DisplayName("Should set and get PaymentStatusEvent fields")
-    public void testPaymentStatusEvent_Setters() {
+    void testPaymentStatusEvent_Setters() {
         PaymentStatusEvent event = new PaymentStatusEvent();
         event.setUserPolicyId(10L);
         event.setPaymentId("pay_123");
@@ -83,7 +83,7 @@ public class PaymentDtoTest {
 
     @Test
     @DisplayName("Should construct PaymentStatusEvent using all-args constructor")
-    public void testPaymentStatusEvent_AllArgsConstructor() {
+    void testPaymentStatusEvent_AllArgsConstructor() {
         PaymentStatusEvent event = new PaymentStatusEvent(7L, "pay_456", "FAILED");
 
         assertEquals(7L, event.getUserPolicyId());
@@ -93,7 +93,7 @@ public class PaymentDtoTest {
 
     @Test
     @DisplayName("Should set and get all PolicyPurchaseEvent fields using setters")
-    public void testPolicyPurchaseEvent_Setters() {
+    void testPolicyPurchaseEvent_Setters() {
         PolicyPurchaseEvent event = new PolicyPurchaseEvent();
         event.setUserPolicyId(1L);
         event.setUserId(2L);
@@ -108,7 +108,7 @@ public class PaymentDtoTest {
 
     @Test
     @DisplayName("Should construct PolicyPurchaseEvent using all-args constructor")
-    public void testPolicyPurchaseEvent_AllArgsConstructor() {
+    void testPolicyPurchaseEvent_AllArgsConstructor() {
         PolicyPurchaseEvent event = new PolicyPurchaseEvent(11L, 22L, 33L, 999.99);
 
         assertEquals(11L, event.getUserPolicyId());

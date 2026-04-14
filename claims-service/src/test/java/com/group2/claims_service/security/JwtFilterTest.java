@@ -17,7 +17,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class JwtFilterTest {
+class JwtFilterTest {
 
     @InjectMocks
     private JwtFilter jwtFilter;
@@ -35,13 +35,13 @@ public class JwtFilterTest {
     private FilterChain filterChain;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
         SecurityContextHolder.clearContext();
     }
 
     @Test
-    public void testDoFilterInternal_NoAuthHeader() throws Exception {
+    void testDoFilterInternal_NoAuthHeader() throws Exception {
         when(request.getHeader("Authorization")).thenReturn(null);
 
         jwtFilter.doFilterInternal(request, response, filterChain);
@@ -50,7 +50,7 @@ public class JwtFilterTest {
     }
 
     @Test
-    public void testDoFilterInternal_ValidToken() throws Exception {
+    void testDoFilterInternal_ValidToken() throws Exception {
         String token = "valid-token";
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         
@@ -68,7 +68,7 @@ public class JwtFilterTest {
     }
 
     @Test
-    public void testDoFilterInternal_InvalidToken() throws Exception {
+    void testDoFilterInternal_InvalidToken() throws Exception {
         String token = "invalid-token";
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtUtil.extractClaims(token)).thenThrow(new RuntimeException("Invalid"));

@@ -17,7 +17,7 @@ import java.io.PrintWriter;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class GatewaySecurityFilterTest {
+class GatewaySecurityFilterTest {
 
     @InjectMocks
     private GatewaySecurityFilter filter;
@@ -33,7 +33,7 @@ public class GatewaySecurityFilterTest {
 
     @Test
     @DisplayName("Should allow request when gateway secret is present and correct")
-    public void shouldAllowRequestWithCorrectSecret() throws ServletException, IOException {
+    void shouldAllowRequestWithCorrectSecret() throws ServletException, IOException {
         when(request.getRequestURI()).thenReturn("/api/claims/initiate");
         when(request.getHeader("X-Gateway-Secret")).thenReturn("SmartSureSecretKey2026");
 
@@ -44,7 +44,7 @@ public class GatewaySecurityFilterTest {
 
     @Test
     @DisplayName("Should block request when gateway secret is missing")
-    public void shouldBlockRequestWithMissingSecret() throws ServletException, IOException {
+    void shouldBlockRequestWithMissingSecret() throws ServletException, IOException {
         when(request.getRequestURI()).thenReturn("/api/claims/initiate");
         when(request.getHeader("X-Gateway-Secret")).thenReturn(null);
         when(response.getWriter()).thenReturn(mock(PrintWriter.class));
@@ -57,7 +57,7 @@ public class GatewaySecurityFilterTest {
 
     @Test
     @DisplayName("Should bypass filter for actuator endpoints")
-    public void shouldBypassForActuator() throws ServletException, IOException {
+    void shouldBypassForActuator() throws ServletException, IOException {
         when(request.getRequestURI()).thenReturn("/actuator/health");
 
         filter.doFilterInternal(request, response, filterChain);

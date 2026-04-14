@@ -15,7 +15,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class EmailServiceTest {
+class EmailServiceTest {
 
     @Mock
     private JavaMailSender mailSender;
@@ -33,28 +33,28 @@ public class EmailServiceTest {
 
     @Test
     @DisplayName("Should call mailSender when sending a general HTML email")
-    public void shouldSendGeneralEmailSuccessfully() {
+    void shouldSendGeneralEmailSuccessfully() {
         emailService.sendEmail("user@example.com", "Subject", "<h1>Content</h1>");
         verify(mailSender, times(1)).send(any(MimeMessage.class));
     }
 
     @Test
     @DisplayName("Should call mailSender when sending an OTP email")
-    public void shouldSendOtpEmailSuccessfully() {
+    void shouldSendOtpEmailSuccessfully() {
         emailService.sendOtpEmail("user@example.com", "123456");
         verify(mailSender, times(1)).send(any(MimeMessage.class));
     }
 
     @Test
     @DisplayName("Should call mailSender when sending a password reset email")
-    public void shouldSendPasswordResetEmailSuccessfully() {
+    void shouldSendPasswordResetEmailSuccessfully() {
         emailService.sendResetPasswordEmail("user@example.com", "token-123");
         verify(mailSender, times(1)).send(any(MimeMessage.class));
     }
 
     @Test
     @DisplayName("Should handle exceptions gracefully when mailSender fails")
-    public void shouldHandleEmailFailureGracefully() {
+    void shouldHandleEmailFailureGracefully() {
         doThrow(new RuntimeException("Mail server down")).when(mailSender).send(any(MimeMessage.class));
         // Should not throw exception to caller as it's caught and logged
         emailService.sendEmail("user@example.com", "Subject", "Content");

@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class AuthServiceTest {
+class AuthServiceTest {
 
     @Mock
     private AuthServiceRepository userRepository;
@@ -52,7 +52,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should create a new user successfully when registration details are valid")
-    public void shouldRegisterUserSuccessfully() {
+    void shouldRegisterUserSuccessfully() {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@test.com");
         request.setPassword("Password123");
@@ -68,7 +68,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should return valid tokens when login credentials are correct")
-    public void shouldLoginSuccessfully() {
+    void shouldLoginSuccessfully() {
         LoginRequest request = new LoginRequest();
         request.setEmail("test@test.com");
         request.setPassword("Password123");
@@ -94,7 +94,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should throw exception when attempting to login with non-existent user")
-    public void shouldThrowExceptionWhenUserNotFoundDuringLogin() {
+    void shouldThrowExceptionWhenUserNotFoundDuringLogin() {
         LoginRequest request = new LoginRequest();
         request.setEmail("none@none.com");
         request.setPassword("pass");
@@ -106,7 +106,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should successfully reset password when token is valid")
-    public void shouldResetPasswordSuccessfully() {
+    void shouldResetPasswordSuccessfully() {
         String token = "valid-token";
         String newPassword = "NewPassword123";
         User user = new User();
@@ -124,7 +124,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should update user profile details correctly")
-    public void shouldUpdateUserProfileSuccessfully() {
+    void shouldUpdateUserProfileSuccessfully() {
         Long userId = 1L;
         UpdateProfileRequest request = new UpdateProfileRequest();
         request.setName("New Name");
@@ -147,7 +147,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should return list of all customers")
-    public void shouldReturnAllCustomers() {
+    void shouldReturnAllCustomers() {
         when(userRepository.findByRole(Role.CUSTOMER)).thenReturn(List.of(new User(), new User()));
         
         List<User> customers = authService.getAllCustomers();
@@ -158,7 +158,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should throw exception when registering existing user")
-    public void shouldThrowExceptionWhenRegisteringExistingUser() {
+    void shouldThrowExceptionWhenRegisteringExistingUser() {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@test.com");
 
@@ -169,7 +169,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should throw exception when registering with short password")
-    public void shouldThrowExceptionWhenRegisteringWithShortPassword() {
+    void shouldThrowExceptionWhenRegisteringWithShortPassword() {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@test.com");
         request.setPassword("12345");
@@ -181,7 +181,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should throw exception when registering with no number in password")
-    public void shouldThrowExceptionWhenRegisteringWithNoNumberInPassword() {
+    void shouldThrowExceptionWhenRegisteringWithNoNumberInPassword() {
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@test.com");
         request.setPassword("Password");
@@ -193,7 +193,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should login correctly with uppercase email")
-    public void shouldLoginWithUppercaseEmail() {
+    void shouldLoginWithUppercaseEmail() {
         LoginRequest request = new LoginRequest();
         request.setEmail("TEST@TEST.COM ");
         request.setPassword("Password123");
@@ -218,7 +218,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should throw exception when password incorrect during login")
-    public void shouldThrowExceptionWhenPasswordIncorrectDuringLogin() {
+    void shouldThrowExceptionWhenPasswordIncorrectDuringLogin() {
         LoginRequest request = new LoginRequest();
         request.setEmail("test@test.com");
         request.setPassword("WrongPassword");
@@ -236,7 +236,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should get user by id successfully")
-    public void shouldGetUserByIdSuccessfully() {
+    void shouldGetUserByIdSuccessfully() {
         User user = new User();
         user.setId(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
@@ -247,14 +247,14 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should throw exception when get user by id not found")
-    public void shouldThrowExceptionWhenGetUserByIdNotFound() {
+    void shouldThrowExceptionWhenGetUserByIdNotFound() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
         assertThrows(RuntimeException.class, () -> authService.getUserById(1L));
     }
 
     @Test
     @DisplayName("Should forgot password successfully")
-    public void shouldForgotPasswordSuccessfully() {
+    void shouldForgotPasswordSuccessfully() {
         User user = new User();
         user.setEmail("test@test.com");
 
@@ -269,22 +269,18 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should throw exception when forgot password user not found")
-    public void shouldThrowExceptionWhenForgotPasswordUserNotFound() {
+    void shouldThrowExceptionWhenForgotPasswordUserNotFound() {
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         assertThrows(RuntimeException.class, () -> authService.forgotPassword("test@test.com"));
     }
 
     @Test
     @DisplayName("Should throw exception when reset password token expired")
-    public void shouldThrowExceptionWhenResetPasswordTokenExpired() {
+    void shouldThrowExceptionWhenResetPasswordTokenExpired() {
         String token = "expired-token";
         User user = new User();
         PasswordResetToken resetToken = new PasswordResetToken(token, user);
         
-        // Mock token expiration by somehow setting expiry date in past or overriding isExpired if we could, 
-        // but let's see how `isExpired()` is implemented. If we can't easily mock `isExpired()` we might need to mock token creation.
-        // Wait, can we mock `PasswordResetToken`? Yes, using spy or just relying on its method if we can set the expiry date.
-        // If not, we can just spy it.
         PasswordResetToken spyToken = spy(resetToken);
         when(spyToken.isExpired()).thenReturn(true);
 
@@ -296,14 +292,14 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should throw exception when reset password token not found")
-    public void shouldThrowExceptionWhenResetPasswordTokenNotFound() {
+    void shouldThrowExceptionWhenResetPasswordTokenNotFound() {
         when(tokenRepository.findByToken(anyString())).thenReturn(Optional.empty());
         assertThrows(RuntimeException.class, () -> authService.resetPassword("invalid", "pass"));
     }
 
     @Test
     @DisplayName("Should init admin when admin does not exist")
-    public void shouldInitAdminWhenNotExists() {
+    void shouldInitAdminWhenNotExists() {
         when(userRepository.findByEmail("admin@capgemini.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("admin123")).thenReturn("encoded");
         
@@ -314,7 +310,7 @@ public class AuthServiceTest {
 
     @Test
     @DisplayName("Should not init admin when admin already exists")
-    public void shouldNotInitAdminWhenExists() {
+    void shouldNotInitAdminWhenExists() {
         when(userRepository.findByEmail("admin@capgemini.com")).thenReturn(Optional.of(new User()));
         
         authService.initAdmin();

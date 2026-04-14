@@ -5,10 +5,10 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class DtoTest {
+class DtoTest {
 
     @Test
-    public void testPolicyRequestDTO() {
+    void testPolicyRequestDTO() {
         PolicyRequestDTO dto = new PolicyRequestDTO();
         dto.setPolicyName("Health");
         dto.setDescription("Health Insurance");
@@ -26,7 +26,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testPolicyResponseDTO() {
+    void testPolicyResponseDTO() {
         PolicyResponseDTO dto = new PolicyResponseDTO();
         dto.setId(1L);
         dto.setPolicyName("Term");
@@ -48,7 +48,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testPolicyStatsDTO() {
+    void testPolicyStatsDTO() {
         PolicyStatsDTO dto = new PolicyStatsDTO();
         dto.setTotalPolicies(100L);
         dto.setTotalRevenue(50000.0);
@@ -58,7 +58,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testUserPolicyResponseDTO() {
+    void testUserPolicyResponseDTO() {
         UserPolicyResponseDTO dto = new UserPolicyResponseDTO();
         dto.setId(1L);
         dto.setUserId(10L);
@@ -84,7 +84,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testPurchasePolicyRequestDTO() {
+    void testPurchasePolicyRequestDTO() {
         PurchasePolicyRequestDTO dto = new PurchasePolicyRequestDTO();
         dto.setPolicyId(1L);
         assertEquals(1L, dto.getPolicyId());

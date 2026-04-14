@@ -3,10 +3,10 @@ package com.group2.auth_service.dto;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class DtoTest {
+class DtoTest {
 
     @Test
-    public void testLoginRequest() {
+    void testLoginRequest() {
         LoginRequest dto = new LoginRequest();
         dto.setEmail("test@test.com");
         dto.setPassword("pass");
@@ -15,7 +15,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testAuthResponse() {
+    void testAuthResponse() {
         AuthResponse dto = new AuthResponse("token", "refresh", "ROLE_USER", 1L, "Name");
         assertEquals("token", dto.getToken());
         assertEquals("refresh", dto.getRefreshToken());
@@ -37,7 +37,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testRegisterRequest() {
+    void testRegisterRequest() {
         RegisterRequest dto = new RegisterRequest();
         dto.setName("Name");
         dto.setEmail("Email");
@@ -53,21 +53,21 @@ public class DtoTest {
     }
 
     @Test
-    public void testResetPasswordRequest() {
+    void testResetPasswordRequest() {
         ResetPasswordRequest dto = new ResetPasswordRequest();
         dto.setNewPassword("np");
         assertEquals("np", dto.getNewPassword());
     }
 
     @Test
-    public void testTokenRefreshRequest() {
+    void testTokenRefreshRequest() {
         TokenRefreshRequest dto = new TokenRefreshRequest();
         dto.setRefreshToken("rt");
         assertEquals("rt", dto.getRefreshToken());
     }
 
     @Test
-    public void testTokenRefreshResponse() {
+    void testTokenRefreshResponse() {
         TokenRefreshResponse dto = new TokenRefreshResponse("at", "rt");
         assertEquals("at", dto.getAccessToken());
         assertEquals("rt", dto.getRefreshToken());
@@ -79,7 +79,7 @@ public class DtoTest {
     }
 
     @Test
-    public void testUpdateProfileRequest() {
+    void testUpdateProfileRequest() {
         UpdateProfileRequest dto = new UpdateProfileRequest();
         dto.setName("N");
         dto.setPhone("P");

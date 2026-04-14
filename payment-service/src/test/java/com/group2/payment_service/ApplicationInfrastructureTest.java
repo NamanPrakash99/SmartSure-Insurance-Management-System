@@ -13,18 +13,18 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
-public class ApplicationInfrastructureTest {
+class ApplicationInfrastructureTest {
 
     @Test
     @DisplayName("Should instantiate PaymentServiceApplication")
-    public void testApplicationMain() {
+    void testApplicationMain() {
         PaymentServiceApplication app = new PaymentServiceApplication();
         assertNotNull(app);
     }
 
     @Test
     @DisplayName("Should create DirectExchange bean with correct name")
-    public void testRabbitConfig_Exchange() {
+    void testRabbitConfig_Exchange() {
         RabbitConfig config = new RabbitConfig();
         DirectExchange exchange = config.exchange();
         assertNotNull(exchange);
@@ -33,7 +33,7 @@ public class ApplicationInfrastructureTest {
 
     @Test
     @DisplayName("Should create purchaseQueue bean with correct name")
-    public void testRabbitConfig_PurchaseQueue() {
+    void testRabbitConfig_PurchaseQueue() {
         RabbitConfig config = new RabbitConfig();
         Queue queue = config.purchaseQueue();
         assertNotNull(queue);
@@ -42,7 +42,7 @@ public class ApplicationInfrastructureTest {
 
     @Test
     @DisplayName("Should create paymentStatusQueue bean with correct name")
-    public void testRabbitConfig_PaymentStatusQueue() {
+    void testRabbitConfig_PaymentStatusQueue() {
         RabbitConfig config = new RabbitConfig();
         Queue queue = config.paymentStatusQueue();
         assertNotNull(queue);
@@ -51,7 +51,7 @@ public class ApplicationInfrastructureTest {
 
     @Test
     @DisplayName("Should create purchaseBinding with correct routing key")
-    public void testRabbitConfig_PurchaseBinding() {
+    void testRabbitConfig_PurchaseBinding() {
         RabbitConfig config = new RabbitConfig();
         Queue purchaseQueue = config.purchaseQueue();
         DirectExchange exchange = config.exchange();
@@ -62,7 +62,7 @@ public class ApplicationInfrastructureTest {
 
     @Test
     @DisplayName("Should create paymentStatusBinding with correct routing key")
-    public void testRabbitConfig_PaymentStatusBinding() {
+    void testRabbitConfig_PaymentStatusBinding() {
         RabbitConfig config = new RabbitConfig();
         Queue paymentStatusQueue = config.paymentStatusQueue();
         DirectExchange exchange = config.exchange();
@@ -73,7 +73,7 @@ public class ApplicationInfrastructureTest {
 
     @Test
     @DisplayName("Should create Jackson2JsonMessageConverter bean")
-    public void testRabbitConfig_MessageConverter() {
+    void testRabbitConfig_MessageConverter() {
         RabbitConfig config = new RabbitConfig();
         MessageConverter converter = config.converter();
         assertNotNull(converter);
@@ -81,7 +81,7 @@ public class ApplicationInfrastructureTest {
 
     @Test
     @DisplayName("Should create RabbitTemplate with configured message converter")
-    public void testRabbitConfig_Template() {
+    void testRabbitConfig_Template() {
         RabbitConfig config = new RabbitConfig();
         ConnectionFactory mockFactory = mock(ConnectionFactory.class);
         AmqpTemplate template = config.template(mockFactory);
@@ -90,7 +90,7 @@ public class ApplicationInfrastructureTest {
 
     @Test
     @DisplayName("Should verify RabbitConfig constant values")
-    public void testRabbitConfig_Constants() {
+    void testRabbitConfig_Constants() {
         assertEquals("policy.exchange", RabbitConfig.EXCHANGE);
         assertEquals("policy.purchase.queue", RabbitConfig.PURCHASE_QUEUE);
         assertEquals("payment.status.queue", RabbitConfig.PAYMENT_STATUS_QUEUE);

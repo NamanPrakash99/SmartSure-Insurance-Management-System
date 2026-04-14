@@ -10,6 +10,8 @@ import com.group2.claims_service.client.PolicyClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,7 +33,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class ClaimServiceTest {
+class ClaimServiceTest {
 
     @InjectMocks
     private ClaimServiceImpl claimService;
@@ -58,7 +60,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should initiate a claim successfully when amount is within coverage")
-    public void testInitiateClaim() {
+    void testInitiateClaim() {
         ClaimRequestDTO request = new ClaimRequestDTO();
         request.setPolicyId(1L);
         request.setUserId(1L);
@@ -92,7 +94,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw RuntimeException when claim amount exceeds coverage")
-    public void testInitiateClaim_ClaimAmountExceedsCoverage() {
+    void testInitiateClaim_ClaimAmountExceedsCoverage() {
         ClaimRequestDTO request = new ClaimRequestDTO();
         request.setPolicyId(1L);
         request.setUserId(1L);
@@ -109,7 +111,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should initiate claim when policyClient returns null (no coverage validation)")
-    public void testInitiateClaim_PolicyClientReturnsNull() {
+    void testInitiateClaim_PolicyClientReturnsNull() {
         ClaimRequestDTO request = new ClaimRequestDTO();
         request.setPolicyId(2L);
         request.setUserId(2L);
@@ -135,7 +137,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should send email to user when user is found after claim initiation")
-    public void testInitiateClaim_WithEmailSentToUser() {
+    void testInitiateClaim_WithEmailSentToUser() {
         ClaimRequestDTO request = new ClaimRequestDTO();
         request.setPolicyId(1L);
         request.setUserId(1L);
@@ -171,7 +173,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should upload PDF document successfully")
-    public void testUploadDocument_PdfContentType() throws IOException {
+    void testUploadDocument_PdfContentType() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getContentType()).thenReturn("application/pdf");
         when(file.getOriginalFilename()).thenReturn("doc.pdf");
@@ -188,7 +190,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should upload image document with image/* content type")
-    public void testUploadDocument_ImageContentType() throws IOException {
+    void testUploadDocument_ImageContentType() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getContentType()).thenReturn("image/png");
         when(file.getOriginalFilename()).thenReturn("photo.png");
@@ -205,7 +207,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should upload document with jpg extension when content type is unrecognised")
-    public void testUploadDocument_ValidJpgExtensionFallback() throws IOException {
+    void testUploadDocument_ValidJpgExtensionFallback() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getContentType()).thenReturn("application/octet-stream");
         when(file.getOriginalFilename()).thenReturn("document.jpg");
@@ -221,7 +223,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should upload document with jpeg extension fallback")
-    public void testUploadDocument_ValidJpegExtensionFallback() throws IOException {
+    void testUploadDocument_ValidJpegExtensionFallback() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getContentType()).thenReturn("application/octet-stream");
         when(file.getOriginalFilename()).thenReturn("scan.jpeg");
@@ -237,7 +239,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should upload document with gif extension fallback")
-    public void testUploadDocument_ValidGifExtensionFallback() throws IOException {
+    void testUploadDocument_ValidGifExtensionFallback() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getContentType()).thenReturn("application/octet-stream");
         when(file.getOriginalFilename()).thenReturn("animation.gif");
@@ -253,7 +255,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should upload document with png extension fallback")
-    public void testUploadDocument_ValidPngExtensionFallback() throws IOException {
+    void testUploadDocument_ValidPngExtensionFallback() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getContentType()).thenReturn("application/octet-stream");
         when(file.getOriginalFilename()).thenReturn("screenshot.png");
@@ -269,7 +271,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw IllegalArgumentException for invalid file format")
-    public void testUploadDocument_InvalidFileFormat() {
+    void testUploadDocument_InvalidFileFormat() {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getContentType()).thenReturn("text/plain");
         when(file.getOriginalFilename()).thenReturn("file.txt");
@@ -283,7 +285,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw ClaimNotFoundException when uploading to non-existent claim")
-    public void testUploadDocument_ClaimNotFound() {
+    void testUploadDocument_ClaimNotFound() {
         MultipartFile file = mock(MultipartFile.class);
         when(claimRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -292,7 +294,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw RuntimeException when IOException occurs reading file bytes")
-    public void testUploadDocument_IOExceptionOnBytes() throws IOException {
+    void testUploadDocument_IOExceptionOnBytes() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getContentType()).thenReturn("application/pdf");
         when(file.getOriginalFilename()).thenReturn("doc.pdf");
@@ -309,7 +311,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should return claim document successfully")
-    public void testGetClaimDocument_Success() {
+    void testGetClaimDocument_Success() {
         ClaimDocument doc = new ClaimDocument();
         doc.setFileData(new byte[]{1, 2, 3});
         when(documentRepository.findFirstByClaimIdOrderByIdDesc(1L)).thenReturn(Optional.of(doc));
@@ -320,7 +322,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw ClaimNotFoundException when document not found")
-    public void testGetClaimDocument_NotFound() {
+    void testGetClaimDocument_NotFound() {
         when(documentRepository.findFirstByClaimIdOrderByIdDesc(99L)).thenReturn(Optional.empty());
         assertThrows(ClaimNotFoundException.class, () -> claimService.getClaimDocument(99L));
     }
@@ -329,7 +331,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should return claim status successfully")
-    public void testGetClaimStatus() {
+    void testGetClaimStatus() {
         Claim claim = new Claim();
         claim.setId(1L);
         claim.setClaimStatus(ClaimStatus.APPROVED);
@@ -343,7 +345,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw ClaimNotFoundException when claim not found for status")
-    public void testGetClaimStatus_NotFound() {
+    void testGetClaimStatus_NotFound() {
         when(claimRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(ClaimNotFoundException.class, () -> claimService.getClaimStatus(99L));
     }
@@ -352,7 +354,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should return full claim details by ID")
-    public void testGetClaimById_Success() {
+    void testGetClaimById_Success() {
         Claim claim = new Claim();
         claim.setId(1L);
         claim.setPolicyId(2L);
@@ -379,91 +381,38 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw ClaimNotFoundException when claim not found by ID")
-    public void testGetClaimById_NotFound() {
+    void testGetClaimById_NotFound() {
         when(claimRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(ClaimNotFoundException.class, () -> claimService.getClaimById(99L));
     }
 
     // ==================== updateClaimStatus ====================
 
-    @Test
-    @DisplayName("Should transition claim from SUBMITTED to UNDER_REVIEW")
-    public void testUpdateClaimStatus_SubmittedToUnderReview() {
+    @ParameterizedTest
+    @CsvSource({
+        "SUBMITTED, UNDER_REVIEW, UNDER_REVIEW",
+        "SUBMITTED, APPROVED, APPROVED",
+        "UNDER_REVIEW, REJECTED, REJECTED",
+        "APPROVED, CLOSED, CLOSED",
+        "REJECTED, CLOSED, CLOSED"
+    })
+    @DisplayName("Should transition claim status correctly")
+    void testUpdateClaimStatus_Transitions(String initialStatus, String newStatus, String expectedStatus) {
         Claim claim = new Claim();
-        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        claim.setClaimStatus(ClaimStatus.valueOf(initialStatus));
         claim.setUserId(1L);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
         when(claimRepository.save(any(Claim.class))).thenReturn(claim);
 
         ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
-        dto.setStatus("UNDER_REVIEW");
+        dto.setStatus(newStatus);
         claimService.updateClaimStatus(1L, dto);
-        assertEquals(ClaimStatus.UNDER_REVIEW, claim.getClaimStatus());
-    }
-
-    @Test
-    @DisplayName("Should transition claim from SUBMITTED to APPROVED")
-    public void testUpdateClaimStatus_ApprovedFromSubmitted() {
-        Claim claim = new Claim();
-        claim.setClaimStatus(ClaimStatus.SUBMITTED);
-        claim.setUserId(1L);
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-        when(claimRepository.save(any(Claim.class))).thenReturn(claim);
-
-        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
-        dto.setStatus("APPROVED");
-        claimService.updateClaimStatus(1L, dto);
-        assertEquals(ClaimStatus.APPROVED, claim.getClaimStatus());
-    }
-
-    @Test
-    @DisplayName("Should transition claim from UNDER_REVIEW to REJECTED")
-    public void testUpdateClaimStatus_RejectedFromUnderReview() {
-        Claim claim = new Claim();
-        claim.setClaimStatus(ClaimStatus.UNDER_REVIEW);
-        claim.setUserId(1L);
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-        when(claimRepository.save(any(Claim.class))).thenReturn(claim);
-
-        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
-        dto.setStatus("REJECTED");
-        claimService.updateClaimStatus(1L, dto);
-        assertEquals(ClaimStatus.REJECTED, claim.getClaimStatus());
-    }
-
-    @Test
-    @DisplayName("Should transition claim from APPROVED to CLOSED")
-    public void testUpdateClaimStatus_ClosedFromApproved() {
-        Claim claim = new Claim();
-        claim.setClaimStatus(ClaimStatus.APPROVED);
-        claim.setUserId(1L);
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-        when(claimRepository.save(any(Claim.class))).thenReturn(claim);
-
-        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
-        dto.setStatus("CLOSED");
-        claimService.updateClaimStatus(1L, dto);
-        assertEquals(ClaimStatus.CLOSED, claim.getClaimStatus());
-    }
-
-    @Test
-    @DisplayName("Should transition claim from REJECTED to CLOSED")
-    public void testUpdateClaimStatus_ClosedFromRejected() {
-        Claim claim = new Claim();
-        claim.setClaimStatus(ClaimStatus.REJECTED);
-        claim.setUserId(1L);
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-        when(claimRepository.save(any(Claim.class))).thenReturn(claim);
-
-        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
-        dto.setStatus("CLOSED");
-        claimService.updateClaimStatus(1L, dto);
-        assertEquals(ClaimStatus.CLOSED, claim.getClaimStatus());
+        assertEquals(ClaimStatus.valueOf(expectedStatus), claim.getClaimStatus());
     }
 
     @Test
     @DisplayName("Should throw RuntimeException for invalid status transition")
-    public void testUpdateClaimStatus_InvalidTransition() {
+    void testUpdateClaimStatus_InvalidTransition() {
         Claim claim = new Claim();
         claim.setClaimStatus(ClaimStatus.CLOSED);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
@@ -475,7 +424,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw RuntimeException for unrecognised status string")
-    public void testUpdateClaimStatus_InvalidStatusString() {
+    void testUpdateClaimStatus_InvalidStatusString() {
         Claim claim = new Claim();
         claim.setClaimStatus(ClaimStatus.SUBMITTED);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
@@ -487,7 +436,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw ClaimNotFoundException when updating status of non-existent claim")
-    public void testUpdateClaimStatus_ClaimNotFound() {
+    void testUpdateClaimStatus_ClaimNotFound() {
         when(claimRepository.findById(99L)).thenReturn(Optional.empty());
         ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
         dto.setStatus("APPROVED");
@@ -496,7 +445,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should update claim status with remark when remark is provided")
-    public void testUpdateClaimStatus_WithRemark() {
+    void testUpdateClaimStatus_WithRemark() {
         Claim claim = new Claim();
         claim.setClaimStatus(ClaimStatus.SUBMITTED);
         claim.setUserId(1L);
@@ -514,7 +463,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should send status update email when user is found")
-    public void testUpdateClaimStatus_SendsEmailWhenUserFound() {
+    void testUpdateClaimStatus_SendsEmailWhenUserFound() {
         Claim claim = new Claim();
         claim.setClaimStatus(ClaimStatus.SUBMITTED);
         claim.setUserId(1L);
@@ -537,7 +486,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should return all claims for a specific user")
-    public void testGetClaimsByUserId_Success() {
+    void testGetClaimsByUserId_Success() {
         Claim claim1 = new Claim();
         claim1.setId(1L);
         claim1.setPolicyId(10L);
@@ -567,7 +516,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should return empty list when user has no claims")
-    public void testGetClaimsByUserId_EmptyList() {
+    void testGetClaimsByUserId_EmptyList() {
         when(claimRepository.findByUserId(99L)).thenReturn(List.of());
         List<ClaimResponseDTO> result = claimService.getClaimsByUserId(99L);
         assertNotNull(result);
@@ -578,7 +527,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should return correct claim statistics")
-    public void testGetClaimStats() {
+    void testGetClaimStats() {
         when(claimRepository.count()).thenReturn(10L);
         when(claimRepository.countByClaimStatus(ClaimStatus.SUBMITTED)).thenReturn(5L);
         when(claimRepository.countByClaimStatus(ClaimStatus.APPROVED)).thenReturn(3L);
@@ -595,7 +544,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should return paginated list of all claims")
-    public void testGetAllClaims_Success() {
+    void testGetAllClaims_Success() {
         Claim claim = new Claim();
         claim.setId(1L);
         claim.setPolicyId(1L);
@@ -619,7 +568,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should return empty page when no claims exist")
-    public void testGetAllClaims_EmptyPage() {
+    void testGetAllClaims_EmptyPage() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Claim> emptyPage = new PageImpl<>(List.of(), pageable, 0);
         when(claimRepository.findAll(pageable)).thenReturn(emptyPage);
@@ -635,7 +584,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should update claim amount, description and policyId successfully")
-    public void testUpdateClaim_Success() {
+    void testUpdateClaim_Success() {
         Claim claim = new Claim();
         claim.setId(1L);
         claim.setPolicyId(1L);
@@ -662,7 +611,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should not update fields when amount is 0 and optional fields are null")
-    public void testUpdateClaim_NoFieldsUpdated() {
+    void testUpdateClaim_NoFieldsUpdated() {
         Claim claim = new Claim();
         claim.setId(1L);
         claim.setPolicyId(5L);
@@ -689,7 +638,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw ClaimNotFoundException when updating non-existent claim")
-    public void testUpdateClaim_NotFound() {
+    void testUpdateClaim_NotFound() {
         when(claimRepository.findById(99L)).thenReturn(Optional.empty());
         ClaimRequestDTO dto = new ClaimRequestDTO();
         assertThrows(ClaimNotFoundException.class, () -> claimService.updateClaim(99L, dto));
@@ -699,7 +648,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should delete claim and its documents successfully")
-    public void testDeleteClaim_Success() {
+    void testDeleteClaim_Success() {
         Claim claim = new Claim();
         claim.setId(1L);
         when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
@@ -712,7 +661,7 @@ public class ClaimServiceTest {
 
     @Test
     @DisplayName("Should throw ClaimNotFoundException when deleting non-existent claim")
-    public void testDeleteClaim_NotFound() {
+    void testDeleteClaim_NotFound() {
         when(claimRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(ClaimNotFoundException.class, () -> claimService.deleteClaim(99L));
     }

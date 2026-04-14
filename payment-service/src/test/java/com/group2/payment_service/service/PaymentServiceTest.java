@@ -37,7 +37,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class PaymentServiceTest {
+class PaymentServiceTest {
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
@@ -58,7 +58,7 @@ public class PaymentServiceTest {
     private EmailService emailService;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         ReflectionTestUtils.setField(paymentService, "razorpayKeyId", "test_id");
         ReflectionTestUtils.setField(paymentService, "razorpayKeySecret", "test_secret");
     }
@@ -67,7 +67,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should create Razorpay order successfully")
-    public void testCreateOrder_Success() throws RazorpayException {
+    void testCreateOrder_Success() throws RazorpayException {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
         request.setPolicyId(1L);
@@ -103,7 +103,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should throw IllegalArgumentException when user does not exist")
-    public void testCreateOrder_UserNotFound() {
+    void testCreateOrder_UserNotFound() {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
 
@@ -117,7 +117,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should throw IllegalArgumentException when policy does not exist")
-    public void testCreateOrder_PolicyNotFound() {
+    void testCreateOrder_PolicyNotFound() {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
         request.setPolicyId(1L);
@@ -133,7 +133,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should throw RuntimeException when RazorpayException occurs during order creation")
-    public void testCreateOrder_RazorpayException() {
+    void testCreateOrder_RazorpayException() {
         PaymentRequest request = new PaymentRequest();
         request.setUserId(1L);
         request.setPolicyId(1L);
@@ -164,7 +164,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should return success when payment signature is valid and transaction exists")
-    public void testVerifyPayment_Success() {
+    void testVerifyPayment_Success() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_123");
         verifyRequest.setRazorpayPaymentId("pay_123");
@@ -192,7 +192,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should return success but not emit event when userPolicyId is null")
-    public void testVerifyPayment_SuccessNullUserPolicyId() {
+    void testVerifyPayment_SuccessNullUserPolicyId() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_456");
         verifyRequest.setRazorpayPaymentId("pay_456");
@@ -220,7 +220,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should return success when valid signature but no transaction found in DB")
-    public void testVerifyPayment_SuccessNoTransaction() {
+    void testVerifyPayment_SuccessNoTransaction() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_unknown");
         verifyRequest.setRazorpayPaymentId("pay_unknown");
@@ -243,7 +243,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should return failure when signature is invalid and transaction exists")
-    public void testVerifyPayment_Failed() {
+    void testVerifyPayment_Failed() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_123");
 
@@ -269,7 +269,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should return failure and not save when invalid signature and no transaction found")
-    public void testVerifyPayment_FailedNoTransaction() {
+    void testVerifyPayment_FailedNoTransaction() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_none");
 
@@ -290,7 +290,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should throw RuntimeException when RazorpayException occurs during payment verification")
-    public void testVerifyPayment_RazorpayException() {
+    void testVerifyPayment_RazorpayException() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_err");
         verifyRequest.setRazorpayPaymentId("pay_err");
@@ -308,7 +308,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should send confirmation email when payment succeeds with user and policy found")
-    public void testVerifyPayment_SuccessWithEmail() {
+    void testVerifyPayment_SuccessWithEmail() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_123");
         verifyRequest.setRazorpayPaymentId("pay_123");
@@ -347,7 +347,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should succeed without email when user is not found in DB")
-    public void testVerifyPayment_SuccessEmailUserNotFound() {
+    void testVerifyPayment_SuccessEmailUserNotFound() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_789");
         verifyRequest.setRazorpayPaymentId("pay_789");
@@ -377,7 +377,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should succeed without email when policy is not found in DB")
-    public void testVerifyPayment_SuccessEmailPolicyNotFound() {
+    void testVerifyPayment_SuccessEmailPolicyNotFound() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_321");
         verifyRequest.setRazorpayPaymentId("pay_321");
@@ -412,7 +412,7 @@ public class PaymentServiceTest {
 
     @Test
     @DisplayName("Should fail payment and not emit event when userPolicyId is null on failure")
-    public void testVerifyPayment_FailedNullUserPolicyId() {
+    void testVerifyPayment_FailedNullUserPolicyId() {
         PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest();
         verifyRequest.setRazorpayOrderId("order_fail_null");
 

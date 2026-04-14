@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class EmailServiceTest {
+class EmailServiceTest {
 
     @InjectMocks
     private EmailServiceImpl emailService;
@@ -29,13 +29,13 @@ public class EmailServiceTest {
     private JavaMailSender mailSender;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@smartsure.com");
     }
 
     @Test
     @DisplayName("Should send HTML email successfully using MimeMessage")
-    public void testSendHtmlEmail_Success() throws Exception {
+    void testSendHtmlEmail_Success() throws Exception {
         MimeMessage mimeMessage = mock(MimeMessage.class);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
@@ -46,7 +46,7 @@ public class EmailServiceTest {
 
     @Test
     @DisplayName("Should handle exception gracefully when HTML email fails")
-    public void testSendHtmlEmail_ExceptionHandled() {
+    void testSendHtmlEmail_ExceptionHandled() {
         when(mailSender.createMimeMessage()).thenThrow(new RuntimeException("Mail server unavailable"));
 
         // Should NOT throw — exception is caught and logged internally
@@ -57,7 +57,7 @@ public class EmailServiceTest {
 
     @Test
     @DisplayName("Should send plain text email successfully")
-    public void testSendEmail_Success() {
+    void testSendEmail_Success() {
         doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
         emailService.sendEmail("recipient@test.com", "Test Subject", "Plain text body");
@@ -67,7 +67,7 @@ public class EmailServiceTest {
 
     @Test
     @DisplayName("Should send HTML email with different content types")
-    public void testSendHtmlEmail_WithComplexBody() throws Exception {
+    void testSendHtmlEmail_WithComplexBody() throws Exception {
         MimeMessage mimeMessage = mock(MimeMessage.class);
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 

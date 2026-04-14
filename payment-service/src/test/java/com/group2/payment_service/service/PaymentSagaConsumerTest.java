@@ -15,7 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class PaymentSagaConsumerTest {
+class PaymentSagaConsumerTest {
 
     @InjectMocks
     private PaymentSagaConsumerImpl paymentSagaConsumer;
@@ -24,7 +24,7 @@ public class PaymentSagaConsumerTest {
     private TransactionRepository transactionRepository;
 
     @Test
-    public void testConsumePurchaseEvent() {
+    void testConsumePurchaseEvent() {
         PolicyPurchaseEvent event = new PolicyPurchaseEvent();
         event.setUserId(1L);
         event.setPolicyId(1L);

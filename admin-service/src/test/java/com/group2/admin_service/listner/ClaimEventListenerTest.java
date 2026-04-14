@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import com.group2.admin_service.dto.ClaimCreatedEvent;
 
 @ExtendWith(MockitoExtension.class)
-public class ClaimEventListenerTest {
+class ClaimEventListenerTest {
 
     @InjectMocks
     private ClaimEventListener claimEventListener;

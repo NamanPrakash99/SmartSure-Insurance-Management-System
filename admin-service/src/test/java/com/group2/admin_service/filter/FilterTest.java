@@ -13,12 +13,12 @@ import java.io.StringWriter;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class FilterTest {
+class FilterTest {
 
     // ==================== HeaderAuthenticationFilter ====================
 
     @Test
-    public void testHeaderAuth_WithRole() throws Exception {
+    void testHeaderAuth_WithRole() throws Exception {
         HeaderAuthenticationFilter filter = new HeaderAuthenticationFilter();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -34,7 +34,7 @@ public class FilterTest {
     }
 
     @Test
-    public void testHeaderAuth_WithRolePrefix() throws Exception {
+    void testHeaderAuth_WithRolePrefix() throws Exception {
         HeaderAuthenticationFilter filter = new HeaderAuthenticationFilter();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -50,7 +50,7 @@ public class FilterTest {
     }
 
     @Test
-    public void testHeaderAuth_NoRole() throws Exception {
+    void testHeaderAuth_NoRole() throws Exception {
         HeaderAuthenticationFilter filter = new HeaderAuthenticationFilter();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -65,7 +65,7 @@ public class FilterTest {
     }
 
     @Test
-    public void testHeaderAuth_NullUserId() throws Exception {
+    void testHeaderAuth_NullUserId() throws Exception {
         HeaderAuthenticationFilter filter = new HeaderAuthenticationFilter();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -83,7 +83,7 @@ public class FilterTest {
     // ==================== GatewaySecurityFilter ====================
 
     @Test
-    public void testGateway_ValidSecret() throws Exception {
+    void testGateway_ValidSecret() throws Exception {
         GatewaySecurityFilter filter = new GatewaySecurityFilter();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -99,7 +99,7 @@ public class FilterTest {
     }
 
     @Test
-    public void testGateway_InvalidSecret() throws Exception {
+    void testGateway_InvalidSecret() throws Exception {
         GatewaySecurityFilter filter = new GatewaySecurityFilter();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -119,7 +119,7 @@ public class FilterTest {
     }
 
     @Test
-    public void testGateway_NoSecret() throws Exception {
+    void testGateway_NoSecret() throws Exception {
         GatewaySecurityFilter filter = new GatewaySecurityFilter();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -138,7 +138,7 @@ public class FilterTest {
     }
 
     @Test
-    public void testGateway_ActuatorPath() throws Exception {
+    void testGateway_ActuatorPath() throws Exception {
         GatewaySecurityFilter filter = new GatewaySecurityFilter();
 
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -153,7 +153,7 @@ public class FilterTest {
     }
 
     @Test
-    public void testGateway_EurekaPath() throws Exception {
+    void testGateway_EurekaPath() throws Exception {
         GatewaySecurityFilter filter = new GatewaySecurityFilter();
 
         HttpServletRequest request = mock(HttpServletRequest.class);

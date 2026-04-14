@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -205,12 +206,13 @@ class ClaimServiceTest {
         verify(documentRepository, times(1)).save(any(ClaimDocument.class));
     }
 
-    @Test
-    @DisplayName("Should upload document with jpg extension when content type is unrecognised")
-    void testUploadDocument_ValidJpgExtensionFallback() throws IOException {
+    @ParameterizedTest
+    @ValueSource(strings = {"document.jpg", "scan.jpeg", "animation.gif", "screenshot.png"})
+    @DisplayName("Should upload document with different extensions when content type is unrecognised")
+    void testUploadDocument_ValidExtensionFallback(String fileName) throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getContentType()).thenReturn("application/octet-stream");
-        when(file.getOriginalFilename()).thenReturn("document.jpg");
+        when(file.getOriginalFilename()).thenReturn(fileName);
         when(file.getBytes()).thenReturn(new byte[5]);
 
         Claim claim = new Claim();
@@ -221,53 +223,6 @@ class ClaimServiceTest {
         assertEquals("Document uploaded Successfully", result);
     }
 
-    @Test
-    @DisplayName("Should upload document with jpeg extension fallback")
-    void testUploadDocument_ValidJpegExtensionFallback() throws IOException {
-        MultipartFile file = mock(MultipartFile.class);
-        when(file.getContentType()).thenReturn("application/octet-stream");
-        when(file.getOriginalFilename()).thenReturn("scan.jpeg");
-        when(file.getBytes()).thenReturn(new byte[5]);
-
-        Claim claim = new Claim();
-        claim.setId(1L);
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-
-        String result = claimService.uploadDocument(1L, file);
-        assertEquals("Document uploaded Successfully", result);
-    }
-
-    @Test
-    @DisplayName("Should upload document with gif extension fallback")
-    void testUploadDocument_ValidGifExtensionFallback() throws IOException {
-        MultipartFile file = mock(MultipartFile.class);
-        when(file.getContentType()).thenReturn("application/octet-stream");
-        when(file.getOriginalFilename()).thenReturn("animation.gif");
-        when(file.getBytes()).thenReturn(new byte[5]);
-
-        Claim claim = new Claim();
-        claim.setId(1L);
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-
-        String result = claimService.uploadDocument(1L, file);
-        assertEquals("Document uploaded Successfully", result);
-    }
-
-    @Test
-    @DisplayName("Should upload document with png extension fallback")
-    void testUploadDocument_ValidPngExtensionFallback() throws IOException {
-        MultipartFile file = mock(MultipartFile.class);
-        when(file.getContentType()).thenReturn("application/octet-stream");
-        when(file.getOriginalFilename()).thenReturn("screenshot.png");
-        when(file.getBytes()).thenReturn(new byte[5]);
-
-        Claim claim = new Claim();
-        claim.setId(1L);
-        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
-
-        String result = claimService.uploadDocument(1L, file);
-        assertEquals("Document uploaded Successfully", result);
-    }
 
     @Test
     @DisplayName("Should throw IllegalArgumentException for invalid file format")

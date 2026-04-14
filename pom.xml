@@ -89,8 +89,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sonar.cpd.exclusions>**/*DTO.java,**/*Entity.java,**/*Exception.java,**/*Request.java,**/*Response.java</sonar.cpd.exclusions>
         <sonar.coverage.exclusions>
-            **/dto/**,
-            **/entity/**,
             **/exception/**,
             **/config/**,
             **/filter/**,

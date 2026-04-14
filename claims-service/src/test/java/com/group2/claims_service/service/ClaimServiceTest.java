@@ -620,4 +620,98 @@ class ClaimServiceTest {
         when(claimRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(ClaimNotFoundException.class, () -> claimService.deleteClaim(99L));
     }
+    @Test
+    @DisplayName("Should handle case where user is not found for initiation email")
+    void testInitiateClaim_UserNotFoundForEmail() {
+        ClaimRequestDTO request = new ClaimRequestDTO();
+        request.setPolicyId(1L);
+        request.setUserId(99L);
+        request.setClaimAmount(1000.0);
+
+        UserPolicyResponseDTO policy = new UserPolicyResponseDTO();
+        policy.setCoverageAmount(5000.0);
+        when(policyClient.getUserPolicyById(eq(1L), anyString())).thenReturn(policy);
+
+        Claim claim = new Claim();
+        claim.setId(1L);
+        claim.setUserId(99L);
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        when(claimRepository.save(any(Claim.class))).thenReturn(claim);
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> claimService.initiateClaim(request));
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Should handle email exception during claim initiation")
+    void testInitiateClaim_EmailException() {
+        ClaimRequestDTO request = new ClaimRequestDTO();
+        request.setPolicyId(1L);
+        request.setUserId(1L);
+        request.setClaimAmount(1000.0);
+
+        UserPolicyResponseDTO policy = new UserPolicyResponseDTO();
+        policy.setCoverageAmount(5000.0);
+        when(policyClient.getUserPolicyById(eq(1L), anyString())).thenReturn(policy);
+
+        Claim claim = new Claim();
+        claim.setId(1L);
+        claim.setUserId(1L);
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        when(claimRepository.save(any(Claim.class))).thenReturn(claim);
+        
+        when(userRepository.findById(1L)).thenReturn(Optional.of(new User()));
+        doThrow(new RuntimeException("Mail server down")).when(emailService).sendHtmlEmail(any(), any(), any());
+
+        assertDoesNotThrow(() -> claimService.initiateClaim(request));
+    }
+
+    @Test
+    @DisplayName("Should handle case where user is not found for status update email")
+    void testUpdateClaimStatus_UserNotFoundForEmail() {
+        Claim claim = new Claim();
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        claim.setUserId(99L);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+        when(claimRepository.save(any(Claim.class))).thenReturn(claim);
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("APPROVED");
+        
+        assertDoesNotThrow(() -> claimService.updateClaimStatus(1L, dto));
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Should throw RuntimeException for unsupported status transition")
+    void testUpdateClaimStatus_UnsupportedTransition() {
+        Claim claim = new Claim();
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("CLOSED"); // SUBMITTED to CLOSED is not valid in switch
+        assertThrows(RuntimeException.class, () -> claimService.updateClaimStatus(1L, dto));
+    }
+
+    @Test
+    @DisplayName("Should handle email exception during status update")
+    void testUpdateClaimStatus_EmailException() {
+        Claim claim = new Claim();
+        claim.setClaimStatus(ClaimStatus.SUBMITTED);
+        claim.setUserId(1L);
+        when(claimRepository.findById(1L)).thenReturn(Optional.of(claim));
+        when(claimRepository.save(any(Claim.class))).thenReturn(claim);
+        
+        when(userRepository.findById(1L)).thenReturn(Optional.of(new User()));
+        doThrow(new RuntimeException("Mail server down")).when(emailService).sendHtmlEmail(any(), any(), any());
+
+        ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
+        dto.setStatus("APPROVED");
+        
+        assertDoesNotThrow(() -> claimService.updateClaimStatus(1L, dto));
+    }
 }
+

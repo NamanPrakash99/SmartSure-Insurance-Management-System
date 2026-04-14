@@ -435,4 +435,38 @@ class PaymentServiceTest {
             verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), (Object) any());
         }
     }
+
+    @Test
+    @DisplayName("Should handle email service exception during verification")
+    void testVerifyPayment_EmailExceptionDuringVerification() throws Exception {
+        PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest("order_email_fail", "pay_email_fail", "sig_email_fail");
+        Transaction transaction = new Transaction();
+        transaction.setUserId(1L);
+        transaction.setPolicyId(1L);
+        transaction.setRazorpayOrderId("order_email_fail");
+
+        when(transactionRepository.findByRazorpayOrderId("order_email_fail")).thenReturn(Optional.of(transaction));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(new User()));
+        when(policyRepository.findById(1L)).thenReturn(Optional.of(new com.group2.payment_service.entity.Policy()));
+        doThrow(new RuntimeException("Mail server down")).when(emailService).sendHtmlEmail(any(), any(), any());
+
+        try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class);
+             MockedStatic<Utils> mockedUtils = mockStatic(Utils.class)) {
+            mockedUtils.when(() -> Utils.verifyPaymentSignature(any(), anyString())).thenReturn(true);
+            String result = paymentService.verifyPayment(verifyRequest);
+            assertEquals("Payment Verification Successful", result);
+        }
+    }
+
+    @Test
+    @DisplayName("Should throw RuntimeException when RazorpayException occurs in verifyPayment")
+    void testVerifyPayment_RazorpayException() throws Exception {
+        PaymentVerifyRequest verifyRequest = new PaymentVerifyRequest("order_razor_fail", "pay_razor_fail", "sig_razor_fail");
+        
+        try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class, (mock, context) -> {
+            throw new RazorpayException("API Error");
+        })) {
+            assertThrows(RuntimeException.class, () -> paymentService.verifyPayment(verifyRequest));
+        }
+    }
 }

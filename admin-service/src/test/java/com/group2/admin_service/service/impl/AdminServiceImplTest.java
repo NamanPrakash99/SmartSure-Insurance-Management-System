@@ -4,13 +4,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,6 +24,10 @@ import com.group2.admin_service.dto.*;
 import com.group2.admin_service.feign.AuthFeignClient;
 import com.group2.admin_service.feign.ClaimsFeignClient;
 import com.group2.admin_service.feign.PolicyFeignClient;
+
+import feign.Request;
+import feign.Request.Method;
+import feign.FeignException;
 
 @ExtendWith(MockitoExtension.class)
 public class AdminServiceImplTest {
@@ -136,7 +140,16 @@ public class AdminServiceImplTest {
         data.put("totalElements", 1L);
         data.put("number", 0);
         data.put("size", 10);
-        data.put("content", Arrays.asList(new ClaimDTO()));
+        
+        List<Map<String, Object>> content = new ArrayList<>();
+        Map<String, Object> claimMap = new HashMap<>();
+        claimMap.put("claimId", 1L);
+        content.add(claimMap);
+        
+        // Add invalid item to trigger catch block in mapContentList
+        content.add(null); 
+        
+        data.put("content", content);
 
         when(claimsFeignClient.getAllClaims(0, 10)).thenReturn(data);
 
@@ -144,7 +157,15 @@ public class AdminServiceImplTest {
 
         assertNotNull(result);
         assertEquals(1, result.getTotalPages());
+        // Should have 1 valid claim because null triggers catch block
         assertEquals(1, result.getContent().size());
+    }
+
+    @Test
+    void testGetAllClaims_NullData() {
+        when(claimsFeignClient.getAllClaims(0, 10)).thenReturn(null);
+        PageResponse<ClaimDTO> result = adminService.getAllClaims(0, 10);
+        assertNotNull(result);
     }
 
     @Test
@@ -182,6 +203,32 @@ public class AdminServiceImplTest {
 
         assertNotNull(result);
         verify(policyFeignClient).createPolicy(dto);
+    }
+
+    @Test
+    void testCreatePolicy_FeignException() {
+        PolicyRequestDTO dto = new PolicyRequestDTO();
+        
+        // Create a real FeignException Mock
+        FeignException fe = FeignException.errorStatus("createPolicy", 
+            feign.Response.builder()
+                .status(500)
+                .reason("Error")
+                .request(Request.create(Method.POST, "/url", Collections.emptyMap(), null, null))
+                .body("Internal Error", java.nio.charset.StandardCharsets.UTF_8)
+                .build());
+
+        when(policyFeignClient.createPolicy(dto)).thenThrow(fe);
+
+        assertThrows(RuntimeException.class, () -> adminService.createPolicy(dto));
+    }
+
+    @Test
+    void testCreatePolicy_GenericException() {
+        PolicyRequestDTO dto = new PolicyRequestDTO();
+        when(policyFeignClient.createPolicy(dto)).thenThrow(new RuntimeException("Crash"));
+
+        assertThrows(RuntimeException.class, () -> adminService.createPolicy(dto));
     }
 
     @Test
@@ -262,6 +309,7 @@ public class AdminServiceImplTest {
     @Test
     void testGetReports() {
         ClaimStatusDTO claimStats = new ClaimStatusDTO();
+        // Test getSafeInt with non-integers if possible, or just ensure coverage
         claimStats.setTotalClaims(10);
         claimStats.setApprovedClaims(5);
         claimStats.setRejectedClaims(5);

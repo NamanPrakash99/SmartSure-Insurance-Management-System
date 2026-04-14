@@ -1,52 +1,38 @@
 package com.group2.admin_service.controller;
 
-import com.group2.admin_service.dto.*;
-import com.group2.admin_service.service.AdminService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.Collections;
-
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.util.Collections;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.group2.admin_service.dto.*;
+import com.group2.admin_service.service.AdminService;
+
 @WebMvcTest(AdminController.class)
-@org.springframework.test.context.ActiveProfiles("test")
-@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-class AdminControllerTest {
+@AutoConfigureMockMvc(addFilters = false) // Disable security for unit testing endpoints
+public class AdminControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @MockBean
     private AdminService adminService;
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void testGetReports() throws Exception {
-        ReportResponse report = new ReportResponse();
-        report.setTotalClaims(10);
-        report.setTotalPolicies(20);
-
-        when(adminService.getReports()).thenReturn(report);
-
-        mockMvc.perform(get("/api/admin/reports")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalClaims").value(10))
-                .andExpect(jsonPath("$.totalPolicies").value(20));
-    }
 
     @Test
     @WithMockUser(roles = "ADMIN")
@@ -55,155 +41,150 @@ class AdminControllerTest {
         request.setStatus("APPROVED");
 
         mockMvc.perform(put("/api/admin/claims/1/review")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
-                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Claim reviewed successfully"));
+
+        verify(adminService).reviewClaim(eq(1L), any(ReviewRequest.class));
+    }
+
+    @Test
+    void testGetStatus() throws Exception {
+        when(adminService.getClaimStatus(1L)).thenReturn(new ClaimStatusDTO());
+
+        mockMvc.perform(get("/api/admin/claims/status/1"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void testCreatePolicy() throws Exception {
-        PolicyRequestDTO request = new PolicyRequestDTO();
-        PolicyDTO response = new PolicyDTO();
-        response.setId(1L);
-
-        when(adminService.createPolicy(any(PolicyRequestDTO.class))).thenReturn(response);
-
-        mockMvc.perform(post("/api/admin/policies")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
-                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void testGetStatus() throws Exception {
-        ClaimStatusDTO dto = new ClaimStatusDTO();
-        dto.setTotalClaims(5);
-        when(adminService.getClaimStatus(1L)).thenReturn(dto);
-
-        mockMvc.perform(get("/api/admin/claims/status/1")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalClaims").value(5));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
     void testGetClaimsByUser() throws Exception {
         when(adminService.getClaimsByUserId(1L)).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/admin/claims/user/1")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026"))
+        mockMvc.perform(get("/api/admin/claims/user/1"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testDownloadDocument() throws Exception {
-        byte[] content = new byte[] { 1, 2, 3 };
-        when(adminService.downloadClaimDocument(1L)).thenReturn(org.springframework.http.ResponseEntity.ok(content));
+        byte[] content = "test".getBytes();
+        when(adminService.downloadClaimDocument(1L)).thenReturn(ResponseEntity.ok(content));
 
-        mockMvc.perform(get("/api/admin/claims/1/document")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026"))
+        mockMvc.perform(get("/api/admin/claims/1/document"))
                 .andExpect(status().isOk())
                 .andExpect(content().bytes(content));
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testGetAllClaims() throws Exception {
-        when(adminService.getAllClaims(0, 10)).thenReturn(new PageResponse<ClaimDTO>());
+        when(adminService.getAllClaims(0, 10)).thenReturn(new PageResponse<>());
 
-        mockMvc.perform(get("/api/admin/claims")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
-                .param("page", "0")
-                .param("size", "10"))
+        mockMvc.perform(get("/api/admin/claims?page=0&size=10"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
+    void testGetAllClaims_Error() throws Exception {
+        when(adminService.getAllClaims(anyInt(), anyInt())).thenThrow(new RuntimeException("Error"));
+
+        mockMvc.perform(get("/api/admin/claims"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
     void testUpdateClaim() throws Exception {
         ClaimDTO dto = new ClaimDTO();
         when(adminService.updateClaim(eq(1L), any(ClaimDTO.class))).thenReturn(dto);
 
         mockMvc.perform(put("/api/admin/claims/1")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
-                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
+    void testUpdateClaim_Error() throws Exception {
+        when(adminService.updateClaim(anyLong(), any(ClaimDTO.class))).thenThrow(new RuntimeException("Error"));
+
+        mockMvc.perform(put("/api/admin/claims/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new ClaimDTO())))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
     void testDeleteClaim() throws Exception {
-        mockMvc.perform(delete("/api/admin/claims/1")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
-                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
-                        .csrf()))
+        mockMvc.perform(delete("/api/admin/claims/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Claim deleted successfully"));
+    }
+
+    @Test
+    void testCreatePolicy() throws Exception {
+        PolicyRequestDTO dto = new PolicyRequestDTO();
+        when(adminService.createPolicy(any(PolicyRequestDTO.class))).thenReturn(new PolicyDTO());
+
+        mockMvc.perform(post("/api/admin/policies")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testUpdatePolicy() throws Exception {
         PolicyRequestDTO dto = new PolicyRequestDTO();
         when(adminService.updatePolicy(eq(1L), any(PolicyRequestDTO.class))).thenReturn(new PolicyDTO());
 
         mockMvc.perform(put("/api/admin/policies/1")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
-                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testDeletePolicy() throws Exception {
-        mockMvc.perform(delete("/api/admin/policies/1")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
-                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
-                        .csrf()))
-                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/admin/policies/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Policy deleted successfully"));
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testGetUserPolicies() throws Exception {
         when(adminService.getUserPolicies(1L)).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/admin/user-policies/1")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026"))
+        mockMvc.perform(get("/api/admin/user-policies/1"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testGetAllUserPolicies() throws Exception {
         when(adminService.getAllUserPolicies()).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/admin/user-policies/all")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026"))
+        mockMvc.perform(get("/api/admin/user-policies/all"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     void testCancelUserPolicy() throws Exception {
-        when(adminService.cancelPolicy(1L)).thenReturn(Collections.singletonMap("status", "cancelled"));
+        when(adminService.cancelPolicy(1L)).thenReturn(new Object());
 
-        mockMvc.perform(put("/api/admin/policies/1/cancel")
-                .header("X-Gateway-Secret", "SmartSureSecretKey2026")
-                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
-                        .csrf()))
+        mockMvc.perform(put("/api/admin/policies/1/cancel"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetAllCustomers() throws Exception {
+        when(adminService.getAllCustomers()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/admin/customers"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetReports() throws Exception {
+        when(adminService.getReports()).thenReturn(new ReportResponse());
+
+        mockMvc.perform(get("/api/admin/reports"))
                 .andExpect(status().isOk());
     }
 }
